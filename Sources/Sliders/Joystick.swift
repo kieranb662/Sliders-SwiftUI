@@ -450,11 +450,13 @@ public struct Joystick: View {
                                                        startLocation: value.startLocation,
                                                        velocity: velocity,
                                                        acceleration: self.calculateAcceleration(velocity: velocity, time: value.time))
-                                self.enteredLockBoxHandler(proxy[bounds[1]!].contains(value.location))
+                                guard let bound = bounds[1] else { return }
+                                self.enteredLockBoxHandler(proxy[bound].contains(value.location))
                             })
                             .onEnded({ (value) in
                                 self.lastPlacement = value.startLocation
-                                self.lock(proxy[bounds[1]!].contains(value.location))
+                                guard let bound = bounds[1] else { return }
+                                self.lock(proxy[bound].contains(value.location))
                             }))
                     self.joystick.allowsHitTesting(false)
                 }
