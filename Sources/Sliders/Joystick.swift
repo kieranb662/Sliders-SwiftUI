@@ -290,7 +290,7 @@ public struct Joystick: View {
     struct JoyStickKey: PreferenceKey {
         static var defaultValue: [Int:Anchor<CGRect>] { [:] }
         static func reduce(value: inout [Int:Anchor<CGRect>], nextValue: () -> [Int:Anchor<CGRect>]) {
-            value = nextValue()
+            value.merge(nextValue(), uniquingKeysWith: {$1})
         }
     }
     @Environment(\.joystickStyle) private var style: AnyJoystickStyle
