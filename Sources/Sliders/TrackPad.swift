@@ -10,19 +10,25 @@ import SwiftUI
 // MARK: - Configuration
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
 public struct TrackPadConfiguration {
+    /// Whether or not the trackpad is disabled
     public let isDisabled: Bool
+    /// whether or not the thumb is dragging
     public let isActive: Bool
-    
+    /// `(valueX-minX)/(maxX-minX)`
     public let pctX: Double
+    /// `(valueY-minY)/(maxY-minY)`
     public let pctY: Double
-    
+    /// The current value in the x direction
     public let valueX: Double
+    /// The current value in the y direction
     public let valueY: Double
-    
+    /// The minimum value from rangeX
     public let minX: Double
+    /// The maximum value from rangeX
     public let maxX: Double
-    
+    /// The minimum value from rangeY
     public let minY: Double
+    /// The maximum value from rangeY
     public let maxY: Double
 }
 // MARK: - Style
@@ -109,6 +115,7 @@ public struct DefaultTrackPadStyle: TrackPadStyle {
 ///     - value: A `CGPoint ` representing the two values being controlled by the trackpad in the x, and y directions
 ///     - rangeX: A `ClosedRange<CGFloat>` defining the minimum and maximum of  the `value` parameters  x component
 ///     - rangeY: A `ClosedRange<CGFloat>` defining the minimum and maximum of  the `value` parameters  y component
+///     - isDisabled: A `Bool` value describing whether the track pad responds to user input or not
 ///
 /// ## Styling
 ///  To create a custom style for the `TrackPad` you need to create a `TrackPadStyle` conforming struct. Conformance requires implementation of 2 methods
@@ -117,35 +124,31 @@ public struct DefaultTrackPadStyle: TrackPadStyle {
 ///
 ///  Both methods provide access to state values of the track pad thru the `TrackPadConfiguration` struct
 ///
-///         public struct TrackPadConfiguration {
-///             public let isDisabled: Bool // Whether or not the trackpad is disabled
-///             public let isActive: Bool // whether or not the thumb is dragging
-///         
-///             public let pctX: Double // (valueX-minX)/(maxX-minX)
-///             public let pctY: Double // (valueY-minY)/(maxY-minY)
-///         
-///             public let valueX: Double // The current value in the x direction
-///             public let valueY: Double // The current value in the y direction
-///         
-///             public let minX: Double // The minimum value from rangeX
-///             public let maxX: Double // The maximum value from rangeX
-///
-///             public let minY: Double // The minimum value from rangeY
-///             public let maxY: Double // The maximum value from rangeY
+///         struct TrackPadConfiguration {
+///             let isDisabled: Bool // Whether or not the trackpad is disabled
+///             let isActive: Bool // whether or not the thumb is dragging
+///             let pctX: Double // (valueX-minX)/(maxX-minX)
+///             let pctY: Double // (valueY-minY)/(maxY-minY)
+///             let valueX: Double // The current value in the x direction
+///             let valueY: Double // The current value in the y direction
+///             let minX: Double // The minimum value from rangeX
+///             let maxX: Double // The maximum value from rangeX
+///             let minY: Double // The minimum value from rangeY
+///             let maxY: Double // The maximum value from rangeY
 ///         }
 ///
 ///  To make this easier just copy and paste the following style based on the `DefaultTrackPadStyle`. After creating your custom style
 ///  apply it by calling the `trackPadStyle` method on the `TrackPad` or a view containing it.
 ///
 /// ```
-///   public struct <#My TrackPad Style #>: TrackPadStyle {
-///       public func makeThumb(configuration:  TrackPadConfiguration) -> some View {
+///   struct <#My TrackPad Style #>: TrackPadStyle {
+///       func makeThumb(configuration:  TrackPadConfiguration) -> some View {
 ///           Circle()
 ///               .fill(configuration.isActive ? Color.yellow : Color.black)
 ///               .frame(width: 40, height: 40)
 ///       }
 ///
-///       public func makeTrack(configuration:  TrackPadConfiguration) -> some View {
+///       func makeTrack(configuration:  TrackPadConfiguration) -> some View {
 ///           RoundedRectangle(cornerRadius: 5)
 ///               .fill(Color.gray)
 ///               .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.blue))
@@ -173,6 +176,16 @@ public struct TrackPad: View {
         self.isDisabled = isDisabled
     }
     
+    public init(_ value: Binding<CGPoint>){
+        self._value = value
+    }
+    /// Use this initializer for when the x and y ranges are the same
+    public init(_ value: Binding<CGPoint>, range: ClosedRange<CGFloat>){
+        self._value = value
+        self.rangeX = range
+        self.rangeY = range
+    }
+    
     
     private var configuration: TrackPadConfiguration {
         .init(isDisabled: isDisabled,
@@ -188,11 +201,17 @@ public struct TrackPad: View {
     }
     
     // MARK: Calculations
+    // Limits the value of the drag gesture to be within the frame of the trackpad
+    // If the gesture hits an edge of the trackpad a haptic impact is played, an state
+    // variable for whether or not the impact has been played prevents the impact from
+    // being played multiple times while dragging along an edge
     private func constrainValue(_ proxy: GeometryProxy, _ location: CGPoint) {
         let w = proxy.size.width
         let h = proxy.size.height
+        // convert location to percentage form [0,1]
         let pctX = (location.x/w).clamped(to: 0...1)
         let pctY = (location.y/h).clamped(to: 0...1)
+        // Horizontal haptic handling
         if pctX == 1 || pctX == 0 {
             if !self.atXLimit {
                 self.impactOccured()
@@ -201,6 +220,7 @@ public struct TrackPad: View {
         } else {
             self.atXLimit = false
         }
+        // vertical haptix handling
         if pctY == 1 || pctY == 0 {
             if !self.atYLimit {
                 self.impactOccured()
@@ -209,6 +229,7 @@ public struct TrackPad: View {
         } else {
             self.atYLimit = false
         }
+        // convert percentage to a value within the ranges provided
         let newX = pctX*(rangeX.upperBound-rangeX.lowerBound) + rangeX.lowerBound
         let newY = pctY*(rangeY.upperBound-rangeY.lowerBound) + rangeY.lowerBound
         self.value = CGPoint(x: newX, y: newY)

@@ -13,13 +13,21 @@ import bez
 // MARK: - Configuration
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
 public struct PSliderConfiguration {
+    /// whether or not the slider is current disables
     public let isDisabled: Bool
+    /// whether or not the thumb is dragging or not
     public let isActive: Bool
+    /// The percentage of the sliders track that is filled
     public let pctFill: Double
+    /// The current value of the slider
     public let value: Double
+    ///  The direction between the current thumb location and the next sampled point
     public let angle: Angle
+    /// The minimum value of the sliders range
     public let min: Double
+    /// The maximum value of the sliders range
     public let max: Double
+    /// The shape of the slider 
     public let shape: AnyShape
 }
 // MARK: - Style
@@ -50,7 +58,6 @@ public struct AnyPSliderStyle: PSliderStyle {
     public func makeTrack(configuration: PSliderConfiguration) -> some View  {
         self._makeTrack(configuration)
     }
-    
     public init<S: PSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -106,37 +113,39 @@ public struct DefaultPSliderStyle: PSliderStyle {
 /// - parameters:
 ///     - value: a `Binding<Double>` value which represents the percent fill of the slider between  (0,1).
 ///     - shape: The `Shape` to be used as the sliders track
+///     - range: `ClosedRange<Double>` The minimum and maximum numbers that `value` can be
+///     - isDisabled: `Bool` Whether or not the slider should be disabled
 ///
 /// ## Styling The Slider
 ///
 /// To create a custom style for the slider you need to create a `PSliderStyle` conforming struct. Conformnance requires implementation of 2 methods
-/// 1. `makeThumb`: which creates the draggable portion of the slider
-/// 2. `makeTrack`: which creates the track which fills or emptys as the thumb is dragging within it
+///     1. `makeThumb`: which creates the draggable portion of the slider
+///     2. `makeTrack`: which creates the track which fills or emptys as the thumb is dragging within it
 ///
 /// Both methods provide access to state values through the `PSliderConfiguration` struct
 ///
-///     public struct PSliderConfiguration {
-///         public let isDisabled: Bool // whether or not  the slider is disabled
-///         public let isActive: Bool // whether or not the thumb is currently dragging
-///         public let pctFill: Double  // The percentage of the sliders track that is filled
-///         public let value: Double // The current value of the slider
-///         public let angle: Angle // Angle of the thumb
-///         public let min: Double  // The minimum value of the sliders range
-///         public let max: Double // The maximum value of the sliders range
+///     struct PSliderConfiguration {
+///         let isDisabled: Bool // whether or not  the slider is disabled
+///         let isActive: Bool // whether or not the thumb is currently dragging
+///         let pctFill: Double  // The percentage of the sliders track that is filled
+///         let value: Double // The current value of the slider
+///         let angle: Angle // Angle of the thumb
+///         let min: Double  // The minimum value of the sliders range
+///         let max: Double // The maximum value of the sliders range
 ///     }
 ///
 /// To make this easier just copy and paste the following style based on the `DefaultPSliderStyle`. After creating your custom style
 ///  apply it by calling the `pathSliderStyle` method on the `PSlider` or a view containing it.
 ///
 /// ```
-///     public struct <#My PSlider Style#>: PSliderStyle {
-///         public func makeThumb(configuration:  PSliderConfiguration) -> some View {
+///     struct <#My PSlider Style#>: PSliderStyle {
+///         func makeThumb(configuration:  PSliderConfiguration) -> some View {
 ///             Circle()
 ///             .frame(width: 30, height:30)
 ///             .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
 ///         }
 ///
-///         public func makeTrack(configuration:  PSliderConfiguration) -> some View {
+///         func makeTrack(configuration:  PSliderConfiguration) -> some View {
 ///             configuration.shape
 ///                 .stroke(Color.gray, lineWidth: 8)
 ///                 .overlay(
@@ -151,12 +160,11 @@ public struct DefaultPSliderStyle: PSliderStyle {
 public struct PSlider<S: Shape>: View {
     enum DragState {
         case inactive
-        case pressing
         case dragging(translation: CGSize)
         
         var translation: CGSize {
             switch self {
-            case .inactive, .pressing:
+            case .inactive:
                 return .zero
             case .dragging(let translation):
                 return translation
@@ -166,15 +174,6 @@ public struct PSlider<S: Shape>: View {
         var isActive: Bool {
             switch self {
             case .inactive:
-                return false
-            case .pressing, .dragging:
-                return true
-            }
-        }
-        
-        var isDragging: Bool {
-            switch self {
-            case .inactive, .pressing:
                 return false
             case .dragging:
                 return true
@@ -285,7 +284,12 @@ public struct PSlider<S: Shape>: View {
     
     private func makeThumb(_ proxy: GeometryProxy) -> some View {
         let rect = proxy.frame(in: .global) != .zero ? proxy.frame(in: .local) : CGRect(x: 0, y: 0, width: 100, height: 100)
-        return PThumb(dragState: $dragState, value: $value, lookUpTable: generateLookupTable(path: shape.path(in: rect)), range: range, isDisabled: self.isDisabled, shape: AnyShape(shape))
+        return PThumb(dragState: $dragState,
+                      value: $value,
+                      lookUpTable: generateLookupTable(path: shape.path(in: rect)),
+                      range: range,
+                      isDisabled: self.isDisabled,
+                      shape: AnyShape(shape))
     }
     
     var configuration: PSliderConfiguration {
@@ -301,7 +305,7 @@ public struct PSlider<S: Shape>: View {
     
     public var body: some View {
         GeometryReader { proxy in
-            self.style.makeTrack(configuration: .init(isDisabled: false , isActive: false, pctFill: self.value, value: self.value, angle: .zero, min: 0, max: 1, shape: self.shape.eraseToAnyShape()))
+            self.style.makeTrack(configuration: self.configuration)
                 .overlay(
                     self.makeThumb(proxy)
             ).coordinateSpace(name: "Follow")

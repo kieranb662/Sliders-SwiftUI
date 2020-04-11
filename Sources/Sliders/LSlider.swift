@@ -123,20 +123,20 @@ public struct DefaultLSliderStyle: LSliderStyle {
 /// ## Styling The Slider
 ///
 /// To create a custom style for the slider you need to create a `LSliderStyle` conforming struct. Conformnance requires implementation of 2 methods
-/// 1. `makeThumb`: which creates the draggable portion of the slider
-/// 2. `makeTrack`: which creates the track which fills or emptys as the thumb is dragging within it
+///     1. `makeThumb`: which creates the draggable portion of the slider
+///     2. `makeTrack`: which creates the track which fills or emptys as the thumb is dragging within it
 ///
 /// Both methods provide access to the sliders current state thru the `LSliderConfiguration` of the `LSlider `to be styled
 ///
 ///```
-///        public struct LSliderConfiguration {
-///            public let isDisabled: Bool // whether or not the slider is current disables
-///            public let isActive: Bool // whether or not the thumb is dragging or not
-///            public let pctFill: Double // The percentage of the sliders track that is filled
-///            public let value: Double // The current value of the slider
-///            public let angle: Angle // The angle of the slider
-///            public let min: Double // The minimum value of the sliders range
-///            public let max: Double // The maximum value of the sliders range
+///        struct LSliderConfiguration {
+///            let isDisabled: Bool // whether or not the slider is current disables
+///            let isActive: Bool // whether or not the thumb is dragging or not
+///            let pctFill: Double // The percentage of the sliders track that is filled
+///            let value: Double // The current value of the slider
+///            let angle: Angle // The angle of the slider
+///            let min: Double // The minimum value of the sliders range
+///            let max: Double // The maximum value of the sliders range
 ///        }
 /// ```
 ///
@@ -144,20 +144,20 @@ public struct DefaultLSliderStyle: LSliderStyle {
 ///  apply it by calling the `linearSliderStyle` method on the `LSlider` or a view containing it.
 ///
 /// ```
-///        public struct <#My Slider Style#>: LSliderStyle {
-///            public func makeThumb(configuration:  LSliderConfiguration) -> some View {
+///        struct <#My Slider Style#>: LSliderStyle {
+///            func makeThumb(configuration:  LSliderConfiguration) -> some View {
 ///                Circle()
 ///                    .fill(configuration.isActive ? Color.yellow : Color.white)
 ///                    .frame(width: 40, height: 40)
 ///            }
-///
-///            public func makeTrack(configuration:  LSliderConfiguration) -> some View {
+///            func makeTrack(configuration:  LSliderConfiguration) -> some View {
 ///                let style: StrokeStyle = .init(lineWidth: 10, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [], dashPhase: 0)
 ///                return AdaptiveLine(angle: configuration.angle)
 ///                    .stroke(Color.gray, style: style)
 ///                    .overlay(AdaptiveLine(angle: configuration.angle).trim(from: 0, to: CGFloat(configuration.pctFill)).stroke(Color.blue, style: style))
 ///            }
 ///        }
+///        
 /// ```
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
 public struct LSlider: View {
@@ -172,11 +172,16 @@ public struct LSlider: View {
     public var angle: Angle = .zero
     public var isDisabled: Bool = false
     
-    public init(value: Binding<Double>, range: ClosedRange<Double>, angle: Angle, isDisabled: Bool = false) {
+    public init(_ value: Binding<Double>, range: ClosedRange<Double>, angle: Angle, isDisabled: Bool = false) {
         self._value = value
         self.range = range
         self.angle = angle
         self.isDisabled = isDisabled
+    }
+    
+    public init(_ value: Binding<Double>) {
+        self._value = value
+        
     }
     
     
@@ -256,7 +261,7 @@ public struct LSlider: View {
                                         self.value = (self.range.upperBound-self.range.lowerBound)*parameter + self.range.lowerBound
                                         self.isActive = false
                                     })
-                            )
+                            ).allowsHitTesting(!self.isDisabled)
                         }
                     }
             )

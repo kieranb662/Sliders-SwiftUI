@@ -12,12 +12,19 @@ import CGExtender
 // MARK: - Configuration
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
 public struct RSliderConfiguration {
+    /// whether or not the slider is current disables
     public let isDisabled: Bool
+    /// whether or not the thumb is dragging or not
     public let isActive: Bool
+    /// The percentage of the sliders track that is filled
     public let pctFill: Double
+    /// The current value of the slider
     public let value: Double
+    ///  The direction from the thumb to the slider center
     public let angle: Angle
+    /// The minimum value of the sliders range
     public let min: Double
+    /// The maximum value of the sliders range
     public let max: Double
 }
 // MARK: - Style
@@ -48,7 +55,6 @@ public struct AnyRSliderStyle: RSliderStyle {
     public func makeTrack(configuration: RSliderConfiguration) -> some View  {
         self._makeTrack(configuration)
     }
-    
     public init<S: RSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -145,28 +151,28 @@ public struct KnobStyle: RSliderStyle {
 ///
 /// Both methods provide access to state values of the radial slider thru the  `RSliderConfiguration` struct
 ///   ```
-///        public struct RSliderConfiguration {
-///            public let isDisabled: Bool // whether or not the slider is current disables
-///            public let isActive: Bool // whether or not the thumb is dragging or not
-///            public let pctFill: Double // The percentage of the sliders track that is filled
-///            public let value: Double // The current value of the slider
-///            public let angle: Angle //  The direction from the thumb to the slider center
-///            public let min: Double // The minimum value of the sliders range
-///            public let max: Double // The maximum value of the sliders range
+///        struct RSliderConfiguration {
+///            let isDisabled: Bool // whether or not the slider is current disables
+///            let isActive: Bool // whether or not the thumb is dragging or not
+///            let pctFill: Double // The percentage of the sliders track that is filled
+///            let value: Double // The current value of the slider
+///            let angle: Angle //  The direction from the thumb to the slider center
+///            let min: Double // The minimum value of the sliders range
+///            let max: Double // The maximum value of the sliders range
 ///        }
 /// ```
 ///  To make this easier just copy and paste the following style based on the `DefaultRSliderStyle`. After creating your custom style
 ///  apply it by calling the `radialSliderStyle` method on the `RSlider` or a view containing it.
 ///
 ///    ```
-///          public struct <#My Slider Style #>: RSliderStyle {
-///              public func makeThumb(configuration:  RSliderConfiguration) -> some View {
+///          struct <#My Slider Style #>: RSliderStyle {
+///              func makeThumb(configuration:  RSliderConfiguration) -> some View {
 ///                  Circle()
 ///                  .frame(width: 30, height:30)
 ///                  .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
 ///              }
 ///
-///              public func makeTrack(configuration:  RSliderConfiguration) -> some View {
+///              func makeTrack(configuration:  RSliderConfiguration) -> some View {
 ///                  Circle()
 ///                  .stroke(Color.gray, style: StrokeStyle(lineWidth: 10, lineCap: .round))
 ///                  .overlay(Circle()

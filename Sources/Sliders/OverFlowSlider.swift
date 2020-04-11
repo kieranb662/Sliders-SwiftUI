@@ -1,5 +1,5 @@
 //
-//  SegmentedSlider.swift
+//  OverflowSlider.swift
 //  MyExamples
 //
 //  Created by Kieran Brown on 3/25/20.
@@ -10,62 +10,63 @@ import SwiftUI
 import Shapes
 
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct SegmentedSliderConfiguration {
+public struct OverflowSliderConfiguration {
+    /// Whether the control is disabled or not
     public let isDisabled: Bool
-    
+    /// Whether the thumb is currently dragging or not
     public let thumbIsActive: Bool
-    public let thumbInDragging: Bool
+    /// Whether the thumb has reached its min/max displacement
     public let thumbIsAtLimit: Bool
-    
+    /// Whether of not the track is dragging
     public let trackIsActive: Bool
+    /// Whether the track has reached its min/max position
     public let trackIsAtLimit: Bool
-    
+    /// The current value of the slider
     public let value: Double
+    /// The minimum value of the sliders range
     public let min: Double
+    /// The maximum value of the sliders range
     public let max: Double
+    /// The spacing of the sliders tick marks
     public let tickSpacing: Double
 }
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public protocol SegmentedSliderStyle {
-    
+public protocol OverflowSliderStyle {
     associatedtype Track: View
     associatedtype Thumb: View
     
-    func makeTrack(configuration: SegmentedSliderConfiguration) -> Self.Track
-    func makeThumb(configuration: SegmentedSliderConfiguration) -> Self.Thumb
+    func makeTrack(configuration: OverflowSliderConfiguration) -> Self.Track
+    func makeThumb(configuration: OverflowSliderConfiguration) -> Self.Thumb
 }
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-extension SegmentedSliderStyle {
-    
-    func makeTrackTypeErased(configuration: SegmentedSliderConfiguration) -> AnyView {
+extension OverflowSliderStyle {
+    func makeTrackTypeErased(configuration: OverflowSliderConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
     }
-    func makeThumbTypeErased(configuration: SegmentedSliderConfiguration) -> AnyView {
+    func makeThumbTypeErased(configuration: OverflowSliderConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
     }
 }
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct AnySegmentedSliderStyle: SegmentedSliderStyle {
-    private let _makeTrack: (SegmentedSliderConfiguration) -> AnyView
-    public func makeTrack(configuration: SegmentedSliderConfiguration) -> some View {
+public struct AnyOverflowSliderStyle: OverflowSliderStyle {
+    private let _makeTrack: (OverflowSliderConfiguration) -> AnyView
+    public func makeTrack(configuration: OverflowSliderConfiguration) -> some View {
         return self._makeTrack(configuration)
     }
-    
-    private let _makeThumb: (SegmentedSliderConfiguration) -> AnyView
-    public func makeThumb(configuration: SegmentedSliderConfiguration) -> some View {
+    private let _makeThumb: (OverflowSliderConfiguration) -> AnyView
+    public func makeThumb(configuration: OverflowSliderConfiguration) -> some View {
         return self._makeThumb(configuration)
     }
     
-    init<ST: SegmentedSliderStyle>(_ style: ST) {
+    init<S: OverflowSliderStyle>(_ style: S) {
         self._makeTrack = style.makeTrackTypeErased
         self._makeThumb = style.makeThumbTypeErased
-        
     }
 }
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct DefaultSegmentedSliderStyle: SegmentedSliderStyle {
+public struct DefaultOverflowSliderStyle: OverflowSliderStyle {
     public init() { } 
-    public func makeTrack(configuration: SegmentedSliderConfiguration) -> some View {
+    public func makeTrack(configuration: OverflowSliderConfiguration) -> some View {
         let totalLength = configuration.max-configuration.min
         let spacing = configuration.tickSpacing
         
@@ -73,7 +74,7 @@ public struct DefaultSegmentedSliderStyle: SegmentedSliderStyle {
             .stroke(Color.gray)
             .frame(width: CGFloat(totalLength))
     }
-    public func makeThumb(configuration: SegmentedSliderConfiguration) -> some View {
+    public func makeThumb(configuration: OverflowSliderConfiguration) -> some View {
         RoundedRectangle(cornerRadius: 5)
             .fill(configuration.thumbIsActive ?  Color.orange : Color.blue)
             .opacity(0.5)
@@ -81,33 +82,82 @@ public struct DefaultSegmentedSliderStyle: SegmentedSliderStyle {
     }
 }
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct SegmentedSliderStyleKey: EnvironmentKey {
-    public static let defaultValue: AnySegmentedSliderStyle  = AnySegmentedSliderStyle(DefaultSegmentedSliderStyle())
+public struct OverflowSliderStyleKey: EnvironmentKey {
+    public static let defaultValue: AnyOverflowSliderStyle  = AnyOverflowSliderStyle(DefaultOverflowSliderStyle())
 }
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
 extension EnvironmentValues {
-    public var segmentedSliderStyle: AnySegmentedSliderStyle {
+    public var overflowSliderStyle: AnyOverflowSliderStyle {
         get {
-            return self[SegmentedSliderStyleKey.self]
+            return self[OverflowSliderStyleKey.self]
         }
         set {
-            self[SegmentedSliderStyleKey.self] = newValue
+            self[OverflowSliderStyleKey.self] = newValue
         }
     }
 }
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
 extension View {
-    public func segmentedSliderStyle<S>(_ style: S) -> some View where S: SegmentedSliderStyle {
-        self.environment(\.segmentedSliderStyle, AnySegmentedSliderStyle(style))
+    public func overflowSliderStyle<S>(_ style: S) -> some View where S: OverflowSliderStyle {
+        self.environment(\.overflowSliderStyle, AnyOverflowSliderStyle(style))
     }
 }
 
 
-/// # Segmented Slider
+/// # Overflow Slider
 ///
-/// A slider
+/// A Slider which has a fixed frame but a movable track in the background. Used for values that have a discrete nature to them but would not necessarily fit on screen.
+/// Both the thumb and track can be dragged, if the track is dragged and thrown the velocity of the throw is added to the tracks velocity and it slows gradually to a stop.
+/// If the thumb is currently being dragged and reachs the minimum or maximum value of its bounds, velocity is added to the track in the opposite direction of the drag. 
+///
+/// - parameters:
+///     - value: `Binding<Double>` The value the slider should control
+///     - range: `ClosedRange<Double>` The minimum and maximum numbers that `value` can be
+///     - isDisabled: `Bool` Whether or not the slider should be disabled
+///
+///
+/// ## Styling The Slider
+///
+/// To create a custom style for the slider you need to create a `OverflowSliderStyle` conforming struct. Conformnance requires implementation of 2 methods
+///     1. `makeThumb`: which creates the draggable portion of the slider
+///     2. `makeTrack`: which creates the draggable background track
+///
+/// Both methods provide access to the sliders current state thru the `OverflowSliderConfiguration` of the `OverflowSlider `to be styled.
+///
+///             struct OverflowSliderConfiguration {
+///                 let isDisabled: Bool // Whether the control is disabled or not
+///                 let thumbIsActive: Bool // Whether the thumb is currently dragging or not
+///                 let thumbIsAtLimit: Bool // Whether the thumb has reached its min/max displacement
+///                 let trackIsActive: Bool // Whether of not the track is dragging
+///                 let trackIsAtLimit: Bool // Whether the track has reached its min/max position
+///                 let value: Double // The current value of the slider
+///                 let min: Double // The minimum value of the sliders range
+///                 let max: Double // The maximum value of the sliders range
+///                 let tickSpacing: Double // The spacing of the sliders tick marks
+///             }
+///
+/// To make this easier just copy and paste the following style based on the `DefaultOverflowSliderStyle`. After creating your custom style
+///  apply it by calling the `overflowSliderStyle` method on the `OverflowSlider` or a view containing it.
+///
+///         struct <#My OverflowSlider Style#>: OverflowSliderStyle {
+///             func makeThumb(configuration: OverflowSliderConfiguration) -> some View {
+///                 RoundedRectangle(cornerRadius: 5)
+///                     .fill(configuration.thumbIsActive ?  Color.orange : Color.blue)
+///                     .opacity(0.5)
+///                     .frame(width: 20, height: 50)
+///             }
+///             func makeTrack(configuration: OverflowSliderConfiguration) -> some View {
+///                 let totalLength = configuration.max-configuration.min
+///                 let spacing = configuration.tickSpacing
+///
+///                 return TickMarks(spacing: CGFloat(spacing), ticks: Int(totalLength/Double(spacing)))
+///                     .stroke(Color.gray)
+///                     .frame(width: CGFloat(totalLength))
+///             }
+///         }
+///
 @available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct SegmentedSlider: View {
+public struct OverflowSlider: View {
     private struct ThumbKey: PreferenceKey {
         static var defaultValue: CGRect {  .zero }
         static func reduce(value: inout CGRect, nextValue: () -> CGRect) {
@@ -165,7 +215,7 @@ public struct SegmentedSlider: View {
             }
         }
     }
-    @Environment(\.segmentedSliderStyle) private var style: AnySegmentedSliderStyle
+    @Environment(\.overflowSliderStyle) private var style: AnyOverflowSliderStyle
     @State private var currentVelocity: CGFloat = 0
     @State private var thumbOffset: CGFloat = 0.5
     @State private var thumbState: CGFloat = 0
@@ -185,10 +235,9 @@ public struct SegmentedSlider: View {
         self.isDisabled = isDisabled
     }
     
-    private var configuration: SegmentedSliderConfiguration {
+    private var configuration: OverflowSliderConfiguration {
         .init(isDisabled: isDisabled,
               thumbIsActive: thumbState != 0,
-              thumbInDragging: thumbState != 0,
               thumbIsAtLimit: thumbOffset + thumbState <= 0 || thumbOffset + thumbState >= 1,
               trackIsActive: trackState.isActive,
               trackIsAtLimit: trackState.translation + trackOffset <= 0 || trackState.translation + trackOffset >= 1,
@@ -199,7 +248,6 @@ public struct SegmentedSlider: View {
     }
     
     private func thumbHandler() {
-        // Thumb handling
         if self.thumbState != 0 {
             if self.thumbOffset + self.thumbState > 1 {
                 self.currentVelocity += (self.thumbOffset + self.thumbState)
@@ -283,10 +331,14 @@ public struct SegmentedSlider: View {
         RoundedRectangle(cornerRadius: 5)
             .fill(Color.white.opacity(0.001))
             .allowsHitTesting(false)
-            .background(GeometryReader{ self.makeTrack($0)}.padding(.horizontal))
+            .background(GeometryReader{
+                self.makeTrack($0)}
+                .padding(.horizontal)
+                .allowsHitTesting(!self.isDisabled))
             .overlay(GeometryReader { proxy in
                 ZStack {
                     self.makeThumb(proxy)
+                        .allowsHitTesting(!self.isDisabled)
                 }.offset(x: -proxy.size.width/2)
             })
             .clipped()
