@@ -238,6 +238,9 @@ public struct PSlider<S: Shape>: View {
         }
         var angle: Angle {
             let num = Int(getPercent(self.position + self.dragState.translation.toPoint(), lookupTable: self.lookUpTable)*CGFloat(lookUpTable.count))
+            if self.lookUpTable.count < 3 {
+                return .zero
+            }
             if num > lookUpTable.count-2 {
                 return calculateDirection(lookUpTable[num-2], lookUpTable[num-1])
             } else {
