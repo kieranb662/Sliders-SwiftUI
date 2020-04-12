@@ -7,6 +7,16 @@
     <img src="https://img.shields.io/badge/Swift-5.1-orange.svg" alt="Swift 5.1" />
 </p>
 
+## Examples Created Using Sliders 
+
+<p align="center">
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/ActivityRings.gif" alt="Activity Rings Gif" height=300 />
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/RGBColorPicker.gif" alt="RGB Color Picker" height=300 />
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/LSlider.gif" alt="LSlider Example" height=300 />
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/RadialPadHSBPicker.gif" alt="RadialPad HSB Color Picker" height=300 />
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/Joystick.gif" alt="JoyStick" height=300 />
+</p>
+
 **Sliders** is a compilation of all my stylable drag based SwiftUI components. It provides a variety of unique controls as well as an enhanced version of the normal `Slider` called an `LSlider`. You can try them all out quickly by clone the example [project](https://github.com/kieranb662/SlidersExamples)
 
 The various components are: 
@@ -19,14 +29,7 @@ The various components are:
 * `Joystick` - an onscreen joystick that can appear anywhere the user drags within the defined hitbox, if the drag ends inside the lockbox, the joystick remains onscreen locked in the forward position. if the drag ends **not** inside the lockbox the joystick fades away until the hitbox is dragged again.
 
 
-## Examples Created Using Sliders 
 
-<p align="center">
-    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/ActivityRings.gif" alt="Activity Rings Gif" height=300 />
-    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/RGBColorPicker.gif" alt="RGB Color Picker" height=300 />
-    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/LSlider.gif" alt="LSlider Example" height=300 />
-    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/RadialPadHSBPicker.gif" alt="RadialPad HSB Color Picker" height=300 />
-</p>
 
 ## Dependencies 
 
