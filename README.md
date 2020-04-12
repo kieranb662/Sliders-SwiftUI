@@ -1,5 +1,5 @@
 <p align="center">
-    <img src ="SlidersLogo.png" width=500 />
+    <img src ="SlidersLogo.svg" width=500 />
 </p>
 
 <p align="center">
