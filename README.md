@@ -77,8 +77,8 @@ The various components are:
 
  To create a custom style for the slider you need to create a `LSliderStyle` conforming struct. Conformance requires implementation of 2 methods
  
-     1. `makeThumb`: which creates the draggable portion of the slider
-     2. `makeTrack`: which creates the track which fills or empties as the thumb is dragging within it
+ 1. `makeThumb`: which creates the draggable portion of the slider
+ 2. `makeTrack`: which creates the track which fills or empties as the thumb is dragging within it
 
  Both methods provide access to the sliders current state thru the `LSliderConfiguration` of the `LSlider `to be styled
 
