@@ -17,6 +17,14 @@
     <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/Joystick.gif" alt="JoyStick" height=300 />
 </p>
 
+<p align="center">
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/KnobRSlider.gif" alt="KnobSlider" height=300 />
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/OverflowSlider.gif" alt="OverflowSlider" height=300 />
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/TrackPadGraphStyle.gif" alt="GraphStyle" height=300 />
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/TrackPadHSBColorPicker.gif" alt="TrackPad HSB Color Picker" height=300 />
+    <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/DefaultRSlider.gif" alt="DefaultRSlider" height=300 />
+</p>
+
 **Sliders** is a compilation of all my stylable drag based SwiftUI components. It provides a variety of unique controls as well as an enhanced version of the normal `Slider` called an `LSlider`. You can try them all out quickly by clone the example [project](https://github.com/kieranb662/SlidersExamples)
 
 The various components are: 
