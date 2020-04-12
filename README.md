@@ -30,6 +30,20 @@ The various components are:
 
 
 
+## Requirements 
+
+**Sliders** as a default requires the SwiftUI Framework to be operational and since the `DragGesture` is required only these platforms can make use of the library:
+
+* macOS 10.15 or Greater 
+* iOS 13 or Greater 
+* watchOS 6 or Greater
+
+## How To Add To Your Project
+
+1. Snag that URL from the github repo 
+2. In Xcode -> File -> Swift Packages -> Add Package Dependencies 
+3. Paste the URL Into the box
+4. Specify the minimum version number (This is new so 1.0.3 and greater will work).
 
 ## Dependencies 
 
