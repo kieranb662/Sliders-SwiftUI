@@ -76,6 +76,7 @@ The various components are:
 ### Styling The Slider
 
  To create a custom style for the slider you need to create a `LSliderStyle` conforming struct. Conformance requires implementation of 2 methods
+ 
      1. `makeThumb`: which creates the draggable portion of the slider
      2. `makeTrack`: which creates the track which fills or empties as the thumb is dragging within it
 
@@ -124,8 +125,9 @@ A Circular slider whose thumb is dragged causing it to follow the path of the ci
 ### Styling The Slider
 
  To create a custom style for the slider you need to create a `RSliderStyle` conforming struct. Conformance requires implementation of 2 methods
- 1.  `makeThumb`: which creates the draggable portion of the slider
- 2.  `makeTrack`: which creates the track which fills or emptys as the thumb is dragging within it
+ 
+1.  `makeThumb`: which creates the draggable portion of the slider
+2.  `makeTrack`: which creates the track which fills or emptys as the thumb is dragging within it
 
 Both methods provide access to state values of the radial slider thru the  `RSliderConfiguration` struct
 
@@ -175,8 +177,9 @@ Both methods provide access to state values of the radial slider thru the  `RSli
 ### Styling The Slider
 
  To create a custom style for the slider you need to create a `PSliderStyle` conforming struct. Conformance requires implementation of 2 methods
-     1. `makeThumb`: which creates the draggable portion of the slider
-     2. `makeTrack`: which creates the track which fills or empties as the thumb is dragging within it
+ 
+1. `makeThumb`: which creates the draggable portion of the slider
+2. `makeTrack`: which creates the track which fills or empties as the thumb is dragging within it
 
  Both methods provide access to state values through the `PSliderConfiguration` struct
 ````Swift
@@ -226,8 +229,9 @@ If the thumb is currently being dragged and reaches the minimum or maximum value
 ## Styling The Slider
  
   To create a custom style for the slider you need to create a `OverflowSliderStyle` conforming struct. Conformance requires implementation of 2 methods
-      1. `makeThumb`: which creates the draggable portion of the slider
-      2. `makeTrack`: which creates the draggable background track
+  
+ 1. `makeThumb`: which creates the draggable portion of the slider
+ 2. `makeTrack`: which creates the draggable background track
  
   Both methods provide access to the sliders current state thru the `OverflowSliderConfiguration` of the `OverflowSlider `to be styled.
  ````Swift
@@ -274,6 +278,7 @@ Essentially the 2D equaivalent of a normal `Slider`, This creates a draggable th
 
 ### Styling
  To create a custom style for the `TrackPad` you need to create a `TrackPadStyle` conforming struct. Conformance requires implementation of 2 methods
+ 
  1.  `makeThumb`: which creates the draggable portion of the trackpad
  2.  `makeTrack`: which creates view containing the thumb
 
@@ -328,8 +333,9 @@ Similar to a joystick, with the difference being that the thumb stays fixed at t
 
 To create a custom style for the `RadialPad` you need to create a `RadialPadStyle` conforming struct.
 Conformance requires implementation of 2 methods
-    1. `makeThumb`: which creates the draggable portion of the `RadialPad`
-    2. `makeTrack`: which creates the background that the thumb will be contained in.
+
+ 1. `makeThumb`: which creates the draggable portion of the `RadialPad`
+ 2. `makeTrack`: which creates the background that the thumb will be contained in.
 
 Both methods provide read access to the state values of the `RadialPad` thru the `RadialPadConfiguration` struct
 ````Swift
@@ -372,10 +378,11 @@ struct <#My RadialPad Style#>: RadialPadStyle {
 
  The Joystick can be themed and styled by making a custom struct conforming to the `JoystickStyle`
  protocol. Conformance requires that you implement 4 methods
-     1.  `makeHitBox` - Creates the rectangular region that responds the the users touch
-     2. `makeLockBox` - Creates a view such that if the drag gestures location is contained within the lockbox, the joystick goes into the locked state
-     3.  `makeTrack` - Creates the circular track that contains the joystick thumb
-     4.   `makeThumb` - Creates the part of the joystick the moves when dragging
+ 
+ 1.  `makeHitBox` - Creates the rectangular region that responds the the users touch
+ 2. `makeLockBox` - Creates a view such that if the drag gestures location is contained within the lockbox, the joystick goes into the locked state
+ 3.  `makeTrack` - Creates the circular track that contains the joystick thumb
+ 4.   `makeThumb` - Creates the part of the joystick the moves when dragging
 
   These 4 methods all provide access to the `JoystickConfiguration` .
   Make use of the various state values to customize the Joystick to your liking.
