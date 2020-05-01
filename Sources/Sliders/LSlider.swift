@@ -224,8 +224,11 @@ public struct LSlider: View {
     
     // MARK: Haptics
     private func impactOccured() {
+        #if os(macOS)
+        #else
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
+        #endif
     }
     private func impactHandler(_ parameterAtLimit: Bool) {
         if parameterAtLimit {

@@ -353,12 +353,18 @@ public struct Joystick: View {
     
     // MARK: Haptics
     private func impactOccured() {
+        #if os(macOS)
+        #else
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
+        #endif
     }
     private func locked() {
+        #if os(macOS)
+        #else
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
+        #endif
     }
     private func enteredLockBoxHandler(_ isInside: Bool) {
         if self.canLock {
