@@ -233,6 +233,19 @@ public struct RSlider: View {
     private func makeThumb(_ proxy: GeometryProxy) -> some View {
         let radius = min(proxy.size.height, proxy.size.width)/2
         let middle = CGPoint(x: proxy.frame(in: .global).midX, y: proxy.frame(in: .global).midY)
+        #if os(macOS)
+        let gesture = DragGesture(minimumDistance: 0)
+            .onChanged { (value) in
+                let direction = self.calculateDirection(middle, value.location)
+                self.value = direction*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
+                self.isActive = true
+        }
+        .onEnded { (value) in
+            let direction = self.calculateDirection(middle, value.location)
+            self.value = direction*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
+            self.isActive = false
+        }
+        #else
         let gesture = DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { (value) in
                 let direction = self.calculateDirection(middle, value.location)
@@ -244,6 +257,7 @@ public struct RSlider: View {
             self.value = direction*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
             self.isActive = false
         }
+        #endif
         let pct = (value-range.lowerBound)/(range.upperBound-range.lowerBound)
         let pX = radius*CGFloat(cos(pct*2 * .pi ))
         let pY = radius*CGFloat(sin(pct*2 * .pi ))
