@@ -175,7 +175,7 @@ public struct TrackPad: View {
         self.rangeY = rangeY
         self.isDisabled = isDisabled
     }
-    
+
     public init(_ value: Binding<CGPoint>){
         self._value = value
     }
@@ -185,8 +185,8 @@ public struct TrackPad: View {
         self.rangeX = range
         self.rangeY = range
     }
-    
-    
+
+
     private var configuration: TrackPadConfiguration {
         .init(isDisabled: isDisabled,
               isActive: isActive,
@@ -199,7 +199,7 @@ public struct TrackPad: View {
               minY: Double(rangeY.lowerBound),
               maxY: Double(rangeY.upperBound))
     }
-    
+
     // MARK: Calculations
     // Limits the value of the drag gesture to be within the frame of the trackpad
     // If the gesture hits an edge of the trackpad a haptic impact is played, an state
@@ -220,7 +220,7 @@ public struct TrackPad: View {
         } else {
             self.atXLimit = false
         }
-        // vertical haptix handling
+        // vertical haptic handling
         if pctY == 1 || pctY == 0 {
             if !self.atYLimit {
                 self.impactOccured()
@@ -241,7 +241,7 @@ public struct TrackPad: View {
         let pctY = (value.y - rangeY.lowerBound)/(rangeY.upperBound - rangeY.lowerBound)
         return CGSize(width: w*(pctX-0.5), height: h*(pctY-0.5))
     }
-    
+
     // MARK: Haptics
     private func impactOccured() {
         #if os(macOS)
@@ -254,24 +254,21 @@ public struct TrackPad: View {
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: configuration)
-                .overlay(GeometryReader { proxy in 
-                    ZStack {
-                        self.style.makeThumb(configuration: self.configuration)
-                            .offset(self.thumbOffset(proxy))
-                            .gesture(
-                                DragGesture(minimumDistance: 0, coordinateSpace: .named(self.space))
-                                    .onChanged({
-                                        self.constrainValue(proxy, $0.location)
-                                        self.isActive = true
-                                    })
-                                    .onEnded({
-                                        self.constrainValue(proxy, $0.location)
-                                        self.isActive = false
-                                    }))
-                    }
-                })
+            GeometryReader { proxy in
+                self.style.makeThumb(configuration: self.configuration)
+                    .position(x: proxy.size.width/2, y: proxy.size.height/2)
+                    .offset(self.thumbOffset(proxy))
+                    .gesture(
+                        DragGesture(minimumDistance: 0, coordinateSpace: .named(self.space))
+                            .onChanged({
+                                self.constrainValue(proxy, $0.location)
+                                self.isActive = true
+                            })
+                            .onEnded({
+                                self.constrainValue(proxy, $0.location)
+                                self.isActive = false
+                            }))
+            }
         }.coordinateSpace(name: space)
-        
     }
 }
-

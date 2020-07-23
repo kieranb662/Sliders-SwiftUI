@@ -171,20 +171,30 @@ public struct LSlider: View {
     public var range: ClosedRange<Double> = 0...1
     public var angle: Angle = .zero
     public var isDisabled: Bool = false
-    
+
     public init(_ value: Binding<Double>, range: ClosedRange<Double>, angle: Angle, isDisabled: Bool = false) {
         self._value = value
         self.range = range
         self.angle = angle
         self.isDisabled = isDisabled
     }
-    
+
+    public init(_ value: Binding<Double>, range: ClosedRange<Double>, isDisabled: Bool = false) {
+        self._value = value
+        self.range = range
+        self.isDisabled = isDisabled
+    }
+
+    public init(_ value: Binding<Double>, angle: Angle, isDisabled: Bool = false) {
+        self._value = value
+        self.angle = angle
+        self.isDisabled = isDisabled
+    }
+
     public init(_ value: Binding<Double>) {
         self._value = value
-        
     }
-    
-    
+
     // MARK: Calculations
     // uses an arbitrarily large number to gesture a line segment that is guarenteed to intersect with the
     // bounding box, then finds those points of intersection to be used as the start and end points of the slider
@@ -192,7 +202,7 @@ public struct LSlider: View {
         let w = proxy.size.width
         let h = proxy.size.height
         let big: CGFloat = 50000000
-        
+
         let x1 = w/2 + big*CGFloat(cos(self.angle.radians))
         let y1 = h/2 + big*CGFloat(sin(self.angle.radians))
         let x2 = w/2 - big*CGFloat(cos(self.angle.radians))
@@ -201,7 +211,7 @@ public struct LSlider: View {
         if points.count < 2 {
             return (.zero, .zero)
         }
-        
+
         return (points[0], points[1])
     }
     private func thumbOffset(_ proxy: GeometryProxy) -> CGSize {
@@ -211,7 +221,7 @@ public struct LSlider: View {
         let y = (1-value)*Double(ends.start.y) + value*Double(ends.end.y) - Double(proxy.size.height/2)
         return CGSize(width: x, height: y)
     }
-    
+
     private var configuration: LSliderConfiguration {
         .init(isDisabled: isDisabled,
               isActive: isActive,
@@ -221,7 +231,7 @@ public struct LSlider: View {
               min: range.lowerBound,
               max: range.upperBound)
     }
-    
+
     // MARK: Haptics
     private func impactOccured() {
         #if os(macOS)
@@ -230,6 +240,7 @@ public struct LSlider: View {
         generator.impactOccurred()
         #endif
     }
+
     private func impactHandler(_ parameterAtLimit: Bool) {
         if parameterAtLimit {
             if !atLimit {
@@ -240,36 +251,39 @@ public struct LSlider: View {
             atLimit = false
         }
     }
+
+    // MARK: - Gesture
+    private func makeGesture(_ proxy: GeometryProxy) -> some Gesture {
+        DragGesture(minimumDistance: 10, coordinateSpace: .named(self.space))
+            .onChanged({ drag in
+                let ends = self.calculateEndPoints(proxy)
+                let parameter = Double(calculateParameter(ends.start, ends.end, drag.location))
+                self.impactHandler(parameter == 1 || parameter == 0)
+                self.value = (self.range.upperBound-self.range.lowerBound)*parameter + self.range.lowerBound
+                self.isActive = true
+            })
+            .onEnded({ (drag) in
+                let ends = self.calculateEndPoints(proxy)
+                let parameter = Double(calculateParameter(ends.start, ends.end, drag.location))
+                self.impactHandler(parameter == 1 || parameter == 0)
+                self.value = (self.range.upperBound-self.range.lowerBound)*parameter + self.range.lowerBound
+                self.isActive = false
+            })
+    }
+
     // MARK: View
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: configuration)
-                .overlay(
-                    GeometryReader { proxy in
-                        ZStack {
-                            self.style.makeThumb(configuration: self.configuration)
-                                .offset(self.thumbOffset(proxy))
-                                .gesture(DragGesture(minimumDistance: 10, coordinateSpace: .named(self.space))
-                                    .onChanged({ drag in
-                                        let ends = self.calculateEndPoints(proxy)
-                                        let parameter = Double(calculateParameter(ends.start, ends.end, drag.location))
-                                        self.impactHandler(parameter == 1 || parameter == 0)
-                                        self.value = (self.range.upperBound-self.range.lowerBound)*parameter + self.range.lowerBound
-                                        self.isActive = true
-                                    })
-                                    .onEnded({ (drag) in
-                                        let ends = self.calculateEndPoints(proxy)
-                                        let parameter = Double(calculateParameter(ends.start, ends.end, drag.location))
-                                        self.impactHandler(parameter == 1 || parameter == 0)
-                                        self.value = (self.range.upperBound-self.range.lowerBound)*parameter + self.range.lowerBound
-                                        self.isActive = false
-                                    })
-                            ).allowsHitTesting(!self.isDisabled)
-                        }
-                    }
-            )
-        }.frame(idealWidth: 200, idealHeight: 50)
-            .coordinateSpace(name: space)
+            GeometryReader { proxy in
+                self.style.makeThumb(configuration: self.configuration)
+                    .position(x: proxy.size.width/2, y: proxy.size.height/2)
+                    .offset(self.thumbOffset(proxy))
+                    .gesture(self.makeGesture(proxy)).allowsHitTesting(!self.isDisabled)
+            }
+        }
+        .coordinateSpace(name: space)
     }
 }
+
 
