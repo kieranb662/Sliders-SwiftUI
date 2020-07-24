@@ -255,19 +255,21 @@ public struct TrackPad: View {
         ZStack {
             style.makeTrack(configuration: configuration)
             GeometryReader { proxy in
-                self.style.makeThumb(configuration: self.configuration)
-                    .position(x: proxy.size.width/2, y: proxy.size.height/2)
-                    .offset(self.thumbOffset(proxy))
-                    .gesture(
-                        DragGesture(minimumDistance: 0, coordinateSpace: .named(self.space))
-                            .onChanged({
-                                self.constrainValue(proxy, $0.location)
-                                self.isActive = true
-                            })
-                            .onEnded({
-                                self.constrainValue(proxy, $0.location)
-                                self.isActive = false
-                            }))
+                ZStack(alignment: .center) {
+                    self.style.makeThumb(configuration: self.configuration)
+                        .offset(self.thumbOffset(proxy))
+                        .gesture(
+                            DragGesture(minimumDistance: 0, coordinateSpace: .named(self.space))
+                                .onChanged({
+                                    self.constrainValue(proxy, $0.location)
+                                    self.isActive = true
+                                })
+                                .onEnded({
+                                    self.constrainValue(proxy, $0.location)
+                                    self.isActive = false
+                                }))
+
+                }.frame(width: proxy.size.width, height: proxy.size.height)
             }
         }.coordinateSpace(name: space)
     }

@@ -172,33 +172,35 @@ public struct RadialPad: View {
     private var configuration: RadialPadConfiguration {
         return .init(isDisabled, isActive, offset == 1, angle, offset)
     }
+    private func makeGesture(_ proxy: GeometryProxy) -> some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named(self.space))
+            .onChanged({
+                let middle = CGPoint(x: proxy.size.width/2, y: proxy.size.height/2)
+                let radius = Double(proxy.size.width > proxy.size.height ? proxy.size.height/2 : proxy.size.width/2)
+                let off = sqrt((middle - $0.location).magnitudeSquared)
+                self.offset = min(radius, off)/radius
+                self.angle = Angle(degrees: calculateDirection(middle, $0.location)*360)
+                self.isActive = true
+            })
+            .onEnded({
+                let middle = CGPoint(x: proxy.size.width/2, y: proxy.size.height/2)
+                let radius = Double(proxy.size.width > proxy.size.height ? proxy.size.height/2 : proxy.size.width/2)
+                let off = sqrt((middle - $0.location).magnitudeSquared)
+                self.offset = min(radius, off)/radius
+                self.angle = Angle(degrees: calculateDirection(middle, $0.location)*360)
+                self.isActive = false
+            })
+    }
     
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: configuration)
                 .overlay(GeometryReader { proxy in
-                    ZStack {
+                    ZStack(alignment: .center) {
                         self.style.makeThumb(configuration: self.configuration)
                             .offset(self.thumbOffset(proxy))
-                            .gesture(
-                                DragGesture(minimumDistance: 0, coordinateSpace: .named(self.space))
-                                    .onChanged({
-                                        let middle = CGPoint(x: proxy.size.width/2, y: proxy.size.height/2)
-                                        let radius = Double(proxy.size.width > proxy.size.height ? proxy.size.height/2 : proxy.size.width/2)
-                                        let off = sqrt((middle - $0.location).magnitudeSquared)
-                                        self.offset = min(radius, off)/radius
-                                        self.angle = Angle(degrees: calculateDirection(middle, $0.location)*360)
-                                        self.isActive = true
-                                    })
-                                    .onEnded({
-                                        let middle = CGPoint(x: proxy.size.width/2, y: proxy.size.height/2)
-                                        let radius = Double(proxy.size.width > proxy.size.height ? proxy.size.height/2 : proxy.size.width/2)
-                                        let off = sqrt((middle - $0.location).magnitudeSquared)
-                                        self.offset = min(radius, off)/radius
-                                        self.angle = Angle(degrees: calculateDirection(middle, $0.location)*360)
-                                        self.isActive = false
-                                    }))
-                    }
+                            .gesture(self.makeGesture(proxy))
+                    }.frame(width: proxy.size.width, height: proxy.size.height)
                 })
         }.coordinateSpace(name: space)
     }

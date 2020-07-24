@@ -444,7 +444,7 @@ public struct Joystick: View {
                 .allowsHitTesting(!self.isDisabled)
         }.overlayPreferenceValue(Key.self) { (bounds: [Int: Anchor<CGRect>]) in
             GeometryReader { proxy in
-                ZStack {
+                ZStack(alignment: .center) {
                     self.style.makeHitBox(configuration: self.config)
                         .gesture(DragGesture()
                             .onChanged({ (value) in
@@ -465,7 +465,7 @@ public struct Joystick: View {
                                 self.lock(proxy[bound].contains(value.location))
                             }))
                     self.joystick.allowsHitTesting(false)
-                }
+                }.frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
     }

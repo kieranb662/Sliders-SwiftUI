@@ -274,13 +274,15 @@ public struct LSlider: View {
     // MARK: View
     public var body: some View {
         ZStack {
-            style.makeTrack(configuration: configuration)
-            GeometryReader { proxy in
-                self.style.makeThumb(configuration: self.configuration)
-                    .position(x: proxy.size.width/2, y: proxy.size.height/2)
-                    .offset(self.thumbOffset(proxy))
-                    .gesture(self.makeGesture(proxy)).allowsHitTesting(!self.isDisabled)
-            }
+            self.style.makeTrack(configuration: self.configuration)
+                .overlay(GeometryReader { proxy in
+                    ZStack(alignment: .center) {
+                        self.style.makeThumb(configuration: self.configuration)
+                            .offset(self.thumbOffset(proxy))
+                            .gesture(self.makeGesture(proxy))
+                            .allowsHitTesting(!self.isDisabled)
+                    }.frame(width: proxy.size.width, height: proxy.size.height)
+                })
         }
         .coordinateSpace(name: space)
     }

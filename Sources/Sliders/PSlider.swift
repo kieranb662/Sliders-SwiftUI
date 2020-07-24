@@ -263,25 +263,28 @@ public struct PSlider<S: Shape>: View {
                 .makeThumb(configuration: self.configuration)
                 .position(position)
                 .offset(dragState.translation)
-                .gesture(
-                    DragGesture(minimumDistance: 0, coordinateSpace: .named(space))
-                        .onChanged({ (drag) in
-                            let closestPoint = getClosestPoint(drag.location , lookupTable: self.lookUpTable)
-                            self.dragState = .dragging(translation: self.getDisplacement(closestPoint: closestPoint))
-                            self.value = Double(getPercent(closestPoint, lookupTable: self.lookUpTable))*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
-                        })
-                        .onEnded { drag in
-                            let closestPoint = getClosestPoint(drag.location, lookupTable: self.lookUpTable)
-                            self.value = Double(getPercent(closestPoint, lookupTable: self.lookUpTable))*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
-                            let displacement = self.getDisplacement(closestPoint: closestPoint)
-                            self.position.x += displacement.width
-                            self.position.y += displacement.height
-                            self.dragState = .inactive
-                })
+                .gesture(self.dragGesture)
                 .onAppear {
                     let num = self.value*Double(self.lookUpTable.count)
                     self.position = self.lookUpTable[Int(num)]
             }
+        }
+
+        private var dragGesture: some Gesture {
+            DragGesture(minimumDistance: 0, coordinateSpace: .named(space))
+                .onChanged({ (drag) in
+                    let closestPoint = getClosestPoint(drag.location , lookupTable: self.lookUpTable)
+                    self.dragState = .dragging(translation: self.getDisplacement(closestPoint: closestPoint))
+                    self.value = Double(getPercent(closestPoint, lookupTable: self.lookUpTable))*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
+                })
+                .onEnded { drag in
+                    let closestPoint = getClosestPoint(drag.location, lookupTable: self.lookUpTable)
+                    self.value = Double(getPercent(closestPoint, lookupTable: self.lookUpTable))*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
+                    let displacement = self.getDisplacement(closestPoint: closestPoint)
+                    self.position.x += displacement.width
+                    self.position.y += displacement.height
+                    self.dragState = .inactive
+        }
         }
     }
     

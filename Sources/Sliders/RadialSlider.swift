@@ -258,9 +258,9 @@ public struct RSlider: View {
     }
     public var body: some View {
         style.makeTrack(configuration: configuration).overlay(GeometryReader { proxy in
-            ZStack {
+            ZStack(alignment: .center) {
                 self.makeThumb(proxy)
-            }
+            }.frame(width: proxy.size.width, height: proxy.size.height)
         }).padding()
     }
 }
