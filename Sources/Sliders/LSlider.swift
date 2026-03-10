@@ -7,14 +7,12 @@
 //
 
 import SwiftUI
-import Shapes
-import CGExtender
 
 
 
 // MARK: - LSlider Configuration
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct LSliderConfiguration {
+
+public struct LSliderConfiguration: Sendable {
     /// whether or not the slider is current disables
     public let isDisabled: Bool
     /// whether or not the thumb is dragging or not
@@ -31,15 +29,15 @@ public struct LSliderConfiguration {
     public let max: Double
 }
 // MARK: - LSlider Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public protocol LSliderStyle {
+
+public protocol LSliderStyle: Sendable {
     associatedtype Thumb: View
     associatedtype Track: View
     
     func makeThumb(configuration:  LSliderConfiguration) -> Self.Thumb
     func makeTrack(configuration:  LSliderConfiguration) -> Self.Track
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public extension LSliderStyle {
     func makeThumbTypeErased(configuration:  LSliderConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
@@ -48,13 +46,16 @@ public extension LSliderStyle {
         AnyView(self.makeTrack(configuration: configuration))
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct AnyLSliderStyle: LSliderStyle {
-    private let _makeThumb: (LSliderConfiguration) -> AnyView
+
+public struct AnyLSliderStyle: LSliderStyle, Sendable {
+    private let _makeThumb: @Sendable (LSliderConfiguration) -> AnyView
+    
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
         self._makeThumb(configuration)
     }
-    private let _makeTrack: (LSliderConfiguration) -> AnyView
+    
+    private let _makeTrack: @Sendable (LSliderConfiguration) -> AnyView
+    
     public func makeTrack(configuration: LSliderConfiguration) -> some View  {
         self._makeTrack(configuration)
     }
@@ -64,30 +65,30 @@ public struct AnyLSliderStyle: LSliderStyle {
         self._makeTrack = style.makeTrackTypeErased
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct LSliderStyleKey: EnvironmentKey {
     public static let defaultValue: AnyLSliderStyle = AnyLSliderStyle(DefaultLSliderStyle())
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension EnvironmentValues {
     public var linearSliderStyle: AnyLSliderStyle {
         get {
             return self[LSliderStyleKey.self]
         }
         set {
-            self[LSliderStyleKey] = newValue
+            self[LSliderStyleKey.self] = newValue
         }
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension View {
     public func linearSliderStyle<S>(_ style: S) -> some View where S: LSliderStyle {
         self.environment(\.linearSliderStyle, AnyLSliderStyle(style))
     }
 }
 // MARK: - Default LSlider Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct DefaultLSliderStyle: LSliderStyle {
+
+public struct DefaultLSliderStyle: LSliderStyle, Sendable {
     public init() {
         
     }
@@ -159,7 +160,7 @@ public struct DefaultLSliderStyle: LSliderStyle {
 ///        }
 ///        
 /// ```
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct LSlider: View {
     // MARK: State and Setup
     @Environment(\.linearSliderStyle) private var style: AnyLSliderStyle

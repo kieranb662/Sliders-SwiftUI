@@ -7,9 +7,8 @@
 //
 
 import SwiftUI
-import Shapes
 
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct OverflowSliderConfiguration {
     /// Whether the control is disabled or not
     public let isDisabled: Bool
@@ -30,15 +29,15 @@ public struct OverflowSliderConfiguration {
     /// The spacing of the sliders tick marks
     public let tickSpacing: Double
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public protocol OverflowSliderStyle {
+
+public protocol OverflowSliderStyle: Sendable {
     associatedtype Track: View
     associatedtype Thumb: View
     
     func makeTrack(configuration: OverflowSliderConfiguration) -> Self.Track
     func makeThumb(configuration: OverflowSliderConfiguration) -> Self.Thumb
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension OverflowSliderStyle {
     func makeTrackTypeErased(configuration: OverflowSliderConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
@@ -47,13 +46,17 @@ extension OverflowSliderStyle {
         AnyView(self.makeThumb(configuration: configuration))
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct AnyOverflowSliderStyle: OverflowSliderStyle {
-    private let _makeTrack: (OverflowSliderConfiguration) -> AnyView
+
+public struct AnyOverflowSliderStyle: OverflowSliderStyle, Sendable {
+    
+    private let _makeTrack: @Sendable (OverflowSliderConfiguration) -> AnyView
+    
     public func makeTrack(configuration: OverflowSliderConfiguration) -> some View {
         return self._makeTrack(configuration)
     }
-    private let _makeThumb: (OverflowSliderConfiguration) -> AnyView
+    
+    private let _makeThumb: @Sendable (OverflowSliderConfiguration) -> AnyView
+    
     public func makeThumb(configuration: OverflowSliderConfiguration) -> some View {
         return self._makeThumb(configuration)
     }
@@ -63,9 +66,9 @@ public struct AnyOverflowSliderStyle: OverflowSliderStyle {
         self._makeThumb = style.makeThumbTypeErased
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct DefaultOverflowSliderStyle: OverflowSliderStyle {
-    public init() { } 
+
+public struct DefaultOverflowSliderStyle: OverflowSliderStyle, Sendable {
+    public init() { }
     public func makeTrack(configuration: OverflowSliderConfiguration) -> some View {
         let totalLength = configuration.max-configuration.min
         let spacing = configuration.tickSpacing
@@ -81,11 +84,11 @@ public struct DefaultOverflowSliderStyle: OverflowSliderStyle {
             .frame(width: 20, height: 50)
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct OverflowSliderStyleKey: EnvironmentKey {
     public static let defaultValue: AnyOverflowSliderStyle  = AnyOverflowSliderStyle(DefaultOverflowSliderStyle())
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension EnvironmentValues {
     public var overflowSliderStyle: AnyOverflowSliderStyle {
         get {
@@ -96,7 +99,7 @@ extension EnvironmentValues {
         }
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension View {
     public func overflowSliderStyle<S>(_ style: S) -> some View where S: OverflowSliderStyle {
         self.environment(\.overflowSliderStyle, AnyOverflowSliderStyle(style))
@@ -156,7 +159,7 @@ extension View {
 ///             }
 ///         }
 ///
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct OverflowSlider: View {
     private struct ThumbKey: PreferenceKey {
         static var defaultValue: CGRect {  .zero }

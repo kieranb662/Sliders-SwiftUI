@@ -7,12 +7,10 @@
 //
 
 import SwiftUI
-import Shapes
-import bez
 
 // MARK: - Configuration
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct PSliderConfiguration {
+
+public struct PSliderConfiguration: Sendable {
     /// whether or not the slider is current disables
     public let isDisabled: Bool
     /// whether or not the thumb is dragging or not
@@ -30,16 +28,17 @@ public struct PSliderConfiguration {
     /// The shape of the slider 
     public let shape: AnyShape
 }
+
 // MARK: - Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public protocol PSliderStyle {
+
+public protocol PSliderStyle: Sendable {
     associatedtype Thumb: View
     associatedtype Track: View
     
     func makeThumb(configuration:  PSliderConfiguration) -> Self.Thumb
     func makeTrack(configuration:  PSliderConfiguration) -> Self.Track
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public extension PSliderStyle {
     func makeThumbTypeErased(configuration:  PSliderConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
@@ -48,13 +47,13 @@ public extension PSliderStyle {
         AnyView(self.makeTrack(configuration: configuration))
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct AnyPSliderStyle: PSliderStyle {
-    private let _makeThumb: (PSliderConfiguration) -> AnyView
+
+public struct AnyPSliderStyle: PSliderStyle, Sendable {
+    private let _makeThumb: @Sendable (PSliderConfiguration) -> AnyView
     public func makeThumb(configuration: PSliderConfiguration) -> some View {
         self._makeThumb(configuration)
     }
-    private let _makeTrack: (PSliderConfiguration) -> AnyView
+    private let _makeTrack: @Sendable (PSliderConfiguration) -> AnyView
     public func makeTrack(configuration: PSliderConfiguration) -> some View  {
         self._makeTrack(configuration)
     }
@@ -63,30 +62,30 @@ public struct AnyPSliderStyle: PSliderStyle {
         self._makeTrack = style.makeTrackTypeErased
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct PSliderStyleKey: EnvironmentKey {
     public static let defaultValue: AnyPSliderStyle = AnyPSliderStyle(DefaultPSliderStyle())
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension EnvironmentValues {
     public var pathSliderStyle: AnyPSliderStyle {
         get {
             return self[PSliderStyleKey.self]
         }
         set {
-            self[PSliderStyleKey] = newValue
+            self[PSliderStyleKey.self] = newValue
         }
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension View {
     public func pathSliderStyle<S>(_ style: S) -> some View where S: PSliderStyle {
         self.environment(\.pathSliderStyle, AnyPSliderStyle(style))
     }
 }
 // MARK: - Default Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct DefaultPSliderStyle: PSliderStyle {
+
+public struct DefaultPSliderStyle: PSliderStyle, Sendable {
     public init() {}
     
     public func makeThumb(configuration:  PSliderConfiguration) -> some View {
@@ -156,7 +155,7 @@ public struct DefaultPSliderStyle: PSliderStyle {
 ///     }
 /// ```
 ///
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct PSlider<S: Shape>: View {
     enum DragState {
         case inactive
@@ -229,6 +228,7 @@ public struct PSlider<S: Shape>: View {
         func getDisplacement(closestPoint: CGPoint) -> CGSize {
             return CGSize(width: closestPoint.x - position.x, height: closestPoint.y - position.y)
         }
+        
         func calculateDirection(_ pt1: CGPoint, _ pt2: CGPoint) -> Angle {
             let a = pt2.x - pt1.x
             let b = pt2.y - pt1.y
@@ -236,6 +236,7 @@ public struct PSlider<S: Shape>: View {
             let angle = a < 0 ? atan(Double(b / a)) : atan(Double(b / a)) - Double.pi
             return Angle(radians: angle)
         }
+        
         var angle: Angle {
             let num = Int(getPercent(self.position + self.dragState.translation.toPoint(), lookupTable: self.lookUpTable)*CGFloat(lookUpTable.count))
             if self.lookUpTable.count < 3 {
@@ -247,6 +248,7 @@ public struct PSlider<S: Shape>: View {
                 return calculateDirection(lookUpTable[num], lookUpTable[num+1])
             }
         }
+        
         var configuration: PSliderConfiguration {
             .init(isDisabled: isDisabled,
                   isActive: dragState.isActive,
@@ -312,9 +314,8 @@ public struct PSlider<S: Shape>: View {
     public var body: some View {
         GeometryReader { proxy in
             self.style.makeTrack(configuration: self.configuration)
-                .overlay(
-                    self.makeThumb(proxy)
-            ).coordinateSpace(name: "Follow")
+                .overlay(self.makeThumb(proxy))
+                .coordinateSpace(name: "Follow")
         }
     }
 }

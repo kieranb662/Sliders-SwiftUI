@@ -7,10 +7,9 @@
 //
 
 import SwiftUI
-import CGExtender
 
 // MARK: - Configuration
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct RSliderConfiguration {
     /// whether or not the slider is current disables
     public let isDisabled: Bool
@@ -28,15 +27,15 @@ public struct RSliderConfiguration {
     public let max: Double
 }
 // MARK: - Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public protocol RSliderStyle {
+
+public protocol RSliderStyle: Sendable {
     associatedtype Thumb: View
     associatedtype Track: View
     
     func makeThumb(configuration:  RSliderConfiguration) -> Self.Thumb
     func makeTrack(configuration:  RSliderConfiguration) -> Self.Track
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public extension RSliderStyle {
     func makeThumbTypeErased(configuration:  RSliderConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
@@ -45,45 +44,49 @@ public extension RSliderStyle {
         AnyView(self.makeTrack(configuration: configuration))
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct AnyRSliderStyle: RSliderStyle {
-    private let _makeThumb: (RSliderConfiguration) -> AnyView
+
+public struct AnyRSliderStyle: RSliderStyle, Sendable {
+    private let _makeThumb: @Sendable (RSliderConfiguration) -> AnyView
+    
     public func makeThumb(configuration: RSliderConfiguration) -> some View {
         self._makeThumb(configuration)
     }
-    private let _makeTrack: (RSliderConfiguration) -> AnyView
+    
+    private let _makeTrack: @Sendable (RSliderConfiguration) -> AnyView
+    
     public func makeTrack(configuration: RSliderConfiguration) -> some View  {
         self._makeTrack(configuration)
     }
+    
     public init<S: RSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct RSliderStyleKey: EnvironmentKey {
     public static let defaultValue: AnyRSliderStyle = AnyRSliderStyle(DefaultRSliderStyle())
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension EnvironmentValues {
     public var radialSliderStyle: AnyRSliderStyle {
         get {
             return self[RSliderStyleKey.self]
         }
         set {
-            self[RSliderStyleKey] = newValue
+            self[RSliderStyleKey.self] = newValue
         }
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension View {
     public func radialSliderStyle<S>(_ style: S) -> some View where S: RSliderStyle {
         self.environment(\.radialSliderStyle, AnyRSliderStyle(style))
     }
 }
 // MARK: - Default Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct DefaultRSliderStyle: RSliderStyle {
+
+public struct DefaultRSliderStyle: RSliderStyle, Sendable {
     public init() { }
     
     public func makeThumb(configuration:  RSliderConfiguration) -> some View {
@@ -104,7 +107,7 @@ public struct DefaultRSliderStyle: RSliderStyle {
 }
 
 // MARK: - Knob Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct KnobStyle: RSliderStyle {
     public init() { }
     
@@ -183,7 +186,7 @@ public struct KnobStyle: RSliderStyle {
 ///          }
 ///  ```
 ///
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct RSlider: View {
     @Environment(\.radialSliderStyle) private var style: AnyRSliderStyle
     @State private var isActive = false
@@ -266,7 +269,7 @@ public struct RSlider: View {
 }
 
 // MARK: - Double Radial Slider
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 struct DoubleRSlider: View {
     @Environment(\.radialSliderStyle) private var style: AnyRSliderStyle
     @State public var startState: CGFloat = 0

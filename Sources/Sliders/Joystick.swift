@@ -10,8 +10,8 @@ import SwiftUI
 
 
 // MARK: - Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct JoystickConfiguration {
+
+public struct JoystickConfiguration: Sendable {
     /// whether or not the slider is current disables
     public let isDisabled: Bool
     /// True if the joystick thumb is dragging or if the joystick is locked
@@ -34,8 +34,8 @@ public struct JoystickConfiguration {
         self.radialOffset = radialOffset
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public protocol JoystickStyle {
+
+public protocol JoystickStyle: Sendable {
     associatedtype HitBox: View
     associatedtype LockBox: View
     associatedtype Track: View
@@ -46,7 +46,7 @@ public protocol JoystickStyle {
     func makeTrack(configuration: JoystickConfiguration) -> Self.Track
     func makeThumb(configuration: JoystickConfiguration) -> Self.Thumb
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public extension JoystickStyle {
     
     func makeHitBoxTypeErased(configuration: JoystickConfiguration) -> AnyView {
@@ -62,24 +62,25 @@ public extension JoystickStyle {
         AnyView(self.makeThumb(configuration: configuration))
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct AnyJoystickStyle: JoystickStyle {
-    private let _makeHitBox: (JoystickConfiguration) -> AnyView
+
+public struct AnyJoystickStyle: JoystickStyle, Sendable {
+    
+    private let _makeHitBox: @Sendable (JoystickConfiguration) -> AnyView
     public func makeHitBox(configuration: JoystickConfiguration) -> some View {
         return self._makeHitBox(configuration)
     }
     
-    private let _makeLockBox: (JoystickConfiguration) -> AnyView
+    private let _makeLockBox: @Sendable (JoystickConfiguration) -> AnyView
     public func makeLockBox(configuration: JoystickConfiguration) -> some View {
         return self._makeLockBox(configuration)
     }
     
-    private let _makeTrack: (JoystickConfiguration) -> AnyView
+    private let _makeTrack: @Sendable (JoystickConfiguration) -> AnyView
     public func makeTrack(configuration: JoystickConfiguration) -> some View {
         return self._makeTrack(configuration)
     }
     
-    private let _makeThumb: (JoystickConfiguration) -> AnyView
+    private let _makeThumb: @Sendable (JoystickConfiguration) -> AnyView
     public func makeThumb(configuration: JoystickConfiguration) -> some View {
         return self._makeThumb(configuration)
     }
@@ -92,8 +93,8 @@ public struct AnyJoystickStyle: JoystickStyle {
         
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct DefaultJoystickStyle: JoystickStyle {
+
+public struct DefaultJoystickStyle: JoystickStyle, Sendable {
     public init() { }
     
     public func makeHitBox(configuration: JoystickConfiguration) -> some View {
@@ -120,11 +121,11 @@ public struct DefaultJoystickStyle: JoystickStyle {
         
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct JoystickStyleKey: EnvironmentKey {
     public static let defaultValue: AnyJoystickStyle  = AnyJoystickStyle(DefaultJoystickStyle())
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension EnvironmentValues {
     public var joystickStyle: AnyJoystickStyle {
         get {
@@ -135,7 +136,7 @@ extension EnvironmentValues {
         }
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension View {
     public func joystickStyle<S>(_ style: S) -> some View where S: JoystickStyle {
         self.environment(\.joystickStyle, AnyJoystickStyle(style))
@@ -145,7 +146,7 @@ extension View {
 
 // MARK: - State
 /// An Enumeration used to represent the state of a `Joystick`
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public enum JoyState {
     case inactive
     case locked
@@ -284,7 +285,7 @@ public enum JoyState {
 ///              }
 ///          }
 ///
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct Joystick: View {
     typealias Key = JoyStickKey
     struct JoyStickKey: PreferenceKey {

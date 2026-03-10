@@ -7,9 +7,10 @@
 //
 
 import SwiftUI
+
 // MARK: - Configuration
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct TrackPadConfiguration {
+
+public struct TrackPadConfiguration: Sendable {
     /// Whether or not the trackpad is disabled
     public let isDisabled: Bool
     /// whether or not the thumb is dragging
@@ -31,31 +32,38 @@ public struct TrackPadConfiguration {
     /// The maximum value from rangeY
     public let maxY: Double
 }
+
 // MARK: - Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public protocol TrackPadStyle {
+
+public protocol TrackPadStyle: Sendable {
     associatedtype Thumb: View
     associatedtype Track: View
     
     func makeThumb(configuration:  TrackPadConfiguration) -> Self.Thumb
     func makeTrack(configuration:  TrackPadConfiguration) -> Self.Track
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public extension TrackPadStyle {
+
     func makeThumbTypeErased(configuration:  TrackPadConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
     }
+
     func makeTrackTypeErased(configuration:  TrackPadConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct AnyTrackPadStyle: TrackPadStyle {
-    private let _makeThumb: (TrackPadConfiguration) -> AnyView
+
+public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
+    
+    private let _makeThumb: @Sendable (TrackPadConfiguration) -> AnyView
+    
     public func makeThumb(configuration: TrackPadConfiguration) -> some View {
         self._makeThumb(configuration)
     }
-    private let _makeTrack: (TrackPadConfiguration) -> AnyView
+    
+    private let _makeTrack: @Sendable (TrackPadConfiguration) -> AnyView
+    
     public func makeTrack(configuration: TrackPadConfiguration) -> some View  {
         self._makeTrack(configuration)
     }
@@ -65,29 +73,29 @@ public struct AnyTrackPadStyle: TrackPadStyle {
         self._makeTrack = style.makeTrackTypeErased
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct TrackPadStyleKey: EnvironmentKey {
     public static let defaultValue: AnyTrackPadStyle = AnyTrackPadStyle(DefaultTrackPadStyle())
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension EnvironmentValues {
     public var trackPadStyle: AnyTrackPadStyle {
         get {
             return self[TrackPadStyleKey.self]
         }
         set {
-            self[TrackPadStyleKey] = newValue
+            self[TrackPadStyleKey.self] = newValue
         }
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension View {
     public func trackPadStyle<S>(_ style: S) -> some View where S: TrackPadStyle {
         self.environment(\.trackPadStyle, AnyTrackPadStyle(style))
     }
 }
 // MARK: Default Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct DefaultTrackPadStyle: TrackPadStyle {
     public init() { }
     public func makeThumb(configuration:  TrackPadConfiguration) -> some View {
@@ -156,7 +164,7 @@ public struct DefaultTrackPadStyle: TrackPadStyle {
 ///   }
 /// ```
 ///
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct TrackPad: View {
     // MARK: State and Setup
     @Environment(\.trackPadStyle) private var style: AnyTrackPadStyle

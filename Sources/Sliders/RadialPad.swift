@@ -7,11 +7,10 @@
 //
 
 import SwiftUI
-import CGExtender
 
 // MARK: - Style
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct RadialPadConfiguration {
+
+public struct RadialPadConfiguration: Sendable {
     /// whether or not the slider is current disables
     public let isDisabled: Bool
     /// whether or not the thumb is dragging or not
@@ -31,15 +30,15 @@ public struct RadialPadConfiguration {
         self.radialOffset = radialOffset
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public protocol RadialPadStyle {
+
+public protocol RadialPadStyle: Sendable {
     associatedtype Track: View
     associatedtype Thumb: View
     
     func makeTrack(configuration: RadialPadConfiguration) -> Self.Track
     func makeThumb(configuration: RadialPadConfiguration) -> Self.Thumb
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public extension RadialPadStyle {
     func makeTrackTypeErased(configuration: RadialPadConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
@@ -48,14 +47,14 @@ public extension RadialPadStyle {
         AnyView(self.makeThumb(configuration: configuration))
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct AnyRadialPadStyle: RadialPadStyle {
-    private let _makeTrack: (RadialPadConfiguration) -> AnyView
+
+public struct AnyRadialPadStyle: RadialPadStyle, Sendable {
+    private let _makeTrack: @Sendable (RadialPadConfiguration) -> AnyView
     public func makeTrack(configuration: RadialPadConfiguration) -> some View {
         return self._makeTrack(configuration)
     }
     
-    private let _makeThumb: (RadialPadConfiguration) -> AnyView
+    private let _makeThumb: @Sendable (RadialPadConfiguration) -> AnyView
     public func makeThumb(configuration: RadialPadConfiguration) -> some View {
         return self._makeThumb(configuration)
     }
@@ -65,8 +64,8 @@ public struct AnyRadialPadStyle: RadialPadStyle {
         self._makeThumb = style.makeThumbTypeErased
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
-public struct DefaultRadialPadStyle: RadialPadStyle {
+
+public struct DefaultRadialPadStyle: RadialPadStyle, Sendable {
     public init() { }
 
     public func makeTrack(configuration: RadialPadConfiguration) -> some View {
@@ -80,11 +79,11 @@ public struct DefaultRadialPadStyle: RadialPadStyle {
         
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct RadialPadStyleKey: EnvironmentKey {
     public static let defaultValue: AnyRadialPadStyle  = AnyRadialPadStyle(DefaultRadialPadStyle())
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension EnvironmentValues {
     public var radialPadStyle: AnyRadialPadStyle {
         get {
@@ -95,7 +94,7 @@ extension EnvironmentValues {
         }
     }
 }
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 extension View {
     public func radialPadStyle<S>(_ style: S) -> some View where S: RadialPadStyle {
         self.environment(\.radialPadStyle, AnyRadialPadStyle(style))
@@ -144,7 +143,7 @@ extension View {
 ///           }
 ///       }
 ///
-@available(iOS 13.0, macOS 10.15, watchOS 6.0 , *)
+
 public struct RadialPad: View {
     @Environment(\.radialPadStyle) private var style: AnyRadialPadStyle
     private let space: String = "Radial Pad"
