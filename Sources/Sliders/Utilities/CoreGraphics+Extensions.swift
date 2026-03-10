@@ -8,7 +8,7 @@
 import SwiftUI
 import simd
 
-public func lineLineIntersection(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ x3: CGFloat, _ y3: CGFloat, _ x4: CGFloat, _ y4: CGFloat) -> (Bool, CGPoint) {
+func lineLineIntersection(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ x3: CGFloat, _ y3: CGFloat, _ x4: CGFloat, _ y4: CGFloat) -> (Bool, CGPoint) {
     // calculate the direction of the lines
     let uA = ((x4-x3)*(y1-y3) - (y4-y3)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1));
     let uB = ((x2-x1)*(y1-y3) - (y2-y1)*(x1-x3)) / ((y4-y3)*(x2-x1) - (x4-x3)*(y2-y1));
@@ -23,7 +23,7 @@ public func lineLineIntersection(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ 
     return (false, .zero)
 }
 
-public func lineRectIntersection(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ rx: CGFloat, _ ry: CGFloat, _ rw: CGFloat, _ rh: CGFloat) -> [CGPoint] {
+func lineRectIntersection(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ y2: CGFloat, _ rx: CGFloat, _ ry: CGFloat, _ rw: CGFloat, _ rh: CGFloat) -> [CGPoint] {
     var points = [CGPoint]()
     // check if the line has hit any of the rectangle's sides
     // uses the Line/Line function below
@@ -41,7 +41,7 @@ public func lineRectIntersection(_ x1: CGFloat, _ y1: CGFloat, _ x2: CGFloat, _ 
 }
 
 /// Projects the point `p` onto the line segment defined by the points `L1` and `L2`
-public func project(_ L1: CGPoint, _ L2: CGPoint, _ p: CGPoint) -> CGPoint {
+func project(_ L1: CGPoint, _ L2: CGPoint, _ p: CGPoint) -> CGPoint {
     let onTo = L1-L2
     let vector = L1 - p
     let top = onTo.x*vector.x + onTo.y*vector.y
@@ -50,7 +50,7 @@ public func project(_ L1: CGPoint, _ L2: CGPoint, _ p: CGPoint) -> CGPoint {
 }
 
 /// Projects the first vector onto the second vector
-public func project(_ vector: CGSize, _ onto: CGSize) -> CGSize {
+func project(_ vector: CGSize, _ onto: CGSize) -> CGSize {
     let top = onto.width*vector.width + onto.height*vector.height
     let scalar = top/CGFloat(onto.magnitudeSquared)
     return CGSize(width: scalar*onto.width, height: scalar*onto.height)
@@ -58,7 +58,7 @@ public func project(_ vector: CGSize, _ onto: CGSize) -> CGSize {
 
 /// Projects the point `p` onto the vector defined by the points `L1` and `L2`,  uses the parametric
 ///  form of the line segment from `L1` to `L2` to constrain the projected point to be on the line segment
-public func calculateParameter(_ L1: CGPoint, _ L2: CGPoint, _ p: CGPoint) -> CGFloat {
+func calculateParameter(_ L1: CGPoint, _ L2: CGPoint, _ p: CGPoint) -> CGFloat {
     let temp = project(L1, L2, p)
     
     if L1.x == L2.x && L1.y != L2.y {
@@ -138,19 +138,19 @@ extension CGSize: VectorArithmetic {
 // MARK: Clamping
 
 extension FloatingPoint {
-    public func clamped(to range: ClosedRange<Self>) -> Self {
+    func clamped(to range: ClosedRange<Self>) -> Self {
         return max(min(self, range.upperBound), range.lowerBound)
     }
 }
 
 extension BinaryInteger {
-    public func clamped(to range: ClosedRange<Self>) -> Self {
+    func clamped(to range: ClosedRange<Self>) -> Self {
         return max(min(self, range.upperBound), range.lowerBound)
     }
 }
 
 /// Returns only positive values between [0, 2π]
-public func atanP(x: Double, y: Double) -> Double {
+func atanP(x: Double, y: Double) -> Double {
     if x>0 && y>=0 {
         return atan(y/x)
         
@@ -176,12 +176,12 @@ public func atanP(x: Double, y: Double) -> Double {
 }
 
 /// Returns only positive values between [0, 2π]
-public func atanP(x: CGFloat, y: CGFloat) -> CGFloat {
+func atanP(x: CGFloat, y: CGFloat) -> CGFloat {
     CGFloat(atanP(x: Double(x), y: Double(y)))
 }
 
 /// Calculated the direction between two points relative to the vector pointing in the trailing direction
-public func calculateDirection(_ pt1: CGPoint, _ pt2: CGPoint) -> Double {
+func calculateDirection(_ pt1: CGPoint, _ pt2: CGPoint) -> Double {
     let a = pt2.x - pt1.x
     let b = pt2.y - pt1.y
     
@@ -202,7 +202,7 @@ extension CGSize {
 ///  - path: The path to be sampled
 ///  - capacity: The maximum number of sampled points (**Default**: 500)
 ///
-public func generateLookupTable(path: Path, capacity: Int = 500) -> [CGPoint] {
+func generateLookupTable(path: Path, capacity: Int = 500) -> [CGPoint] {
     let elements = path.elements
     let lookupTableCapacity = capacity
     var lookupTable = [CGPoint]()
@@ -275,7 +275,7 @@ public func generateLookupTable(path: Path, capacity: Int = 500) -> [CGPoint] {
 }
 
 /// Returns the approximate closest point on the path from the given point
-public func getClosestPoint(_ from: CGPoint, lookupTable: [CGPoint]) -> CGPoint {
+func getClosestPoint(_ from: CGPoint, lookupTable: [CGPoint]) -> CGPoint {
     let minimum = {
         (0..<lookupTable.count).map {
             (distance: distance_squared(simd_double2(x: Double(from.x), y:Double(from.y)), simd_double2(x: Double(lookupTable[$0].x), y: Double(lookupTable[$0].y))), index: $0)
@@ -288,7 +288,7 @@ public func getClosestPoint(_ from: CGPoint, lookupTable: [CGPoint]) -> CGPoint 
 }
 
 /// Returns the percent based location in the lookup table
-public func getPercent(_ from: CGPoint, lookupTable: [CGPoint]) -> CGFloat {
+func getPercent(_ from: CGPoint, lookupTable: [CGPoint]) -> CGFloat {
     let minimum = {
         (0..<lookupTable.count).map {
             (distance: distance_squared(simd_double2(x: Double(from.x), y:Double(from.y)), simd_double2(x: Double(lookupTable[$0].x), y: Double(lookupTable[$0].y))), index: $0)
@@ -315,7 +315,7 @@ extension CGPoint {
 ///     - t: parametric variable of some value on [0,1]
 ///     - start: The starting location of the line
 ///     - end: The ending location of the line
-public func linearInterpolation(t: Float, start: CGPoint, end: CGPoint) -> CGPoint {
+func linearInterpolation(t: Float, start: CGPoint, end: CGPoint) -> CGPoint {
     let p0 = start.tosimd()
     let p1 = end.tosimd()
     let point = mix(p0, p1, t: t)
@@ -333,7 +333,7 @@ public func linearInterpolation(t: Float, start: CGPoint, end: CGPoint) -> CGPoi
 ///     - start: The starting location of the curve
 ///     - control: The control point of the curve
 ///     - endPoint: The ending location of the curve
-public func quadraticBezierInterpolation(t: Float, start: CGPoint, control: CGPoint , end: CGPoint) -> CGPoint {
+func quadraticBezierInterpolation(t: Float, start: CGPoint, control: CGPoint , end: CGPoint) -> CGPoint {
     let p0 = start.tosimd()
     let p1 = control.tosimd()
     let p2 = end.tosimd()
@@ -360,7 +360,7 @@ public func quadraticBezierInterpolation(t: Float, start: CGPoint, control: CGPo
 ///     - control1: The first control point of the curve
 ///     - control2: The second control point of the curve
 ///     - endPoint: The ending location of the curve
-public func cubicBezierInterpolation(t: Float, start: CGPoint, control1: CGPoint, control2: CGPoint , end: CGPoint) -> CGPoint {
+func cubicBezierInterpolation(t: Float, start: CGPoint, control1: CGPoint, control2: CGPoint , end: CGPoint) -> CGPoint {
     
     let p0 = start.tosimd()
     let p1 = control1.tosimd()
@@ -378,7 +378,7 @@ public func cubicBezierInterpolation(t: Float, start: CGPoint, control1: CGPoint
     return CGPoint(x: CGFloat(point.x), y: CGFloat(point.y))
 }
 
-public func segmentLength(lastPoint: CGPoint, element: Path.Element) -> Double {
+func segmentLength(lastPoint: CGPoint, element: Path.Element) -> Double {
     switch element {
         
     case .move(_):
@@ -409,7 +409,7 @@ public func segmentLength(lastPoint: CGPoint, element: Path.Element) -> Double {
 }
 
 /// Calculates the length of a `Path` using linear interpolation for speed.
-public func quickLengths(path: Path) -> [Double] {
+func quickLengths(path: Path) -> [Double] {
     let elements = path.elements
     var lastPoint: CGPoint = .zero
     var startingPoint: CGPoint = .zero

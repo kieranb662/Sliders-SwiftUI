@@ -7,16 +7,16 @@
 
 import SwiftUI
 
-struct AdaptiveLine: Shape {
-     var angle: Angle
+public struct AdaptiveLine: Shape {
+    var angle: Angle
     
-     var animatableData: Angle {
+    var animatableData: Angle {
         get { self.angle }
         set { self.angle = newValue }
     }
     
     var insetAmount: CGFloat = 0
-
+    
     /// # Adaptive Line
     ///
     /// This shape creates a line centered inside of and constrained by its bounding box.
@@ -44,30 +44,30 @@ struct AdaptiveLine: Shape {
     ///        }
     ///    }
     /// ```
-     init(angle: Angle = .zero) {
+    public init(angle: Angle = .zero) {
         self.angle = angle
     }
-
-     func path(in rect: CGRect) -> Path {
+    
+    public func path(in rect: CGRect) -> Path {
         let rect = rect.insetBy(dx: insetAmount, dy: insetAmount)
         let w = rect.width
         let h = rect.height
         let big: CGFloat = 5000000
-
-        let x1 = w/2 + big*CGFloat(cos(self.angle.radians))
-        let y1 = h/2 + big*CGFloat(sin(self.angle.radians))
-        let x2 = w/2 - big*CGFloat(cos(self.angle.radians))
-        let y2 = h/2 - big*CGFloat(sin(self.angle.radians))
-
+        
+        let x1 = w/2 + big*CGFloat(cos(angle.radians))
+        let y1 = h/2 + big*CGFloat(sin(angle.radians))
+        let x2 = w/2 - big*CGFloat(cos(angle.radians))
+        let y2 = h/2 - big*CGFloat(sin(angle.radians))
+        
         let points = lineRectIntersection(x1, y1, x2, y2, rect.minX, rect.minY, w, h)
-         
+        
         if points.count < 2 {
             return Path { p in
                 p.move(to: CGPoint(x: rect.minX, y: rect.midY))
                 p.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
             }
         }
-
+        
         return Path { p in
             p.move(to: points[0])
             p.addLine(to: points[1])
@@ -76,7 +76,7 @@ struct AdaptiveLine: Shape {
 }
 
 extension AdaptiveLine: InsettableShape {
-     func inset(by amount: CGFloat) -> some InsettableShape {
+    public func inset(by amount: CGFloat) -> some InsettableShape {
         var shape = self
         shape.insetAmount += amount
         return shape

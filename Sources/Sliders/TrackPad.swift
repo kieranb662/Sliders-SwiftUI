@@ -44,28 +44,24 @@ public protocol TrackPadStyle: Sendable {
 }
 
 public extension TrackPadStyle {
-
     func makeThumbTypeErased(configuration:  TrackPadConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
     }
-
+    
     func makeTrackTypeErased(configuration:  TrackPadConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
     }
 }
 
 public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
-    
     private let _makeThumb: @Sendable (TrackPadConfiguration) -> AnyView
-    
     public func makeThumb(configuration: TrackPadConfiguration) -> some View {
-        self._makeThumb(configuration)
+        _makeThumb(configuration)
     }
     
     private let _makeTrack: @Sendable (TrackPadConfiguration) -> AnyView
-    
     public func makeTrack(configuration: TrackPadConfiguration) -> some View  {
-        self._makeTrack(configuration)
+        _makeTrack(configuration)
     }
     
     public init<S: TrackPadStyle>(_ style: S) {
@@ -91,9 +87,10 @@ extension EnvironmentValues {
 
 extension View {
     public func trackPadStyle<S>(_ style: S) -> some View where S: TrackPadStyle {
-        self.environment(\.trackPadStyle, AnyTrackPadStyle(style))
+        environment(\.trackPadStyle, AnyTrackPadStyle(style))
     }
 }
+
 // MARK: Default Style
 
 public struct DefaultTrackPadStyle: TrackPadStyle {
@@ -110,8 +107,6 @@ public struct DefaultTrackPadStyle: TrackPadStyle {
             .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.blue))
     }
 }
-
-
 
 // MARK: - TrackPad
 
@@ -177,24 +172,25 @@ public struct TrackPad: View {
     public var rangeX: ClosedRange<CGFloat> = 0...1
     public var rangeY: ClosedRange<CGFloat> = 0...1
     public var isDisabled: Bool = false
+    
     public init(value: Binding<CGPoint>, rangeX: ClosedRange<CGFloat>, rangeY: ClosedRange<CGFloat>, isDisabled: Bool = false){
         self._value = value
         self.rangeX = rangeX
         self.rangeY = rangeY
         self.isDisabled = isDisabled
     }
-
+    
     public init(_ value: Binding<CGPoint>){
         self._value = value
     }
+    
     /// Use this initializer for when the x and y ranges are the same
     public init(_ value: Binding<CGPoint>, range: ClosedRange<CGFloat>){
         self._value = value
         self.rangeX = range
         self.rangeY = range
     }
-
-
+    
     private var configuration: TrackPadConfiguration {
         .init(isDisabled: isDisabled,
               isActive: isActive,
@@ -207,7 +203,7 @@ public struct TrackPad: View {
               minY: Double(rangeY.lowerBound),
               maxY: Double(rangeY.upperBound))
     }
-
+    
     // MARK: Calculations
     // Limits the value of the drag gesture to be within the frame of the trackpad
     // If the gesture hits an edge of the trackpad a haptic impact is played, an state
@@ -221,26 +217,26 @@ public struct TrackPad: View {
         let pctY = (location.y/h).clamped(to: 0...1)
         // Horizontal haptic handling
         if pctX == 1 || pctX == 0 {
-            if !self.atXLimit {
-                self.impactOccured()
+            if !atXLimit {
+                impactOccured()
             }
-            self.atXLimit = true
+            atXLimit = true
         } else {
-            self.atXLimit = false
+            atXLimit = false
         }
         // vertical haptic handling
         if pctY == 1 || pctY == 0 {
-            if !self.atYLimit {
-                self.impactOccured()
+            if !atYLimit {
+                impactOccured()
             }
-            self.atYLimit = true
+            atYLimit = true
         } else {
-            self.atYLimit = false
+            atYLimit = false
         }
         // convert percentage to a value within the ranges provided
         let newX = pctX*(rangeX.upperBound-rangeX.lowerBound) + rangeX.lowerBound
         let newY = pctY*(rangeY.upperBound-rangeY.lowerBound) + rangeY.lowerBound
-        self.value = CGPoint(x: newX, y: newY)
+        value = CGPoint(x: newX, y: newY)
     }
     private func thumbOffset(_ proxy: GeometryProxy) -> CGSize {
         let w = proxy.size.width
@@ -249,36 +245,39 @@ public struct TrackPad: View {
         let pctY = (value.y - rangeY.lowerBound)/(rangeY.upperBound - rangeY.lowerBound)
         return CGSize(width: w*(pctX-0.5), height: h*(pctY-0.5))
     }
-
+    
     // MARK: Haptics
     private func impactOccured() {
-        #if os(macOS)
-        #else
+#if os(macOS)
+#else
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
-        #endif
+#endif
     }
+    
     // MARK: View
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: configuration)
             GeometryReader { proxy in
                 ZStack(alignment: .center) {
-                    self.style.makeThumb(configuration: self.configuration)
-                        .offset(self.thumbOffset(proxy))
+                    style.makeThumb(configuration: configuration)
+                        .offset(thumbOffset(proxy))
                         .gesture(
-                            DragGesture(minimumDistance: 0, coordinateSpace: .named(self.space))
+                            DragGesture(minimumDistance: 0, coordinateSpace: .named(space))
                                 .onChanged({
-                                    self.constrainValue(proxy, $0.location)
-                                    self.isActive = true
+                                    constrainValue(proxy, $0.location)
+                                    isActive = true
                                 })
                                 .onEnded({
-                                    self.constrainValue(proxy, $0.location)
-                                    self.isActive = false
+                                    constrainValue(proxy, $0.location)
+                                    isActive = false
                                 }))
-
-                }.frame(width: proxy.size.width, height: proxy.size.height)
+                    
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
-        }.coordinateSpace(name: space)
+        }
+        .coordinateSpace(name: space)
     }
 }

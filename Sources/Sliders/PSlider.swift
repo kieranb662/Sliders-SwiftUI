@@ -25,7 +25,7 @@ public struct PSliderConfiguration: Sendable {
     public let min: Double
     /// The maximum value of the sliders range
     public let max: Double
-    /// The shape of the slider 
+    /// The shape of the slider
     public let shape: AnyShape
 }
 
@@ -51,12 +51,14 @@ public extension PSliderStyle {
 public struct AnyPSliderStyle: PSliderStyle, Sendable {
     private let _makeThumb: @Sendable (PSliderConfiguration) -> AnyView
     public func makeThumb(configuration: PSliderConfiguration) -> some View {
-        self._makeThumb(configuration)
+        _makeThumb(configuration)
     }
+    
     private let _makeTrack: @Sendable (PSliderConfiguration) -> AnyView
     public func makeTrack(configuration: PSliderConfiguration) -> some View  {
-        self._makeTrack(configuration)
+        _makeTrack(configuration)
     }
+    
     public init<S: PSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -80,7 +82,7 @@ extension EnvironmentValues {
 
 extension View {
     public func pathSliderStyle<S>(_ style: S) -> some View where S: PSliderStyle {
-        self.environment(\.pathSliderStyle, AnyPSliderStyle(style))
+        environment(\.pathSliderStyle, AnyPSliderStyle(style))
     }
 }
 // MARK: - Default Style
@@ -93,6 +95,7 @@ public struct DefaultPSliderStyle: PSliderStyle, Sendable {
             .frame(width: 30, height:30)
             .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
     }
+    
     public func makeTrack(configuration:  PSliderConfiguration) -> some View {
         ZStack {
             configuration.shape
@@ -107,7 +110,7 @@ public struct DefaultPSliderStyle: PSliderStyle, Sendable {
 
 
 /// # Path Slider
-/// A View that turns any `Shape` into a slider. Its great for creating unique user experiences 
+/// A View that turns any `Shape` into a slider. Its great for creating unique user experiences
 ///
 /// - parameters:
 ///     - value: a `Binding<Double>` value which represents the percent fill of the slider between  (0,1).
@@ -194,18 +197,21 @@ public struct PSlider<S: Shape>: View {
         self.range = 0...1
         self.isDisabled = false
     }
+    
     public init(_ value: Binding<Double>, range: ClosedRange<Double>, shape: S) {
         self._value = value
         self.shape = shape
         self.range = range
         self.isDisabled = false
     }
+    
     public init(_ value: Binding<Double>, range: ClosedRange<Double>, shape: S, isDisabled: Bool) {
         self._value = value
         self.shape = shape
         self.isDisabled = isDisabled
         self.range = range
     }
+    
     public init(_ value: Binding<Double>, shape: S, isDisabled: Bool) {
         self._value = value
         self.shape = shape
@@ -238,8 +244,8 @@ public struct PSlider<S: Shape>: View {
         }
         
         var angle: Angle {
-            let num = Int(getPercent(self.position + self.dragState.translation.toPoint(), lookupTable: self.lookUpTable)*CGFloat(lookUpTable.count))
-            if self.lookUpTable.count < 3 {
+            let num = Int(getPercent(position + dragState.translation.toPoint(), lookupTable: lookUpTable)*CGFloat(lookUpTable.count))
+            if lookUpTable.count < 3 {
                 return .zero
             }
             if num > lookUpTable.count-2 {
@@ -262,31 +268,31 @@ public struct PSlider<S: Shape>: View {
         
         var body: some View {
             style
-                .makeThumb(configuration: self.configuration)
+                .makeThumb(configuration: configuration)
                 .position(position)
                 .offset(dragState.translation)
-                .gesture(self.dragGesture)
+                .gesture(dragGesture)
                 .onAppear {
-                    let num = self.value*Double(self.lookUpTable.count)
-                    self.position = self.lookUpTable[Int(num)]
-            }
+                    let num = value*Double(lookUpTable.count)
+                    position = lookUpTable[Int(num)]
+                }
         }
-
+        
         private var dragGesture: some Gesture {
             DragGesture(minimumDistance: 0, coordinateSpace: .named(space))
                 .onChanged({ (drag) in
-                    let closestPoint = getClosestPoint(drag.location , lookupTable: self.lookUpTable)
-                    self.dragState = .dragging(translation: self.getDisplacement(closestPoint: closestPoint))
-                    self.value = Double(getPercent(closestPoint, lookupTable: self.lookUpTable))*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
+                    let closestPoint = getClosestPoint(drag.location , lookupTable: lookUpTable)
+                    dragState = .dragging(translation: getDisplacement(closestPoint: closestPoint))
+                    value = Double(getPercent(closestPoint, lookupTable: lookUpTable))*(range.upperBound-range.lowerBound) + range.lowerBound
                 })
                 .onEnded { drag in
-                    let closestPoint = getClosestPoint(drag.location, lookupTable: self.lookUpTable)
-                    self.value = Double(getPercent(closestPoint, lookupTable: self.lookUpTable))*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
-                    let displacement = self.getDisplacement(closestPoint: closestPoint)
-                    self.position.x += displacement.width
-                    self.position.y += displacement.height
-                    self.dragState = .inactive
-        }
+                    let closestPoint = getClosestPoint(drag.location, lookupTable: lookUpTable)
+                    value = Double(getPercent(closestPoint, lookupTable: lookUpTable))*(range.upperBound-range.lowerBound) + range.lowerBound
+                    let displacement = getDisplacement(closestPoint: closestPoint)
+                    position.x += displacement.width
+                    position.y += displacement.height
+                    dragState = .inactive
+                }
         }
     }
     
@@ -296,7 +302,7 @@ public struct PSlider<S: Shape>: View {
                       value: $value,
                       lookUpTable: generateLookupTable(path: shape.path(in: rect)),
                       range: range,
-                      isDisabled: self.isDisabled,
+                      isDisabled: isDisabled,
                       shape: AnyShape(shape))
     }
     
@@ -313,8 +319,8 @@ public struct PSlider<S: Shape>: View {
     
     public var body: some View {
         GeometryReader { proxy in
-            self.style.makeTrack(configuration: self.configuration)
-                .overlay(self.makeThumb(proxy))
+            style.makeTrack(configuration: configuration)
+                .overlay(makeThumb(proxy))
                 .coordinateSpace(name: "Follow")
         }
     }

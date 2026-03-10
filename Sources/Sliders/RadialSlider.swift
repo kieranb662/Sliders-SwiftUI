@@ -26,6 +26,7 @@ public struct RSliderConfiguration {
     /// The maximum value of the sliders range
     public let max: Double
 }
+
 // MARK: - Style
 
 public protocol RSliderStyle: Sendable {
@@ -49,13 +50,13 @@ public struct AnyRSliderStyle: RSliderStyle, Sendable {
     private let _makeThumb: @Sendable (RSliderConfiguration) -> AnyView
     
     public func makeThumb(configuration: RSliderConfiguration) -> some View {
-        self._makeThumb(configuration)
+        _makeThumb(configuration)
     }
     
     private let _makeTrack: @Sendable (RSliderConfiguration) -> AnyView
     
     public func makeTrack(configuration: RSliderConfiguration) -> some View  {
-        self._makeTrack(configuration)
+        _makeTrack(configuration)
     }
     
     public init<S: RSliderStyle>(_ style: S) {
@@ -81,7 +82,7 @@ extension EnvironmentValues {
 
 extension View {
     public func radialSliderStyle<S>(_ style: S) -> some View where S: RSliderStyle {
-        self.environment(\.radialSliderStyle, AnyRSliderStyle(style))
+        environment(\.radialSliderStyle, AnyRSliderStyle(style))
     }
 }
 // MARK: - Default Style
@@ -97,11 +98,11 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
     
     public func makeTrack(configuration:  RSliderConfiguration) -> some View {
         ZStack {
-           Circle()
-            .stroke(Color.gray, style: StrokeStyle(lineWidth: 10, lineCap: .round))
             Circle()
-            .trim(from: 0, to: CGFloat(configuration.pctFill))
-            .stroke(Color.purple, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                .stroke(Color.gray, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+            Circle()
+                .trim(from: 0, to: CGFloat(configuration.pctFill))
+                .stroke(Color.purple, style: StrokeStyle(lineWidth: 12, lineCap: .round))
         }
     }
 }
@@ -113,25 +114,31 @@ public struct KnobStyle: RSliderStyle {
     
     public func makeThumb(configuration: RSliderConfiguration) -> some View {
         let gradient = RadialGradient(gradient: Gradient(colors: [.gray, .white]), center: .center, startRadius: 0 , endRadius: 80)
-       return Circle()
+        return Circle()
             .fill(gradient)
             .frame(width: 40)
-        .shadow(radius: 1)
-        
+            .shadow(radius: 1)
     }
+    
     public func makeTrack(configuration: RSliderConfiguration) -> some View {
         Circle().frame(width: 150)
             .foregroundColor(.clear)
             .overlay(ZStack {
                 Circle()
-                .fill(RadialGradient(gradient: Gradient(colors: [.blue, Color(white: 0.2)]), center: .center, startRadius: 0 , endRadius: 300))
-                .drawingGroup(opaque: false, colorMode: .extendedLinear)
-                .overlay(
-                    Circle().stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [6], dashPhase: 0))
-                )
+                    .fill(
+                        RadialGradient(gradient: Gradient(colors: [.blue, Color(white: 0.2)]),
+                                       center: .center,
+                                       startRadius: 0,
+                                       endRadius: 300)
+                    )
+                    .drawingGroup(opaque: false, colorMode: .extendedLinear)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [6], dashPhase: 0))
+                    )
             }
-            .rotationEffect(Angle(degrees: Double(360*configuration.pctFill)))
-            .scaleEffect(1.50))
+                .rotationEffect(Angle(degrees: Double(360*configuration.pctFill)))
+                .scaleEffect(1.50))
     }
     
 }
@@ -199,17 +206,20 @@ public struct RSlider: View {
         self.isDisabled = isDisabled
         self.range = 0...1
     }
+    
     public init(_ value: Binding<Double>, range: ClosedRange<Double>) {
         self._value = value
         self.range = range
         self.isDisabled = false
         
     }
+    
     public init(_ value: Binding<Double>, range: ClosedRange<Double>, isDisabled: Bool) {
         self._value = value
         self.isDisabled = isDisabled
         self.range = range
     }
+    
     public init(_ value: Binding<Double>) {
         self._value = value
         self.range = 0...1
@@ -218,13 +228,14 @@ public struct RSlider: View {
     
     private func calculateDirection(_ pt1: CGPoint, _ pt2: CGPoint) -> Double {
         let a = pt2.x - pt1.x
-        #if os(macOS)
+#if os(macOS)
         let b = -(pt2.y - pt1.y)
-        #else
+#else
         let b = pt2.y - pt1.y
-        #endif
+#endif
         return Double(atanP(x: a, y: b)/(2 * .pi))
     }
+    
     private var configuration: RSliderConfiguration {
         let pct = (value-range.lowerBound)/(range.upperBound-range.lowerBound)
         
@@ -236,21 +247,22 @@ public struct RSlider: View {
                      min: range.lowerBound,
                      max: range.upperBound)
     }
+    
     private func makeThumb(_ proxy: GeometryProxy) -> some View {
         let radius = min(proxy.size.height, proxy.size.width)/2
         let middle = CGPoint(x: proxy.frame(in: .global).midX, y: proxy.frame(in: .global).midY)
         
         let gesture = DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { (value) in
-                let direction = self.calculateDirection(middle, value.location)
-                self.value = direction*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
-                self.isActive = true
-        }
-        .onEnded { (value) in
-            let direction = self.calculateDirection(middle, value.location)
-            self.value = direction*(self.range.upperBound-self.range.lowerBound) + self.range.lowerBound
-            self.isActive = false
-        }
+                let direction = calculateDirection(middle, value.location)
+                self.value = direction*(range.upperBound-range.lowerBound) + range.lowerBound
+                isActive = true
+            }
+            .onEnded { (value) in
+                let direction = calculateDirection(middle, value.location)
+                self.value = direction*(range.upperBound-range.lowerBound) + range.lowerBound
+                isActive = false
+            }
         let pct = (value-range.lowerBound)/(range.upperBound-range.lowerBound)
         let pX = radius*CGFloat(cos(pct*2 * .pi ))
         let pY = radius*CGFloat(sin(pct*2 * .pi ))
@@ -259,12 +271,16 @@ public struct RSlider: View {
             .offset(x: pX, y: pY)
             .gesture(gesture)
     }
+    
     public var body: some View {
-        style.makeTrack(configuration: configuration).overlay(GeometryReader { proxy in
-            ZStack(alignment: .center) {
-                self.makeThumb(proxy)
-            }.frame(width: proxy.size.width, height: proxy.size.height)
-        }).padding()
+        style.makeTrack(configuration: configuration)
+            .overlay(GeometryReader { proxy in
+                ZStack(alignment: .center) {
+                    makeThumb(proxy)
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
+            })
+            .padding()
     }
 }
 
@@ -280,7 +296,7 @@ struct DoubleRSlider: View {
     private var s: CGFloat { startState + start }
     private var configuration: RSliderConfiguration {
         .init(isDisabled: false,
-              isActive: self.startState != 0 || self.endState != 0,
+              isActive: startState != 0 || endState != 0,
               pctFill: Double(s > e ? e+(1-s) : e-s),
               value: 0,
               angle: .zero,
@@ -288,27 +304,28 @@ struct DoubleRSlider: View {
               max: 1)
     }
     
-    
-    public init() {
-        
-    }
+    public init() {}
     
     public func makeThumbs(_ proxy: GeometryProxy) -> some View {
         let radius = min(proxy.size.height, proxy.size.width)/2
         let middle = CGPoint(x: proxy.frame(in: .global).midX, y: proxy.frame(in: .global).midY)
-        let upperGesture = DragGesture(minimumDistance: 0, coordinateSpace: .global).onChanged { (value) in
-            self.endState = self.calculateDirection(middle, value.location) - self.end
-        }.onEnded { (value) in
-            self.endState = 0
-            self.end = self.calculateDirection(middle, value.location)
-        }
+        let upperGesture = DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .onChanged { (value) in
+                endState = calculateDirection(middle, value.location) - end
+            }
+            .onEnded { (value) in
+                endState = 0
+                end = calculateDirection(middle, value.location)
+            }
         
-        let lowerGesture = DragGesture(minimumDistance: 0, coordinateSpace: .global).onChanged { (value) in
-            self.startState = self.calculateDirection(middle, value.location) - self.start
-        }.onEnded { (value) in
-            self.startState = 0
-            self.start = self.calculateDirection(middle, value.location)
-        }
+        let lowerGesture = DragGesture(minimumDistance: 0, coordinateSpace: .global)
+            .onChanged { (value) in
+                startState = calculateDirection(middle, value.location) - start
+            }
+            .onEnded { (value) in
+                startState = 0
+                start = calculateDirection(middle, value.location)
+            }
         
         let pX = radius*cos(e*2 * .pi)
         let pY = radius*sin(e*2 * .pi )
@@ -338,10 +355,9 @@ struct DoubleRSlider: View {
             .rotationEffect(Angle(radians: Double(s*2*CGFloat.pi)))
             .overlay(GeometryReader { proxy in
                 ZStack {
-                    self.makeThumbs(proxy)
+                    makeThumbs(proxy)
                 }
             })
-            
             .padding()
     }
 }

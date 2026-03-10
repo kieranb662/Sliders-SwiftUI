@@ -52,13 +52,13 @@ public struct AnyOverflowSliderStyle: OverflowSliderStyle, Sendable {
     private let _makeTrack: @Sendable (OverflowSliderConfiguration) -> AnyView
     
     public func makeTrack(configuration: OverflowSliderConfiguration) -> some View {
-        return self._makeTrack(configuration)
+        return _makeTrack(configuration)
     }
     
     private let _makeThumb: @Sendable (OverflowSliderConfiguration) -> AnyView
     
     public func makeThumb(configuration: OverflowSliderConfiguration) -> some View {
-        return self._makeThumb(configuration)
+        return _makeThumb(configuration)
     }
     
     init<S: OverflowSliderStyle>(_ style: S) {
@@ -102,7 +102,7 @@ extension EnvironmentValues {
 
 extension View {
     public func overflowSliderStyle<S>(_ style: S) -> some View where S: OverflowSliderStyle {
-        self.environment(\.overflowSliderStyle, AnyOverflowSliderStyle(style))
+        environment(\.overflowSliderStyle, AnyOverflowSliderStyle(style))
     }
 }
 
@@ -111,7 +111,7 @@ extension View {
 ///
 /// A Slider which has a fixed frame but a movable track in the background. Used for values that have a discrete nature to them but would not necessarily fit on screen.
 /// Both the thumb and track can be dragged, if the track is dragged and thrown the velocity of the throw is added to the tracks velocity and it slows gradually to a stop.
-/// If the thumb is currently being dragged and reachs the minimum or maximum value of its bounds, velocity is added to the track in the opposite direction of the drag. 
+/// If the thumb is currently being dragged and reachs the minimum or maximum value of its bounds, velocity is added to the track in the opposite direction of the drag.
 ///
 /// - parameters:
 ///     - value: `Binding<Double>` The value the slider should control
@@ -251,53 +251,57 @@ public struct OverflowSlider: View {
     }
     
     private func thumbHandler() {
-        if self.thumbState != 0 {
-            if self.thumbOffset + self.thumbState > 1 {
-                self.currentVelocity += (self.thumbOffset + self.thumbState)
-            } else if self.thumbOffset + self.thumbState < 0 {
-                self.currentVelocity -= 1-(self.thumbOffset + self.thumbState)
+        if thumbState != 0 {
+            if thumbOffset + thumbState > 1 {
+                currentVelocity += (thumbOffset + thumbState)
+            } else if thumbOffset + thumbState < 0 {
+                currentVelocity -= 1-(thumbOffset + thumbState)
             } else {
-                self.currentVelocity *= 0.97
+                currentVelocity *= 0.97
             }
         } else {
-            self.currentVelocity *= 0.97
+            currentVelocity *= 0.97
         }
     }
+    
     private func makeThumb(_ proxy: GeometryProxy) -> some View {
         style.makeThumb(configuration: configuration)
             .allowsHitTesting(false)
             .opacity(0)
             .anchorPreference(key: ThumbKey.self, value: .bounds, transform: { proxy[$0]})
             .overlayPreferenceValue(ThumbKey.self, { (rect)  in
-                self.style.makeThumb(configuration: self.configuration)
-                    .position(x: (proxy.size.width-rect.width)*min(max(self.thumbState + self.thumbOffset, 0), 1),
+                style.makeThumb(configuration: configuration)
+                    .position(x: (proxy.size.width-rect.width)*min(max(thumbState + thumbOffset, 0), 1),
                               y: proxy.size.height/2)
                     .offset(x: rect.width/2, y: 0)
                     .gesture(
                         DragGesture()
                             .onChanged({ (value) in
-                                self.thumbState = value.translation.width/proxy.size.width
-                            }).onEnded({ (value) in
-                                self.thumbState = 0
-                                self.thumbOffset = min(max(value.translation.width/proxy.size.width + self.thumbOffset, 0), 1)
-                            }))
-                    .onReceive(self.timer) { (time) in
+                                thumbState = value.translation.width/proxy.size.width
+                            })
+                            .onEnded({ (value) in
+                                thumbState = 0
+                                thumbOffset = min(max(value.translation.width/proxy.size.width + thumbOffset, 0), 1)
+                            })
+                    )
+                    .onReceive(timer) { (time) in
                         // stop velocity once value reaches limit
-                        if self.value == self.range.upperBound || self.value == self.range.lowerBound || abs(self.currentVelocity) < 1 {
-                            self.currentVelocity = 0
+                        if value == range.upperBound || value == range.lowerBound || abs(currentVelocity) < 1 {
+                            currentVelocity = 0
                         }
                         // allow velocity to displace track while not active
-                        if !self.trackState.isActive {
-                            self.trackOffset -= self.currentVelocity*0.01
+                        if !trackState.isActive {
+                            trackOffset -= currentVelocity*0.01
                         }
                         
-                        self.thumbHandler()
+                        thumbHandler()
                         
                         // Update value
-                        self.value = max(min(Double(-(self.trackState.translation + self.trackOffset) + (proxy.size.width-rect.width)*(self.thumbState + self.thumbOffset)), self.range.upperBound), self.range.lowerBound)
-                }.onAppear {
-                    self.trackOffset = -(CGFloat(self.value) - (proxy.size.width-rect.width)*(self.thumbState + self.thumbOffset))
-                }
+                        value = max(min(Double(-(trackState.translation + trackOffset) + (proxy.size.width-rect.width)*(thumbState + thumbOffset)), range.upperBound), range.lowerBound)
+                    }
+                    .onAppear {
+                        trackOffset = -(CGFloat(value) - (proxy.size.width-rect.width)*(thumbState + thumbOffset))
+                    }
             })
     }
     
@@ -307,9 +311,11 @@ public struct OverflowSlider: View {
         let dt = CGFloat(1/last.timeIntervalSince(time))
         return dx*dt
     }
+    
     private func makeTrack(_ proxy: GeometryProxy) -> some View {
-        let offset = self.trackState.translation + self.trackOffset
+        let offset = trackState.translation + trackOffset
         let w: CGFloat = proxy.size.width/2
+        
         return style.makeTrack(configuration: configuration)
             .contentShape(Rectangle())
             .offset(x: max(min(offset, -CGFloat(range.lowerBound)+w), -CGFloat(range.upperBound)+w), y: 0)
@@ -317,33 +323,36 @@ public struct OverflowSlider: View {
             .gesture(
                 DragGesture(coordinateSpace: .global)
                     .onChanged({ (value) in
-                        let velocity = self.calculateVelocity(translation: value.translation.width, time: value.time)
-                        self.trackState = .dragging(time: value.time, translation: value.translation.width, startLocation: value.startLocation.x, velocity: velocity)
-                    }).onEnded({ (value) in
-                        self.currentVelocity += self.trackState.velocity
-                        self.trackState = .inactive
-                        self.trackOffset += value.translation.width
-                        self.trackOffset = max(min(self.trackOffset, CGFloat(-self.range.lowerBound)+proxy.size.width/2), CGFloat(-self.range.upperBound)+proxy.size.width/2)
+                        let velocity = calculateVelocity(translation: value.translation.width, time: value.time)
+                        trackState = .dragging(time: value.time, translation: value.translation.width, startLocation: value.startLocation.x, velocity: velocity)
+                    })
+                    .onEnded({ (value) in
+                        currentVelocity += trackState.velocity
+                        trackState = .inactive
+                        trackOffset += value.translation.width
+                        trackOffset = max(min(trackOffset, CGFloat(-range.lowerBound)+proxy.size.width/2), CGFloat(-range.upperBound)+proxy.size.width/2)
                         
-                    }))
-            .animation(.linear)
-        
+                    })
+            )
     }
     
     public var body: some View {
         RoundedRectangle(cornerRadius: 5)
             .fill(Color.white.opacity(0.001))
             .allowsHitTesting(false)
-            .background(GeometryReader{
-                self.makeTrack($0)}
-                .padding(.horizontal)
-                .allowsHitTesting(!self.isDisabled))
-            .overlay(GeometryReader { proxy in
-                ZStack {
-                    self.makeThumb(proxy)
-                        .allowsHitTesting(!self.isDisabled)
-                }.offset(x: -proxy.size.width/2)
-            })
+            .background(
+                GeometryReader(content: makeTrack)
+                    .padding(.horizontal)
+                    .allowsHitTesting(!isDisabled))
+            .overlay(
+                GeometryReader { proxy in
+                    ZStack {
+                        makeThumb(proxy)
+                            .allowsHitTesting(!isDisabled)
+                    }
+                    .offset(x: -proxy.size.width/2)
+                }
+            )
             .clipped()
     }
 }

@@ -51,12 +51,12 @@ public extension RadialPadStyle {
 public struct AnyRadialPadStyle: RadialPadStyle, Sendable {
     private let _makeTrack: @Sendable (RadialPadConfiguration) -> AnyView
     public func makeTrack(configuration: RadialPadConfiguration) -> some View {
-        return self._makeTrack(configuration)
+        return _makeTrack(configuration)
     }
     
     private let _makeThumb: @Sendable (RadialPadConfiguration) -> AnyView
     public func makeThumb(configuration: RadialPadConfiguration) -> some View {
-        return self._makeThumb(configuration)
+        return _makeThumb(configuration)
     }
     
     public init<S: RadialPadStyle>(_ style: S) {
@@ -67,7 +67,7 @@ public struct AnyRadialPadStyle: RadialPadStyle, Sendable {
 
 public struct DefaultRadialPadStyle: RadialPadStyle, Sendable {
     public init() { }
-
+    
     public func makeTrack(configuration: RadialPadConfiguration) -> some View {
         Circle()
             .fill(Color.gray.opacity(0.4))
@@ -97,9 +97,10 @@ extension EnvironmentValues {
 
 extension View {
     public func radialPadStyle<S>(_ style: S) -> some View where S: RadialPadStyle {
-        self.environment(\.radialPadStyle, AnyRadialPadStyle(style))
+        environment(\.radialPadStyle, AnyRadialPadStyle(style))
     }
 }
+
 /// # Radial Track Pad
 ///
 /// A control that constrains the drag gesture of the thumb to be contained within the radius of the track.
@@ -151,6 +152,7 @@ public struct RadialPad: View {
     @Binding public var angle: Angle
     @State private var isActive: Bool = false
     public var isDisabled: Bool = false
+    
     public init(offset: Binding<Double>, angle: Binding<Angle>) {
         self._offset = offset
         self._angle = angle
@@ -168,26 +170,28 @@ public struct RadialPad: View {
         let pY = radius*offset*sin(angle.radians)
         return CGSize(width: pX, height: pY)
     }
+    
     private var configuration: RadialPadConfiguration {
         return .init(isDisabled, isActive, offset == 1, angle, offset)
     }
+    
     private func makeGesture(_ proxy: GeometryProxy) -> some Gesture {
-        DragGesture(minimumDistance: 0, coordinateSpace: .named(self.space))
+        DragGesture(minimumDistance: 0, coordinateSpace: .named(space))
             .onChanged({
                 let middle = CGPoint(x: proxy.size.width/2, y: proxy.size.height/2)
                 let radius = Double(proxy.size.width > proxy.size.height ? proxy.size.height/2 : proxy.size.width/2)
                 let off = sqrt((middle - $0.location).magnitudeSquared)
-                self.offset = min(radius, off)/radius
-                self.angle = Angle(degrees: calculateDirection(middle, $0.location)*360)
-                self.isActive = true
+                offset = min(radius, off)/radius
+                angle = Angle(degrees: calculateDirection(middle, $0.location)*360)
+                isActive = true
             })
             .onEnded({
                 let middle = CGPoint(x: proxy.size.width/2, y: proxy.size.height/2)
                 let radius = Double(proxy.size.width > proxy.size.height ? proxy.size.height/2 : proxy.size.width/2)
                 let off = sqrt((middle - $0.location).magnitudeSquared)
-                self.offset = min(radius, off)/radius
-                self.angle = Angle(degrees: calculateDirection(middle, $0.location)*360)
-                self.isActive = false
+                offset = min(radius, off)/radius
+                angle = Angle(degrees: calculateDirection(middle, $0.location)*360)
+                isActive = false
             })
     }
     
@@ -196,10 +200,11 @@ public struct RadialPad: View {
             style.makeTrack(configuration: configuration)
                 .overlay(GeometryReader { proxy in
                     ZStack(alignment: .center) {
-                        self.style.makeThumb(configuration: self.configuration)
-                            .offset(self.thumbOffset(proxy))
-                            .gesture(self.makeGesture(proxy))
-                    }.frame(width: proxy.size.width, height: proxy.size.height)
+                        style.makeThumb(configuration: configuration)
+                            .offset(thumbOffset(proxy))
+                            .gesture(makeGesture(proxy))
+                    }
+                    .frame(width: proxy.size.width, height: proxy.size.height)
                 })
         }.coordinateSpace(name: space)
     }

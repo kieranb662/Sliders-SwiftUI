@@ -52,12 +52,15 @@ public extension JoystickStyle {
     func makeHitBoxTypeErased(configuration: JoystickConfiguration) -> AnyView {
         AnyView(self.makeHitBox(configuration: configuration))
     }
+    
     func makeLockBoxTypeErased(configuration: JoystickConfiguration) -> AnyView {
         AnyView(self.makeLockBox(configuration: configuration))
     }
+    
     func makeTrackTypeErased(configuration: JoystickConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
     }
+    
     func makeThumbTypeErased(configuration: JoystickConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
     }
@@ -67,22 +70,22 @@ public struct AnyJoystickStyle: JoystickStyle, Sendable {
     
     private let _makeHitBox: @Sendable (JoystickConfiguration) -> AnyView
     public func makeHitBox(configuration: JoystickConfiguration) -> some View {
-        return self._makeHitBox(configuration)
+        return _makeHitBox(configuration)
     }
     
     private let _makeLockBox: @Sendable (JoystickConfiguration) -> AnyView
     public func makeLockBox(configuration: JoystickConfiguration) -> some View {
-        return self._makeLockBox(configuration)
+        return _makeLockBox(configuration)
     }
     
     private let _makeTrack: @Sendable (JoystickConfiguration) -> AnyView
     public func makeTrack(configuration: JoystickConfiguration) -> some View {
-        return self._makeTrack(configuration)
+        return _makeTrack(configuration)
     }
     
     private let _makeThumb: @Sendable (JoystickConfiguration) -> AnyView
     public func makeThumb(configuration: JoystickConfiguration) -> some View {
-        return self._makeThumb(configuration)
+        return _makeThumb(configuration)
     }
     
     public init<ST: JoystickStyle>(_ style: ST) {
@@ -101,6 +104,7 @@ public struct DefaultJoystickStyle: JoystickStyle, Sendable {
         Rectangle()
             .fill(Color.white.opacity(0.05))
     }
+    
     public func makeLockBox(configuration: JoystickConfiguration) -> some View {
         ZStack {
             Circle()
@@ -108,17 +112,19 @@ public struct DefaultJoystickStyle: JoystickStyle, Sendable {
             Circle()
                 .fill(Color.yellow)
                 .scaleEffect(0.7)
-        }.frame(width: 25, height: 25)
+        }
+        .frame(width: 25, height: 25)
     }
+    
     public func makeTrack(configuration: JoystickConfiguration) -> some View {
         Circle()
             .fill(Color.gray.opacity(0.4))
     }
+    
     public func makeThumb(configuration: JoystickConfiguration) -> some View {
         Circle()
             .fill(Color.blue)
             .frame(width: 45, height: 45)
-        
     }
 }
 
@@ -139,10 +145,9 @@ extension EnvironmentValues {
 
 extension View {
     public func joystickStyle<S>(_ style: S) -> some View where S: JoystickStyle {
-        self.environment(\.joystickStyle, AnyJoystickStyle(style))
+        environment(\.joystickStyle, AnyJoystickStyle(style))
     }
 }
-
 
 // MARK: - State
 /// An Enumeration used to represent the state of a `Joystick`
@@ -158,18 +163,21 @@ public enum JoyState {
         default: return false
         }
     }
+    
     public var isDragging: Bool {
         switch self {
         case .dragging(_, _, _, _, _): return true
         default: return false
         }
     }
+    
     public var isActive: Bool {
         switch self {
         case .inactive: return false
         default: return true
         }
     }
+    
     public var time: Date? {
         switch self {
         case .dragging( let time, _ , _, _, _):
@@ -177,6 +185,7 @@ public enum JoyState {
         default: return nil
         }
     }
+    
     public var translation: CGSize {
         switch self {
         case .dragging(_, let translation , _, _, _):
@@ -184,6 +193,7 @@ public enum JoyState {
         default: return .zero
         }
     }
+    
     public var startLocation: CGPoint? {
         switch self {
         case .dragging(_, _ , let start, _, _):
@@ -191,6 +201,7 @@ public enum JoyState {
         default: return nil
         }
     }
+    
     public var velocity: CGSize {
         switch self {
         case .dragging(_ , _ , _, let velocity, _):
@@ -198,6 +209,7 @@ public enum JoyState {
         default: return .zero
         }
     }
+    
     public var acceleration: CGSize {
         switch self {
         case .dragging(_ , _ , _, _, let acceleration):
@@ -205,6 +217,7 @@ public enum JoyState {
         default: return .zero
         }
     }
+    
     public var angle: Angle {
         switch self {
         case .dragging(_, let trans , _, _, _):
@@ -212,6 +225,7 @@ public enum JoyState {
         default: return .zero
         }
     }
+    
     public var radialOffset: Double {
         switch self {
         case .dragging(_, let trans , _, _, _):
@@ -285,15 +299,16 @@ public enum JoyState {
 ///              }
 ///          }
 ///
-
 public struct Joystick: View {
     typealias Key = JoyStickKey
+    
     struct JoyStickKey: PreferenceKey {
         static var defaultValue: [Int:Anchor<CGRect>] { [:] }
         static func reduce(value: inout [Int:Anchor<CGRect>], nextValue: () -> [Int:Anchor<CGRect>]) {
             value.merge(nextValue(), uniquingKeysWith: {$1})
         }
     }
+    
     @Environment(\.joystickStyle) private var style: AnyJoystickStyle
     let radius: Double
     let canLock: Bool
@@ -306,12 +321,14 @@ public struct Joystick: View {
         self.canLock = canLock
         self.isDisabled = isDisabled
     }
+    
     public init(state: Binding<JoyState>, radius: Double) {
         self._state = state
         self.radius = radius
         self.canLock = true
         self.isDisabled = false
     }
+    
     public init(state: Binding<JoyState>, radius: Double, isDisabled: Bool) {
         self._state = state
         self.radius = radius
@@ -321,6 +338,7 @@ public struct Joystick: View {
     
     @State private var lastPlacement: CGPoint = .zero
     @State private var isInsideLockBox = false
+    
     private var config: JoystickConfiguration {
         .init(isDisabled,
               state.isActive,
@@ -329,6 +347,7 @@ public struct Joystick: View {
               state.angle,
               state.radialOffset)
     }
+    
     // MARK:  Calculations
     private func calculateVelocity(translation: CGSize, time: Date) -> CGSize {
         guard let last = state.time else {return .zero}
@@ -337,6 +356,7 @@ public struct Joystick: View {
         let dt = CGFloat(1/last.timeIntervalSince(time))
         return CGSize(width: dx*dt, height: dy*dt)
     }
+    
     private func calculateAcceleration(velocity: CGSize, time: Date) -> CGSize {
         guard let last = state.time else {return .zero}
         let dx = velocity.width-state.velocity.width
@@ -344,6 +364,7 @@ public struct Joystick: View {
         let dt = CGFloat(1/last.timeIntervalSince(time))
         return CGSize(width: dx*dt, height: dy*dt)
     }
+    
     private func limitTranslation(_ translation: CGSize) -> CGSize {
         if translation.magnitudeSquared < radius*radius {return translation}
         let magnitude = sqrt(translation.magnitudeSquared)
@@ -354,31 +375,31 @@ public struct Joystick: View {
     
     // MARK: Haptics
     private func impactOccured() {
-        #if os(macOS)
-        #else
+#if os(iOS)
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
-        #endif
+#endif
     }
     private func locked() {
-        #if os(macOS)
-        #else
+#if os(iOS)
         let generator = UINotificationFeedbackGenerator()
         generator.notificationOccurred(.success)
-        #endif
+#endif
     }
+    
     private func enteredLockBoxHandler(_ isInside: Bool) {
-        if self.canLock {
+        if canLock {
             if isInside {
-                if !self.isInsideLockBox {
-                    self.impactOccured()
+                if !isInsideLockBox {
+                    impactOccured()
                 }
-                self.isInsideLockBox = true
+                isInsideLockBox = true
             } else {
-                self.isInsideLockBox = false
+                isInsideLockBox = false
             }
         }
     }
+    
     private func lock(_ shouldLock: Bool) {
         if canLock {
             if shouldLock {
@@ -388,7 +409,7 @@ public struct Joystick: View {
                 state = .inactive
             }
         } else {
-            self.state = .inactive
+            state = .inactive
         }
     }
     
@@ -401,15 +422,17 @@ public struct Joystick: View {
                 .transition(AnyTransition.opacity.animation(.easeIn))
                 .opacity(canLock ? 1 : 0)
             
-            
             style.makeThumb(configuration: config)
                 .offset(x: state.translation.width, y: state.translation.height)
-                .background(style.makeTrack(configuration: config)
-                    .frame(width: CGFloat(2*radius), height: CGFloat(2*radius)))
+                .background(
+                    style.makeTrack(configuration: config)
+                        .frame(width: CGFloat(2*radius), height: CGFloat(2*radius))
+                )
                 .position(state.startLocation!)
                 .transition(AnyTransition.opacity.animation(.easeIn))
         }
     }
+    
     private var lockedViews: some View {
         Group {
             style.makeLockBox(configuration: config)
@@ -418,17 +441,20 @@ public struct Joystick: View {
             
             style.makeThumb(configuration: config)
                 .offset(x: state.translation.width, y: state.translation.height)
-                .background(style.makeTrack(configuration: config)
-                    .frame(width: CGFloat(2*radius), height: CGFloat(2*radius)))
+                .background(
+                    style.makeTrack(configuration: config)
+                        .frame(width: CGFloat(2*radius), height: CGFloat(2*radius))
+                )
                 .position(lastPlacement)
         }
     }
+    
     private var joystick: some View {
         Group {
             if state.isDragging {
-                self.draggingViews
+                draggingViews
             } else if state.isLocked {
-                self.lockedViews
+                lockedViews
             }
         }
     }
@@ -442,31 +468,34 @@ public struct Joystick: View {
                 .offset(x: 0, y: -CGFloat(radius+50))
             style.makeHitBox(configuration: config)
                 .opacity(0)
-                .allowsHitTesting(!self.isDisabled)
-        }.overlayPreferenceValue(Key.self) { (bounds: [Int: Anchor<CGRect>]) in
+                .allowsHitTesting(!isDisabled)
+        }
+        .overlayPreferenceValue(Key.self) { (bounds: [Int: Anchor<CGRect>]) in
             GeometryReader { proxy in
                 ZStack(alignment: .center) {
-                    self.style.makeHitBox(configuration: self.config)
-                        .gesture(DragGesture()
-                            .onChanged({ (value) in
-                                self.lastPlacement = .zero
-                                let translation = self.limitTranslation(value.translation)
-                                let velocity = self.calculateVelocity(translation: translation, time: value.time)
-                                self.state = .dragging(time: value.time,
-                                                       translation: translation,
-                                                       startLocation: value.startLocation,
-                                                       velocity: velocity,
-                                                       acceleration: self.calculateAcceleration(velocity: velocity, time: value.time))
-                                guard let bound = bounds[1] else { return }
-                                self.enteredLockBoxHandler(proxy[bound].contains(value.location))
-                            })
-                            .onEnded({ (value) in
-                                self.lastPlacement = value.startLocation
-                                guard let bound = bounds[1] else { return }
-                                self.lock(proxy[bound].contains(value.location))
-                            }))
-                    self.joystick.allowsHitTesting(false)
-                }.frame(width: proxy.size.width, height: proxy.size.height)
+                    style.makeHitBox(configuration: config)
+                        .gesture(
+                            DragGesture()
+                                .onChanged({ (value) in
+                                    lastPlacement = .zero
+                                    let translation = limitTranslation(value.translation)
+                                    let velocity = calculateVelocity(translation: translation, time: value.time)
+                                    state = .dragging(time: value.time,
+                                                           translation: translation,
+                                                           startLocation: value.startLocation,
+                                                           velocity: velocity,
+                                                           acceleration: calculateAcceleration(velocity: velocity, time: value.time))
+                                    guard let bound = bounds[1] else { return }
+                                    enteredLockBoxHandler(proxy[bound].contains(value.location))
+                                })
+                                .onEnded({ (value) in
+                                    lastPlacement = value.startLocation
+                                    guard let bound = bounds[1] else { return }
+                                    lock(proxy[bound].contains(value.location))
+                                }))
+                    joystick.allowsHitTesting(false)
+                }
+                .frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
     }

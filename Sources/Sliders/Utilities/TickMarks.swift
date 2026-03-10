@@ -11,7 +11,7 @@ public struct TickMarks: Shape {
     public var spacing: CGFloat
     public var ticks: Int
     public var isVertical: Bool
-
+    
     /// Creates `ticks` number of tickmarks of varying sizes each spaced apart with the given `spacing`
     ///
     /// ## Example Usage
@@ -60,7 +60,7 @@ public struct TickMarks: Shape {
         self.ticks = ticks
         self.isVertical = isVertical
     }
-
+    
     func determineHeight(_ i: Int) -> CGFloat {
         if i%100 == 0 { return 1    }
         if i%10 == 0  { return 0.75 }
@@ -85,7 +85,7 @@ public struct TickMarks: Shape {
             }
         }
     }
-
+    
     public func path(in rect: CGRect) -> Path {
         isVertical ? verticalPath(in: rect) : horizontalPath(in: rect)
     }

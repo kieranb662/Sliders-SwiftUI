@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-public extension Path {
+extension Path {
     /// The array of `Path.Elements` describing the path
     var elements: [Path.Element] {
         var temp = [Path.Element]()
