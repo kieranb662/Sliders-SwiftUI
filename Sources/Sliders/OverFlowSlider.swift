@@ -275,7 +275,7 @@ public struct OverflowSlider: View {
                         x: (proxy.size.width-rect.width)*min(max(thumbState + thumbOffset, 0), 1),
                         y: proxy.size.height/2
                     )
-                    .offset(x: rect.width, y: 0)
+                    .offset(x: rect.width/2, y: 0)
                     .gesture(
                         DragGesture()
                             .onChanged({ (value) in
@@ -352,7 +352,6 @@ public struct OverflowSlider: View {
                         makeThumb(proxy)
                             .allowsHitTesting(!isDisabled)
                     }
-                    .offset(x: -proxy.size.width/2)
                 }
             )
             .clipped()
