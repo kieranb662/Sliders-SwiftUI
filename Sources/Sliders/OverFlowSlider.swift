@@ -268,12 +268,14 @@ public struct OverflowSlider: View {
         style.makeThumb(configuration: configuration)
             .allowsHitTesting(false)
             .opacity(0)
-            .anchorPreference(key: ThumbKey.self, value: .bounds, transform: { proxy[$0]})
+            .anchorPreference(key: ThumbKey.self, value: .bounds, transform: { proxy[$0] })
             .overlayPreferenceValue(ThumbKey.self, { (rect)  in
                 style.makeThumb(configuration: configuration)
-                    .position(x: (proxy.size.width-rect.width)*min(max(thumbState + thumbOffset, 0), 1),
-                              y: proxy.size.height/2)
-                    .offset(x: rect.width/2, y: 0)
+                    .position(
+                        x: (proxy.size.width-rect.width)*min(max(thumbState + thumbOffset, 0), 1),
+                        y: proxy.size.height/2
+                    )
+                    .offset(x: rect.width, y: 0)
                     .gesture(
                         DragGesture()
                             .onChanged({ (value) in
