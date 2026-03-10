@@ -228,11 +228,7 @@ public struct RSlider: View {
     
     private func calculateDirection(_ pt1: CGPoint, _ pt2: CGPoint) -> Double {
         let a = pt2.x - pt1.x
-#if os(macOS)
-        let b = -(pt2.y - pt1.y)
-#else
         let b = pt2.y - pt1.y
-#endif
         return Double(atanP(x: a, y: b)/(2 * .pi))
     }
     

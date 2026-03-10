@@ -95,6 +95,7 @@ extension View {
 
 public struct DefaultTrackPadStyle: TrackPadStyle {
     public init() { }
+    
     public func makeThumb(configuration:  TrackPadConfiguration) -> some View {
         Circle()
             .fill(configuration.isActive ? Color.yellow : Color.black)
@@ -173,7 +174,7 @@ public struct TrackPad: View {
     public var rangeY: ClosedRange<CGFloat> = 0...1
     public var isDisabled: Bool = false
     
-    public init(value: Binding<CGPoint>, rangeX: ClosedRange<CGFloat>, rangeY: ClosedRange<CGFloat>, isDisabled: Bool = false){
+    public init(value: Binding<CGPoint>, rangeX: ClosedRange<CGFloat>, rangeY: ClosedRange<CGFloat>, isDisabled: Bool = false) {
         self._value = value
         self.rangeX = rangeX
         self.rangeY = rangeY
@@ -238,6 +239,7 @@ public struct TrackPad: View {
         let newY = pctY*(rangeY.upperBound-rangeY.lowerBound) + rangeY.lowerBound
         value = CGPoint(x: newX, y: newY)
     }
+    
     private func thumbOffset(_ proxy: GeometryProxy) -> CGSize {
         let w = proxy.size.width
         let h = proxy.size.height
@@ -271,7 +273,8 @@ public struct TrackPad: View {
                                 .onEnded({
                                     constrainValue(proxy, $0.location)
                                     isActive = false
-                                }))
+                                })
+                        )
                     
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)

@@ -43,6 +43,7 @@ public extension RadialPadStyle {
     func makeTrackTypeErased(configuration: RadialPadConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
     }
+    
     func makeThumbTypeErased(configuration: RadialPadConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
     }
@@ -72,6 +73,7 @@ public struct DefaultRadialPadStyle: RadialPadStyle, Sendable {
         Circle()
             .fill(Color.gray.opacity(0.4))
     }
+    
     public func makeThumb(configuration: RadialPadConfiguration) -> some View {
         Circle()
             .fill(Color.blue)
@@ -198,15 +200,18 @@ public struct RadialPad: View {
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: configuration)
-                .overlay(GeometryReader { proxy in
-                    ZStack(alignment: .center) {
-                        style.makeThumb(configuration: configuration)
-                            .offset(thumbOffset(proxy))
-                            .gesture(makeGesture(proxy))
+                .overlay(
+                    GeometryReader { proxy in
+                        ZStack(alignment: .center) {
+                            style.makeThumb(configuration: configuration)
+                                .offset(thumbOffset(proxy))
+                                .gesture(makeGesture(proxy))
+                        }
+                        .frame(width: proxy.size.width, height: proxy.size.height)
                     }
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                })
-        }.coordinateSpace(name: space)
+                )
+        }
+        .coordinateSpace(name: space)
     }
 }
 
