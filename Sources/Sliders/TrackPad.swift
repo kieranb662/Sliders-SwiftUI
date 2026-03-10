@@ -192,6 +192,44 @@ public struct TrackPad: View {
         self.rangeY = range
     }
     
+    public init(x: Binding<Double>, y: Binding<Double>, rangeX: ClosedRange<CGFloat>, rangeY: ClosedRange<CGFloat>, isDisabled: Bool = false) {
+        self._value = Binding(
+            get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
+            set: {
+                x.wrappedValue = Double($0.x)
+                y.wrappedValue = Double($0.y)
+            }
+        )
+        
+        self.rangeX = rangeX
+        self.rangeY = rangeY
+        self.isDisabled = isDisabled
+    }
+    
+    public init(x: Binding<Double>, y: Binding<Double>){
+        self._value = Binding(
+            get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
+            set: {
+                x.wrappedValue = Double($0.x)
+                y.wrappedValue = Double($0.y)
+            }
+        )
+    }
+    
+    /// Use this initializer for when the x and y ranges are the same
+    public init(x: Binding<Double>, y: Binding<Double>, range: ClosedRange<CGFloat>){
+        self._value = Binding(
+            get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
+            set: {
+                x.wrappedValue = Double($0.x)
+                y.wrappedValue = Double($0.y)
+            }
+        )
+        
+        self.rangeX = range
+        self.rangeY = range
+    }
+    
     private var configuration: TrackPadConfiguration {
         .init(isDisabled: isDisabled,
               isActive: isActive,
