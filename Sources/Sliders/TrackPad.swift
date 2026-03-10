@@ -248,8 +248,7 @@ public struct TrackPad: View {
     
     // MARK: Haptics
     private func impactOccured() {
-#if os(macOS)
-#else
+#if os(iOS)
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
 #endif
