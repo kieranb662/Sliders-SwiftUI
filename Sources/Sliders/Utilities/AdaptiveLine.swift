@@ -10,7 +10,9 @@ import SwiftUI
 public struct AdaptiveLine: Shape {
     var angle: Angle
     var thickness: Double
+    var percentFilled: Double
     var cap: Cap
+    var adjustmentForThumb: Double
     
     var animatableData: Angle {
         get { self.angle }
@@ -51,10 +53,18 @@ public struct AdaptiveLine: Shape {
     ///        }
     ///    }
     /// ```
-    public init(thickness: Double = 40, angle: Angle = .zero, cap: Cap = .round) {
+    public init(
+        thickness: Double = 40,
+        angle: Angle = .zero,
+        percentFilled: Double = 1.0,
+        cap: Cap = .round,
+        adjustmentForThumb: Double = 0
+    ) {
         self.thickness = thickness
         self.angle = angle
+        self.percentFilled = percentFilled
         self.cap = cap
+        self.adjustmentForThumb = adjustmentForThumb
     }
     
     public func path(in rect: CGRect) -> Path {
@@ -72,28 +82,30 @@ public struct AdaptiveLine: Shape {
         
         switch cap {
         case .square:
-            // Maximum length so that the rotated L×T rectangle fits inside w×h:
-            //   |cos θ|·(L/2) + |sin θ|·(T/2) ≤ w/2  →  L ≤ (w - T·|sin θ|) / |cos θ|
-            //   |sin θ|·(L/2) + |cos θ|·(T/2) ≤ h/2  →  L ≤ (h - T·|cos θ|) / |sin θ|
             let rectMaxFromWidth:  Double = absCos > epsilon ? (w - T * absSin) / absCos : .infinity
             let rectMaxFromHeight: Double = absSin > epsilon ? (h - T * absCos) / absSin : .infinity
             let rectLength = max(0, min(rectMaxFromWidth, rectMaxFromHeight))
             
+            let filledWidth = rectLength * percentFilled + adjustmentForThumb
+
             p = Rectangle()
-                .path(in: CGRect(x: -rectLength / 2, y: -T / 2, width: rectLength, height: T))
+                .path(in: CGRect(x: -rectLength / 2, y: -T / 2, width: filledWidth, height: T))
         case .round:
-            // For a capsule, the extremal points are on the hemicircle caps (radius T/2),
-            // whose centers sit at ±(L/2 - T/2) along the axis. The constraint becomes:
-            //   |cos θ|·(L/2 - T/2) + T/2 ≤ w/2  →  L ≤ (w - T) / |cos θ| + T
-            //   |sin θ|·(L/2 - T/2) + T/2 ≤ h/2  →  L ≤ (h - T) / |sin θ| + T
             let capsuleMaxFromWidth:  Double = absCos > epsilon ? (w - T) / absCos + T : .infinity
             let capsuleMaxFromHeight: Double = absSin > epsilon ? (h - T) / absSin + T : .infinity
             let capsuleLength = max(0, min(capsuleMaxFromWidth, capsuleMaxFromHeight))
+            let width = capsuleLength * percentFilled + adjustmentForThumb
             
-            p = Capsule()
-                .path(in: CGRect(x: -capsuleLength / 2, y: -T / 2, width: capsuleLength, height: T))
+            p = RoundedRectangle(cornerRadius: T/2)
+                .path(
+                    in: CGRect(
+                    x: -capsuleLength / 2,
+                    y: -T / 2,
+                    width: max(width, T),
+                    height: T)
+                )
         }
-        
+
         return p
             .applying(.init(rotationAngle: θ))
             .offsetBy(dx: rect.midX, dy: rect.midY)

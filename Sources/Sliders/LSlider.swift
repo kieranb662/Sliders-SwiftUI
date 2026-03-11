@@ -25,6 +25,10 @@ public struct LSliderConfiguration: Sendable {
     public let min: Double
     /// The maximum value of the sliders range
     public let max: Double
+    /// Whether the thumb is constrained to stay within the track's extent
+    public let keepThumbInTrack: Bool
+    /// The thickness of the track, used to compute how far the thumb center is inset from the track ends
+    public let trackThickness: Double
 }
 
 // MARK: - LSlider Style
@@ -96,25 +100,36 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
     
     public func makeThumb(configuration:  LSliderConfiguration) -> some View {
         Circle()
-            .fill(configuration.isActive ? Color.yellow : Color.white)
+            .fill(configuration.isActive ? Color.yellow : Color.cyan)
             .frame(width: thickness, height: thickness)
     }
     
     public func makeTrack(configuration:  LSliderConfiguration) -> some View {
-        let strokeStyle = StrokeStyle(lineWidth: thickness, lineCap: .square)
-        
-        return AdaptiveLine(angle: configuration.angle)
-            .stroke(Color.gray, style: strokeStyle)
-            .overlay(
-                AdaptiveLine(angle: configuration.angle)
-                    .trim(from: 0, to: CGFloat(configuration.pctFill))
-                    .stroke(Color.blue, lineWidth: thickness)
+        // When keepThumbInTrack is true, the thumb travels over a shorter range (inset by
+        // thickness/2 on each end). The filled region must end at the thumb's trailing edge,
+        // which is at: thumbCenter + thumbRadius
+        //   = (inset + pctFill*(L - 2*inset)) + inset
+        //   = 2*inset + pctFill*(L - 2*inset)
+        // The difference vs. pctFill*L is: 2*inset*(1 - pctFill)
+        // When keepThumbInTrack is false the thumb already travels the full range so we
+        // only need the standard half-thumb offset.
+        let adjustment: Double = configuration.keepThumbInTrack
+            ? thickness * (1 - configuration.pctFill)
+            : thickness / 2
+
+        return ZStack {
+            AdaptiveLine(thickness: thickness, angle: configuration.angle)
+                .fill(.gray)
+            
+            AdaptiveLine(
+                thickness: thickness,
+                angle: configuration.angle,
+                percentFilled: configuration.pctFill,
+                adjustmentForThumb: adjustment
             )
-//            .mask(
-//                Capsule()
-//                    .frame(height: thickness)
-//                    .rotationEffect(configuration.angle)
-//            )
+            .fill(Color.blue)
+            .mask(AdaptiveLine(thickness: thickness, angle: configuration.angle))
+        }
     }
 }
 
@@ -182,24 +197,32 @@ public struct LSlider: View {
     private var range: ClosedRange<Double> = 0...1
     private var angle: Angle = .zero
     private var isDisabled: Bool = false
-    
-    public init(_ value: Binding<Double>, range: ClosedRange<Double>, angle: Angle, isDisabled: Bool = false) {
+    private var keepThumbInTrack: Bool = false
+    private var trackThickness: Double = 40
+
+    public init(_ value: Binding<Double>, range: ClosedRange<Double>, angle: Angle, isDisabled: Bool = false, keepThumbInTrack: Bool = false, trackThickness: Double = 40) {
         self._value = value
         self.range = range
         self.angle = angle
         self.isDisabled = isDisabled
+        self.keepThumbInTrack = keepThumbInTrack
+        self.trackThickness = trackThickness
     }
     
-    public init(_ value: Binding<Double>, range: ClosedRange<Double>, isDisabled: Bool = false) {
+    public init(_ value: Binding<Double>, range: ClosedRange<Double>, isDisabled: Bool = false, keepThumbInTrack: Bool = false, trackThickness: Double = 40) {
         self._value = value
         self.range = range
         self.isDisabled = isDisabled
+        self.keepThumbInTrack = keepThumbInTrack
+        self.trackThickness = trackThickness
     }
     
-    public init(_ value: Binding<Double>, angle: Angle, isDisabled: Bool = false) {
+    public init(_ value: Binding<Double>, angle: Angle, isDisabled: Bool = false, keepThumbInTrack: Bool = false, trackThickness: Double = 40) {
         self._value = value
         self.angle = angle
         self.isDisabled = isDisabled
+        self.keepThumbInTrack = keepThumbInTrack
+        self.trackThickness = trackThickness
     }
     
     public init(_ value: Binding<Double>) {
@@ -223,7 +246,20 @@ public struct LSlider: View {
             return (.zero, .zero)
         }
         
-        return (points[0], points[1])
+        var start = points[0]
+        var end   = points[1]
+        
+        // When keepThumbInTrack is true, shrink the travel range by half the track
+        // thickness on each side so the thumb center stays within the track's extent.
+        if keepThumbInTrack {
+            let inset = CGFloat(trackThickness / 2)
+            let dx = CGFloat(cos(angle.radians))
+            let dy = CGFloat(sin(angle.radians))
+            start = CGPoint(x: start.x + inset * dx, y: start.y + inset * dy)
+            end   = CGPoint(x: end.x   - inset * dx, y: end.y   - inset * dy)
+        }
+        
+        return (start, end)
     }
     
     private func thumbOffset(_ proxy: GeometryProxy) -> CGSize {
@@ -242,7 +278,9 @@ public struct LSlider: View {
             value: value,
             angle: angle,
             min: range.lowerBound,
-            max: range.upperBound
+            max: range.upperBound,
+            keepThumbInTrack: keepThumbInTrack,
+            trackThickness: trackThickness
         )
     }
     
@@ -306,11 +344,12 @@ fileprivate struct LSliderExamples: View {
     
     var body: some View {
         VStack {
-            LSlider($value, range: 0...1, angle: Angle(degrees: 45))
+            LSlider($value, range: 0...1, angle: Angle(degrees: 45), keepThumbInTrack: true, trackThickness: 40)
                 .border(Color.red)
             
-            LSlider($value, range: 0...1, angle: Angle(degrees: 0))
+            LSlider($value, range: 0...1, keepThumbInTrack: true, trackThickness: 40)
         }
+        .padding(20)
     }
 }
 
