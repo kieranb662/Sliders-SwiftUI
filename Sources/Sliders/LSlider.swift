@@ -8,8 +8,6 @@
 
 import SwiftUI
 
-
-
 // MARK: - LSlider Configuration
 
 public struct LSliderConfiguration: Sendable {
@@ -90,27 +88,35 @@ extension View {
 // MARK: - Default LSlider Style
 
 public struct DefaultLSliderStyle: LSliderStyle, Sendable {
-    public init() { }
+    var thickness: Double
+    
+    public init(thickness: Double = 40) {
+        self.thickness = thickness
+    }
     
     public func makeThumb(configuration:  LSliderConfiguration) -> some View {
         Circle()
             .fill(configuration.isActive ? Color.yellow : Color.white)
-            .frame(width: 40, height: 40)
+            .frame(width: thickness, height: thickness)
     }
     
     public func makeTrack(configuration:  LSliderConfiguration) -> some View {
-        let style = StrokeStyle(lineWidth: 40, lineCap: .round, lineJoin: .round)
+        let strokeStyle = StrokeStyle(lineWidth: thickness, lineCap: .square)
         
         return AdaptiveLine(angle: configuration.angle)
-            .stroke(Color.gray, style: style)
+            .stroke(Color.gray, style: strokeStyle)
             .overlay(
                 AdaptiveLine(angle: configuration.angle)
                     .trim(from: 0, to: CGFloat(configuration.pctFill))
-                    .stroke(Color.blue, style: style)
+                    .stroke(Color.blue, lineWidth: thickness)
             )
+//            .mask(
+//                Capsule()
+//                    .frame(height: thickness)
+//                    .rotationEffect(configuration.angle)
+//            )
     }
 }
-
 
 
 // MARK: - LSlider
@@ -165,7 +171,6 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
 ///        }
 ///
 /// ```
-
 public struct LSlider: View {
     // MARK: State and Setup
     @Environment(\.linearSliderStyle) private var style: AnyLSliderStyle
@@ -220,6 +225,7 @@ public struct LSlider: View {
         
         return (points[0], points[1])
     }
+    
     private func thumbOffset(_ proxy: GeometryProxy) -> CGSize {
         let ends = calculateEndPoints(proxy)
         let value = (value-range.lowerBound)/(range.upperBound - range.lowerBound)
@@ -229,13 +235,15 @@ public struct LSlider: View {
     }
     
     private var configuration: LSliderConfiguration {
-        LSliderConfiguration(isDisabled: isDisabled,
-                             isActive: isActive,
-                             pctFill: (value-range.lowerBound)/(range.upperBound-range.lowerBound),
-                             value: value,
-                             angle: angle,
-                             min: range.lowerBound,
-                             max: range.upperBound)
+        LSliderConfiguration(
+            isDisabled: isDisabled,
+            isActive: isActive,
+            pctFill: (value - range.lowerBound) / (range.upperBound - range.lowerBound),
+            value: value,
+            angle: angle,
+            min: range.lowerBound,
+            max: range.upperBound
+        )
     }
     
     // MARK: Haptics
@@ -261,15 +269,15 @@ public struct LSlider: View {
     private func makeGesture(_ proxy: GeometryProxy) -> some Gesture {
         DragGesture(minimumDistance: 10, coordinateSpace: .named(space))
             .onChanged({ drag in
-                let ends = calculateEndPoints(proxy)
-                let parameter = Double(calculateParameter(ends.start, ends.end, drag.location))
+                let (start, end) = calculateEndPoints(proxy)
+                let parameter = Double(calculateParameter(start, end, drag.location))
                 impactHandler(parameter == 1 || parameter == 0)
                 value = (range.upperBound-range.lowerBound)*parameter + range.lowerBound
                 isActive = true
             })
             .onEnded({ (drag) in
-                let ends = calculateEndPoints(proxy)
-                let parameter = Double(calculateParameter(ends.start, ends.end, drag.location))
+                let (start, end) = calculateEndPoints(proxy)
+                let parameter = Double(calculateParameter(start, end, drag.location))
                 impactHandler(parameter == 1 || parameter == 0)
                 value = (range.upperBound-range.lowerBound)*parameter + range.lowerBound
                 isActive = false
@@ -278,20 +286,34 @@ public struct LSlider: View {
     
     // MARK: View
     public var body: some View {
-        ZStack {
-            style.makeTrack(configuration: configuration)
-                .overlay(GeometryReader { proxy in
-                    ZStack(alignment: .center) {
-                        style.makeThumb(configuration: configuration)
-                            .offset(thumbOffset(proxy))
-                            .gesture(makeGesture(proxy))
-                            .allowsHitTesting(!isDisabled)
-                    }
-                    .frame(width: proxy.size.width, height: proxy.size.height)
-                })
+        GeometryReader { geo in
+            ZStack {
+                style.makeTrack(configuration: configuration)
+                
+                style.makeThumb(configuration: configuration)
+                    .offset(thumbOffset(geo))
+                    .gesture(makeGesture(geo))
+                    .allowsHitTesting(!isDisabled)
+            }
+            .coordinateSpace(name: space)
         }
-        .coordinateSpace(name: space)
     }
 }
 
 
+fileprivate struct LSliderExamples: View {
+    @State var value = 0.5
+    
+    var body: some View {
+        VStack {
+            LSlider($value, range: 0...1, angle: Angle(degrees: 45))
+                .border(Color.red)
+            
+            LSlider($value, range: 0...1, angle: Angle(degrees: 0))
+        }
+    }
+}
+
+#Preview {
+    LSliderExamples()
+}
