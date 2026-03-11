@@ -3,3 +3,9 @@
 /Packages
 /*.xcodeproj
 xcuserdata/
+
+## Swift Package Manager
+.swiftpm/
+# Exclude the "build" directory within the .swiftpm directory as well
+.swiftpm/build/
+Package.resolved
