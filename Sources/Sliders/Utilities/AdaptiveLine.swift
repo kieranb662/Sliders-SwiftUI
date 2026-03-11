@@ -9,13 +9,22 @@ import SwiftUI
 
 public struct AdaptiveLine: Shape {
     var angle: Angle
+    var thickness: Double
+    var percentFilled: Double
+    var cap: Cap
+    var adjustmentForThumb: Double
     
     var animatableData: Angle {
         get { self.angle }
         set { self.angle = newValue }
     }
     
-    var insetAmount: CGFloat = 0
+    public var insetAmount: CGFloat = 0
+    
+    public enum Cap: Sendable {
+        case square
+        case round
+    }
     
     /// # Adaptive Line
     ///
@@ -44,34 +53,62 @@ public struct AdaptiveLine: Shape {
     ///        }
     ///    }
     /// ```
-    public init(angle: Angle = .zero) {
+    public init(
+        thickness: Double = 40,
+        angle: Angle = .zero,
+        percentFilled: Double = 1.0,
+        cap: Cap = .round,
+        adjustmentForThumb: Double = 0
+    ) {
+        self.thickness = thickness
         self.angle = angle
+        self.percentFilled = percentFilled
+        self.cap = cap
+        self.adjustmentForThumb = adjustmentForThumb
     }
     
     public func path(in rect: CGRect) -> Path {
         let rect = rect.insetBy(dx: insetAmount, dy: insetAmount)
         let w = rect.width
         let h = rect.height
-        let big: CGFloat = 5000000
+        let T = thickness
         
-        let x1 = w/2 + big*CGFloat(cos(angle.radians))
-        let y1 = h/2 + big*CGFloat(sin(angle.radians))
-        let x2 = w/2 - big*CGFloat(cos(angle.radians))
-        let y2 = h/2 - big*CGFloat(sin(angle.radians))
+        let θ = angle.radians
+        let absCos = abs(cos(θ))
+        let absSin = abs(sin(θ))
+        let epsilon: Double = 1e-10
         
-        let points = lineRectIntersection(x1, y1, x2, y2, rect.minX, rect.minY, w, h)
+        let p: Path
         
-        if points.count < 2 {
-            return Path { p in
-                p.move(to: CGPoint(x: rect.minX, y: rect.midY))
-                p.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-            }
+        switch cap {
+        case .square:
+            let rectMaxFromWidth:  Double = absCos > epsilon ? (w - T * absSin) / absCos : .infinity
+            let rectMaxFromHeight: Double = absSin > epsilon ? (h - T * absCos) / absSin : .infinity
+            let rectLength = max(0, min(rectMaxFromWidth, rectMaxFromHeight))
+            
+            let filledWidth = rectLength * percentFilled + adjustmentForThumb
+
+            p = Rectangle()
+                .path(in: CGRect(x: -rectLength / 2, y: -T / 2, width: filledWidth, height: T))
+        case .round:
+            let capsuleMaxFromWidth:  Double = absCos > epsilon ? (w - T) / absCos + T : .infinity
+            let capsuleMaxFromHeight: Double = absSin > epsilon ? (h - T) / absSin + T : .infinity
+            let capsuleLength = max(0, min(capsuleMaxFromWidth, capsuleMaxFromHeight))
+            let width = capsuleLength * percentFilled + adjustmentForThumb
+            
+            p = RoundedRectangle(cornerRadius: T/2)
+                .path(
+                    in: CGRect(
+                    x: -capsuleLength / 2,
+                    y: -T / 2,
+                    width: max(width, T),
+                    height: T)
+                )
         }
-        
-        return Path { p in
-            p.move(to: points[0])
-            p.addLine(to: points[1])
-        }
+
+        return p
+            .applying(.init(rotationAngle: θ))
+            .offsetBy(dx: rect.midX, dy: rect.midY)
     }
 }
 
@@ -80,5 +117,69 @@ extension AdaptiveLine: InsettableShape {
         var shape = self
         shape.insetAmount += amount
         return shape
+    }
+}
+
+#Preview {
+    VStack {
+        Color.green
+            .border(Color.red)
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(90))
+            })
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(90), cap: .square)
+                    .stroke(Color.blue)
+            })
+            .overlay(Circle().foregroundStyle(.blue).frame(width: 10, height: 10))
+            .padding(10)
+        
+        Color.green
+            .border(Color.red)
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(45))
+            })
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(45), cap: .square)
+                    .stroke(Color.blue)
+            })
+            .overlay(Circle().foregroundStyle(.blue).frame(width: 10, height: 10))
+            .padding(10)
+        
+        Color.green
+            .border(Color.red)
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(30))
+            })
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(30), cap: .square)
+                    .strokeBorder(Color.blue)
+            })
+            .overlay(Circle().foregroundStyle(.blue).frame(width: 10, height: 10))
+            .padding(10)
+        
+        Color.green
+            .border(Color.red)
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(15))
+            })
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(15), cap: .square)
+                    .stroke(Color.blue)
+            })
+            .overlay(Circle().foregroundStyle(.blue).frame(width: 10, height: 10))
+            .padding(10)
+        
+        Color.green
+            .border(Color.red)
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(0))
+            })
+            .overlay(content: {
+                AdaptiveLine(thickness: 40, angle: .degrees(0), cap: .square)
+                    .stroke(Color.blue)
+            })
+            .overlay(Circle().foregroundStyle(.blue).frame(width: 10, height: 10))
+            .padding(10)
     }
 }

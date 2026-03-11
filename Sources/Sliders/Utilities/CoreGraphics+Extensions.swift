@@ -101,6 +101,12 @@ extension CGPoint: VectorArithmetic {
     }
 }
 
+func distance(from p1: CGPoint, to p2: CGPoint) -> Double {
+    let dx = p2.x - p1.x
+    let dy = p2.y - p1.y
+    return sqrt(dx*dx + dy*dy)
+}
+
 // MARK: - CGSize VectorArithmetic Conformance
 
 extension CGSize: VectorArithmetic {
