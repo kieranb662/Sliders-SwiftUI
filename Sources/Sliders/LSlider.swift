@@ -233,32 +233,41 @@ public struct LSlider: View {
     // uses an arbitrarily large number to gesture a line segment that is guarenteed to intersect with the
     // bounding box, then finds those points of intersection to be used as the start and end points of the slider
     private func calculateEndPoints(_ proxy: GeometryProxy) -> (start: CGPoint, end: CGPoint) {
-        let w = proxy.size.width
-        let h = proxy.size.height
-        let big: CGFloat = 50000000
-        
-        let x1 = w/2 + big*CGFloat(cos(angle.radians))
-        let y1 = h/2 + big*CGFloat(sin(angle.radians))
-        let x2 = w/2 - big*CGFloat(cos(angle.radians))
-        let y2 = h/2 - big*CGFloat(sin(angle.radians))
-        let points = lineRectIntersection(x1, y1, x2, y2, 0, 0, w, h)
-        if points.count < 2 {
-            return (.zero, .zero)
-        }
-        
-        var start = points[0]
-        var end   = points[1]
-        
-        // When keepThumbInTrack is true, shrink the travel range by half the track
-        // thickness on each side so the thumb center stays within the track's extent.
+        let w = Double(proxy.size.width)
+        let h = Double(proxy.size.height)
+        let T = trackThickness
+
+        let θ = angle.radians
+        let absCos = abs(cos(θ))
+        let absSin = abs(sin(θ))
+        let epsilon: Double = 1e-10
+
+        // Match AdaptiveLine's capsule length formula exactly
+        let capsuleMaxFromWidth:  Double = absCos > epsilon ? (w - T) / absCos + T : .infinity
+        let capsuleMaxFromHeight: Double = absSin > epsilon ? (h - T) / absSin + T : .infinity
+        let capsuleLength = max(0, min(capsuleMaxFromWidth, capsuleMaxFromHeight))
+
+        // The two cap centres are half a capsule-length apart along the angle axis.
+        // When keepThumbInTrack the thumb travels between those cap centres (inset T/2 from each end).
+        // When not keepThumbInTrack the thumb travels the full capsule length (end-to-end).
+        let halfTravel: Double
         if keepThumbInTrack {
-            let inset = CGFloat(trackThickness / 2)
-            let dx = CGFloat(cos(angle.radians))
-            let dy = CGFloat(sin(angle.radians))
-            start = CGPoint(x: start.x + inset * dx, y: start.y + inset * dy)
-            end   = CGPoint(x: end.x   - inset * dx, y: end.y   - inset * dy)
+            halfTravel = (capsuleLength - T) / 2   // cap-centre to cap-centre, halved
+        } else {
+            halfTravel = capsuleLength / 2          // full end to full end, halved
         }
-        
+
+        let cx = w / 2
+        let cy = h / 2
+        let dx = cos(θ)
+        let dy = sin(θ)
+
+        // "start" is the low-value end (parameter 0), "end" is the high-value end (parameter 1).
+        // AdaptiveLine draws left→right in its local frame before rotation, so the
+        // negative-cos direction corresponds to the start of the fill.
+        let start = CGPoint(x: cx - halfTravel * dx, y: cy - halfTravel * dy)
+        let end   = CGPoint(x: cx + halfTravel * dx, y: cy + halfTravel * dy)
+
         return (start, end)
     }
     
@@ -344,7 +353,7 @@ fileprivate struct LSliderExamples: View {
     
     var body: some View {
         VStack {
-            LSlider($value, range: 0...1, angle: Angle(degrees: 45), keepThumbInTrack: true, trackThickness: 40)
+            LSlider($value, range: 0...1, angle: Angle(degrees: 325), keepThumbInTrack: true, trackThickness: 40)
                 .border(Color.red)
             
             LSlider($value, range: 0...1, keepThumbInTrack: true, trackThickness: 40)
