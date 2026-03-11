@@ -36,6 +36,7 @@ import SwiftUI
 public struct LSlider: View {
     // MARK: State and Setup
     @Environment(\.linearSliderStyle) private var style: AnyLSliderStyle
+    @Environment(\.isEnabled) private var isEnabled: Bool
     @StateObject private var hapticManager = LSliderHapticManager()
     @State private var isActive: Bool = false
     @State private var atLimit: Bool = false
@@ -47,7 +48,6 @@ public struct LSlider: View {
     @Binding private var value: Double
     private var range: ClosedRange<Double> = 0...1
     private var angle: Angle = .zero
-    private var isDisabled: Bool = false
     private var keepThumbInTrack: Bool = false
     private var trackThickness: Double = 40
     private var tickMarkSpacing: TickMarkSpacing? = nil
@@ -59,7 +59,6 @@ public struct LSlider: View {
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
         angle: Angle,
-        isDisabled: Bool = false,
         keepThumbInTrack: Bool = false,
         trackThickness: Double = 40,
         tickMarkSpacing: TickMarkSpacing? = nil,
@@ -68,7 +67,6 @@ public struct LSlider: View {
         self._value = value
         self.range = range
         self.angle = angle
-        self.isDisabled = isDisabled
         self.keepThumbInTrack = keepThumbInTrack
         self.trackThickness = trackThickness
         self.tickMarkSpacing = tickMarkSpacing
@@ -78,7 +76,6 @@ public struct LSlider: View {
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
-        isDisabled: Bool = false,
         keepThumbInTrack: Bool = false,
         trackThickness: Double = 40,
         tickMarkSpacing: TickMarkSpacing? = nil,
@@ -86,7 +83,6 @@ public struct LSlider: View {
     ) {
         self._value = value
         self.range = range
-        self.isDisabled = isDisabled
         self.keepThumbInTrack = keepThumbInTrack
         self.trackThickness = trackThickness
         self.tickMarkSpacing = tickMarkSpacing
@@ -96,7 +92,6 @@ public struct LSlider: View {
     public init(
         _ value: Binding<Double>,
         angle: Angle,
-        isDisabled: Bool = false,
         keepThumbInTrack: Bool = false,
         trackThickness: Double = 40,
         tickMarkSpacing: TickMarkSpacing? = nil,
@@ -104,7 +99,6 @@ public struct LSlider: View {
     ) {
         self._value = value
         self.angle = angle
-        self.isDisabled = isDisabled
         self.keepThumbInTrack = keepThumbInTrack
         self.trackThickness = trackThickness
         self.tickMarkSpacing = tickMarkSpacing
@@ -201,7 +195,7 @@ public struct LSlider: View {
     private var configuration: LSliderConfiguration {
         let ticks = resolveTickValues()
         return LSliderConfiguration(
-            isDisabled: isDisabled,
+            isDisabled: !isEnabled,
             isActive: isActive,
             pctFill: (value - range.lowerBound) / (range.upperBound - range.lowerBound),
             value: value,
@@ -219,8 +213,10 @@ public struct LSlider: View {
 
     private func impactOccured() {
 #if os(iOS)
-        let generator = UIImpactFeedbackGenerator(style: .medium)
-        generator.impactOccurred()
+        if tickMarkSpacing == nil && hapticFeedbackEnabled && isEnabled {
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+        }
 #endif
     }
 
@@ -291,6 +287,7 @@ public struct LSlider: View {
         GeometryReader { geo in
             let config = configuration
             let ticks = config.tickValues
+            
             ZStack {
                 // Track
                 style.makeTrack(configuration: config)
@@ -305,7 +302,7 @@ public struct LSlider: View {
                 style.makeThumb(configuration: config)
                     .offset(thumbOffset(geo))
                     .gesture(makeGesture(geo))
-                    .allowsHitTesting(!isDisabled)
+                    .allowsHitTesting(isEnabled)
             }
             .coordinateSpace(name: space)
         }
