@@ -15,6 +15,17 @@ import SwiftUI
 /// added via the `tickMarkSpacing` parameter and will optionally play haptic feedback
 /// when the thumb passes over them.
 ///
+/// ## Tick Mark Affinity (Magnetic Snap)
+///
+/// When `affinityEnabled` is `true` and tick marks are configured, the thumb is
+/// magnetically attracted to nearby tick marks:
+///
+/// - **Pull zone** – within `affinityRadius` (fraction of total range) the thumb is
+///   pulled all the way onto the nearest tick mark and "snapped" there.
+/// - **Resistance zone** – once snapped, the thumb stays locked until the raw drag
+///   position moves beyond `affinityRadius + affinityResistance`, giving a tactile
+///   resistance feel before the thumb escapes.
+///
 /// - parameters:
 ///     - value: `Binding<Double>` The value the slider should control
 ///     - range: `ClosedRange<Double>` The minimum and maximum numbers that `value` can be
@@ -23,6 +34,9 @@ import SwiftUI
 ///     - trackThickness: `Double` The thickness of the track
 ///     - tickMarkSpacing: `TickMarkSpacing?` How tick marks should be spaced, or `nil` to hide them
 ///     - hapticFeedbackEnabled: `Bool` Whether crossing a tick mark triggers haptic feedback
+///     - affinityEnabled: `Bool` Whether the thumb snaps magnetically to tick marks (requires `tickMarkSpacing != nil`)
+///     - affinityRadius: `Double` Fraction of the total range within which a tick attracts the thumb (default 0.04)
+///     - affinityResistance: `Double` Extra fraction beyond `affinityRadius` the drag must travel to escape a snap (default 0.02)
 ///
 /// ## Styling The Slider
 ///
@@ -41,6 +55,8 @@ public struct LSlider: View {
     @State private var atLimit: Bool = false
     /// The last tick value the thumb was snapped near, used to avoid re-firing haptics.
     @State private var lastHapticTickValue: Double? = nil
+    /// The tick value the thumb is currently snapped to (nil = free).
+    @State private var snappedTickValue: Double? = nil
     private let space: String = "Slider"
 
     // MARK: Input
@@ -51,6 +67,11 @@ public struct LSlider: View {
     private var trackThickness: Double = 20
     private var tickMarkSpacing: TickMarkSpacing? = nil
     private var hapticFeedbackEnabled: Bool = true
+    private var affinityEnabled: Bool = false
+    /// Pull radius as a fraction of the total value range.
+    private var affinityRadius: Double = 0.04
+    /// Extra escape distance (fraction of range) beyond the pull radius needed to leave a snap.
+    private var affinityResistance: Double = 0.02
 
     // MARK: - Initialisers
 
@@ -61,7 +82,10 @@ public struct LSlider: View {
         keepThumbInTrack: Bool = false,
         trackThickness: Double = 20,
         tickMarkSpacing: TickMarkSpacing? = nil,
-        hapticFeedbackEnabled: Bool = true
+        hapticFeedbackEnabled: Bool = true,
+        affinityEnabled: Bool = false,
+        affinityRadius: Double = 0.04,
+        affinityResistance: Double = 0.02
     ) {
         self._value = value
         self.range = range
@@ -70,6 +94,9 @@ public struct LSlider: View {
         self.trackThickness = trackThickness
         self.tickMarkSpacing = tickMarkSpacing
         self.hapticFeedbackEnabled = hapticFeedbackEnabled
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
     }
 
     public init(
@@ -78,7 +105,10 @@ public struct LSlider: View {
         keepThumbInTrack: Bool = false,
         trackThickness: Double = 20,
         tickMarkSpacing: TickMarkSpacing? = nil,
-        hapticFeedbackEnabled: Bool = true
+        hapticFeedbackEnabled: Bool = true,
+        affinityEnabled: Bool = false,
+        affinityRadius: Double = 0.04,
+        affinityResistance: Double = 0.02
     ) {
         self._value = value
         self.range = range
@@ -86,6 +116,9 @@ public struct LSlider: View {
         self.trackThickness = trackThickness
         self.tickMarkSpacing = tickMarkSpacing
         self.hapticFeedbackEnabled = hapticFeedbackEnabled
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
     }
 
     public init(
@@ -94,7 +127,10 @@ public struct LSlider: View {
         keepThumbInTrack: Bool = false,
         trackThickness: Double = 20,
         tickMarkSpacing: TickMarkSpacing? = nil,
-        hapticFeedbackEnabled: Bool = true
+        hapticFeedbackEnabled: Bool = true,
+        affinityEnabled: Bool = false,
+        affinityRadius: Double = 0.04,
+        affinityResistance: Double = 0.02
     ) {
         self._value = value
         self.angle = angle
@@ -102,6 +138,9 @@ public struct LSlider: View {
         self.trackThickness = trackThickness
         self.tickMarkSpacing = tickMarkSpacing
         self.hapticFeedbackEnabled = hapticFeedbackEnabled
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
     }
 
     public init(_ value: Binding<Double>) {
@@ -138,6 +177,52 @@ public struct LSlider: View {
         default:
             return []
         }
+    }
+
+    // MARK: - Affinity / Magnetic Snap
+
+    /// Describes a snap transition that occurred during `applyAffinity`.
+    private enum AffinityTransition {
+        case snappedIn   // thumb just entered a snap
+        case snappedOut  // thumb just broke free from a snap
+        case none
+    }
+
+    /// Applies affinity logic to a raw drag-computed value.
+    ///
+    /// - Returns: A tuple of the adjusted display value and any snap transition that occurred.
+    @discardableResult
+    private func applyAffinity(rawValue: Double) -> (value: Double, transition: AffinityTransition) {
+        guard affinityEnabled && tickMarkSpacing != nil else { return (rawValue, .none) }
+
+        let ticks = resolveTickValues()
+        guard !ticks.isEmpty else { return (rawValue, .none) }
+
+        let rangeSpan = range.upperBound - range.lowerBound
+        guard rangeSpan > 0 else { return (rawValue, .none) }
+
+        let pullDistance   = affinityRadius * rangeSpan
+        let resistDistance = (affinityRadius + affinityResistance) * rangeSpan
+
+        // ── Hold phase: already snapped ──────────────────────────────────────
+        if let snapped = snappedTickValue {
+            let distToSnapped = abs(rawValue - snapped)
+            if distToSnapped <= resistDistance {
+                return (snapped, .none)
+            } else {
+                snappedTickValue = nil
+                return (rawValue, .snappedOut)
+            }
+        }
+
+        // ── Pull phase: find nearest tick within pull distance ───────────────
+        let nearest = ticks.min(by: { abs($0 - rawValue) < abs($1 - rawValue) })!
+        if abs(rawValue - nearest) <= pullDistance {
+            snappedTickValue = nearest
+            return (nearest, .snappedIn)
+        }
+
+        return (rawValue, .none)
     }
 
     // MARK: - Calculations
@@ -204,7 +289,9 @@ public struct LSlider: View {
             keepThumbInTrack: keepThumbInTrack,
             trackThickness: trackThickness,
             tickMarkSpacing: tickMarkSpacing,
-            tickValues: ticks
+            tickValues: ticks,
+            affinityEnabled: affinityEnabled,
+            snappedTickValue: snappedTickValue
         )
     }
 
@@ -229,26 +316,36 @@ public struct LSlider: View {
     }
 
     /// Fires a haptic tick if the thumb has moved onto (or very close to) a tick mark
-    /// that hasn't already fired.
-    private func fireTickHapticIfNeeded(newValue: Double) {
+    /// that hasn't already fired.  When affinity is enabled, snap transition haptics
+    /// are used instead — this method is a no-op for plain `playTick` calls in that mode.
+    private func fireTickHapticIfNeeded(newValue: Double, transition: AffinityTransition = .none) {
         guard hapticFeedbackEnabled else { return }
+
+        // Affinity mode: dedicated snap-in / snap-out haptics replace the tick haptic.
+        if affinityEnabled && tickMarkSpacing != nil {
+            switch transition {
+            case .snappedIn:  hapticManager.playSnapIn()
+            case .snappedOut: hapticManager.playSnapOut()
+            case .none:       break
+            }
+            return
+        }
+
+        // Non-affinity tick haptic (unchanged behaviour)
         let ticks = resolveTickValues()
         guard !ticks.isEmpty else { return }
         let rangeSpan = range.upperBound - range.lowerBound
         guard rangeSpan > 0 else { return }
 
-        // Find the nearest tick
         let nearest = ticks.min(by: { abs($0 - newValue) < abs($1 - newValue) })!
         let distancePct = abs(nearest - newValue) / rangeSpan
 
-        // Fire if within 1 % of range and we haven't already fired for this tick
         if distancePct < 0.01 {
             if lastHapticTickValue != nearest {
                 hapticManager.playTick(intensity: 0.6)
                 lastHapticTickValue = nearest
             }
         } else {
-            // Reset once we move away
             if let last = lastHapticTickValue, abs(last - newValue) / rangeSpan >= 0.01 {
                 lastHapticTickValue = nil
             }
@@ -263,18 +360,20 @@ public struct LSlider: View {
                 let (start, end) = calculateEndPoints(proxy)
                 let parameter = Double(calculateParameter(start, end, drag.location))
                 impactHandler(parameter == 1 || parameter == 0)
-                let newValue = (range.upperBound - range.lowerBound) * parameter + range.lowerBound
+                let rawValue = (range.upperBound - range.lowerBound) * parameter + range.lowerBound
+                let (newValue, transition) = applyAffinity(rawValue: rawValue)
                 value = newValue
-                fireTickHapticIfNeeded(newValue: newValue)
+                fireTickHapticIfNeeded(newValue: newValue, transition: transition)
                 isActive = true
             })
             .onEnded({ drag in
                 let (start, end) = calculateEndPoints(proxy)
                 let parameter = Double(calculateParameter(start, end, drag.location))
                 impactHandler(parameter == 1 || parameter == 0)
-                let newValue = (range.upperBound - range.lowerBound) * parameter + range.lowerBound
+                let rawValue = (range.upperBound - range.lowerBound) * parameter + range.lowerBound
+                let (newValue, transition) = applyAffinity(rawValue: rawValue)
                 value = newValue
-                fireTickHapticIfNeeded(newValue: newValue)
+                fireTickHapticIfNeeded(newValue: newValue, transition: transition)
                 isActive = false
                 lastHapticTickValue = nil
             })
@@ -315,6 +414,8 @@ fileprivate struct LSliderExamples: View {
     @State var value2 = 0.5
     @State var value3 = 3.0
     @State var value4 = 0.5
+    @State var value5 = 0.5
+    @State var value6 = 3.0
 
     var body: some View {
         ScrollView {
@@ -371,8 +472,44 @@ fileprivate struct LSliderExamples: View {
                         .font(.caption)
                 }
 
+                // ── Affinity enabled (count) ──────────────────────────────────
+                GroupBox("Affinity ON — count(11), radius 4%, resistance 3%") {
+                    LSlider(
+                        $value5,
+                        range: 0...1,
+                        keepThumbInTrack: true,
+                        trackThickness: 20,
+                        tickMarkSpacing: .count(11),
+                        hapticFeedbackEnabled: true,
+                        affinityEnabled: true,
+                        affinityRadius: 0.04,
+                        affinityResistance: 0.03
+                    )
+                    .frame(height: 60)
+                    Text("Value: \(value5, specifier: "%.2f")")
+                        .font(.caption)
+                }
+
+                // ── Affinity enabled (spacing) ────────────────────────────────
+                GroupBox("Affinity ON — spacing(1), radius 5%, resistance 3%") {
+                    LSlider(
+                        $value6,
+                        range: 0...10,
+                        keepThumbInTrack: true,
+                        trackThickness: 20,
+                        tickMarkSpacing: .spacing(1),
+                        hapticFeedbackEnabled: true,
+                        affinityEnabled: true,
+                        affinityRadius: 0.05,
+                        affinityResistance: 0.03
+                    )
+                    .frame(height: 60)
+                    Text("Value: \(value6, specifier: "%.2f")")
+                        .font(.caption)
+                }
+
                 // ── Diagonal slider with count-based ticks ───────────────────
-                GroupBox("Diagonal (325°) with count(5) ticks") {
+                GroupBox("Diagonal (325°) with count(5) ticks + affinity") {
                     LSlider(
                         $value2,
                         range: 0...1,
@@ -380,20 +517,24 @@ fileprivate struct LSliderExamples: View {
                         keepThumbInTrack: true,
                         trackThickness: 20,
                         tickMarkSpacing: .count(5),
-                        hapticFeedbackEnabled: true
+                        hapticFeedbackEnabled: true,
+                        affinityEnabled: true
                     )
                     .frame(height: 120)
                 }
 
                 // ── Custom style with tick marks ──────────────────────────────
-                GroupBox("Custom BarLSliderStyle + spacing(0.1) ticks") {
+                GroupBox("Custom BarLSliderStyle + spacing(0.1) ticks + affinity") {
                     LSlider(
                         $value1,
                         range: 0...1,
                         keepThumbInTrack: true,
                         trackThickness: 40,
                         tickMarkSpacing: .spacing(0.1),
-                        hapticFeedbackEnabled: true
+                        hapticFeedbackEnabled: true,
+                        affinityEnabled: true,
+                        affinityRadius: 0.04,
+                        affinityResistance: 0.02
                     )
                     .linearSliderStyle(BarLSliderStyle())
                     .frame(height: 60)
@@ -411,10 +552,23 @@ fileprivate struct LSliderExamples: View {
 /// A custom style that uses diamond-shaped tick marks.
 private struct BarLSliderStyle: LSliderStyle {
     func makeThumb(configuration: LSliderConfiguration) -> some View {
-        RoundedRectangle(cornerRadius: 4)
-            .fill(configuration.isActive ? Color.orange : Color.white)
-            .frame(width: configuration.trackThickness * 0.8, height: configuration.trackThickness * 1.4)
+        let isSnapped = configuration.snappedTickValue != nil
+        return RoundedRectangle(cornerRadius: 4)
+            .fill(
+                configuration.isActive
+                    ? (isSnapped ? Color.yellow : Color.orange)
+                    : Color.white
+            )
+            .frame(
+                width: configuration.trackThickness * 0.8,
+                height: configuration.trackThickness * 1.4
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .stroke(Color.orange, lineWidth: isSnapped ? 2 : 0)
+            )
             .shadow(radius: 3)
+            .animation(.easeOut(duration: 0.1), value: isSnapped)
     }
 
     func makeTrack(configuration: LSliderConfiguration) -> some View {
@@ -430,29 +584,31 @@ private struct BarLSliderStyle: LSliderStyle {
                 angle: configuration.angle,
                 percentFilled: configuration.pctFill,
                 cap: .square,
-                adjustmentForThumb: adjustment/2
+                adjustmentForThumb: adjustment / 2
             )
             .fill(Color.orange)
             .mask(AdaptiveLine(thickness: configuration.trackThickness, angle: configuration.angle))
         }
     }
 
-    /// Diamond-shaped tick mark that rotates to align with the slider axis.
+    /// Diamond-shaped tick mark that grows when the thumb is near.
     func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> some View {
         let range = configuration.max - configuration.min
         let thumbPct = range > 0 ? (configuration.value - configuration.min) / range : 0
         let tickPct  = range > 0 ? (tickValue           - configuration.min) / range : 0
         let distance  = abs(thumbPct - tickPct)
         let proximity = max(0, 1 - distance / 0.15)
+        let isSnappedHere = configuration.snappedTickValue == tickValue
 
-        let size = 6.0 + 6.0 * proximity
-        let opacity = 0.4 + 0.6 * proximity
+        let size    = 6.0 + 6.0 * proximity + (isSnappedHere ? 3.0 : 0)
+        let opacity = 0.4 + 0.6 * proximity + (isSnappedHere ? 0.2 : 0)
 
         return Rectangle()
-            .fill(Color.orange.opacity(opacity))
+            .fill(Color.orange.opacity(min(opacity, 1.0)))
             .frame(width: size, height: size)
             .rotationEffect(.degrees(45))
             .animation(.easeOut(duration: 0.08), value: proximity)
+            .animation(.easeOut(duration: 0.08), value: isSnappedHere)
     }
 }
 

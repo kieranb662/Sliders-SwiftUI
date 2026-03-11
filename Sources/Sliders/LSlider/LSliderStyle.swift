@@ -44,6 +44,10 @@ public struct LSliderConfiguration: Sendable {
     public let tickMarkSpacing: TickMarkSpacing?
     /// The resolved list of tick-mark values computed from `tickMarkSpacing`.
     public let tickValues: [Double]
+    /// Whether tick-mark affinity (magnetic snap) is enabled.
+    public let affinityEnabled: Bool
+    /// The tick-mark value the thumb is currently snapped to, or `nil` when not snapped.
+    public let snappedTickValue: Double?
 }
 
 // MARK: - LSlider Style
