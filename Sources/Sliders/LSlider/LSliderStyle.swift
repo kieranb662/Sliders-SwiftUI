@@ -7,6 +7,18 @@
 
 import SwiftUI
 
+// MARK: - TickMarkSpacing
+
+/// Describes how tick marks should be spaced along the LSlider's dragging axis.
+public enum TickMarkSpacing: Sendable, Equatable {
+    /// Place a tick mark every `spacing` units in the slider's value domain.
+    case spacing(Double)
+    /// Distribute exactly `count` tick marks evenly across the slider's range (including endpoints).
+    case count(Int)
+    /// Place tick marks at the specified values within the slider's range.
+    case values([Double])
+}
+
 // MARK: - LSlider Configuration
 
 public struct LSliderConfiguration: Sendable {
@@ -28,6 +40,10 @@ public struct LSliderConfiguration: Sendable {
     public let keepThumbInTrack: Bool
     /// The thickness of the track, used to compute how far the thumb center is inset from the track ends
     public let trackThickness: Double
+    /// How tick marks are spaced, or `nil` if tick marks are disabled.
+    public let tickMarkSpacing: TickMarkSpacing?
+    /// The resolved list of tick-mark values computed from `tickMarkSpacing`.
+    public let tickValues: [Double]
 }
 
 // MARK: - LSlider Style
@@ -35,38 +51,54 @@ public struct LSliderConfiguration: Sendable {
 public protocol LSliderStyle: Sendable {
     associatedtype Thumb: View
     associatedtype Track: View
-    
-    func makeThumb(configuration:  LSliderConfiguration) -> Self.Thumb
-    func makeTrack(configuration:  LSliderConfiguration) -> Self.Track
+    associatedtype TickMark: View
+
+    func makeThumb(configuration: LSliderConfiguration) -> Self.Thumb
+    func makeTrack(configuration: LSliderConfiguration) -> Self.Track
+    /// Returns the view displayed at a single tick mark position.
+    /// - Parameters:
+    ///   - configuration: The current slider configuration.
+    ///   - tickValue: The value (in the slider's domain) at which this tick mark sits.
+    func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> Self.TickMark
 }
 
 public extension LSliderStyle {
-    func makeThumbTypeErased(configuration:  LSliderConfiguration) -> AnyView {
+    func makeThumbTypeErased(configuration: LSliderConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
     }
-    func makeTrackTypeErased(configuration:  LSliderConfiguration) -> AnyView {
+    func makeTrackTypeErased(configuration: LSliderConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
+    }
+    func makeTickMarkTypeErased(configuration: LSliderConfiguration, tickValue: Double) -> AnyView {
+        AnyView(self.makeTickMark(configuration: configuration, tickValue: tickValue))
     }
 }
 
+// MARK: - AnyLSliderStyle
+
 public struct AnyLSliderStyle: LSliderStyle, Sendable {
     private let _makeThumb: @Sendable (LSliderConfiguration) -> AnyView
-    
+    private let _makeTrack: @Sendable (LSliderConfiguration) -> AnyView
+    private let _makeTickMark: @Sendable (LSliderConfiguration, Double) -> AnyView
+
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
         _makeThumb(configuration)
     }
-    
-    private let _makeTrack: @Sendable (LSliderConfiguration) -> AnyView
-    
-    public func makeTrack(configuration: LSliderConfiguration) -> some View  {
+    public func makeTrack(configuration: LSliderConfiguration) -> some View {
         _makeTrack(configuration)
     }
-    
+    public func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> some View {
+        _makeTickMark(configuration, tickValue)
+    }
+
     public init<S: LSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
+        self._makeTickMark = style.makeTickMarkTypeErased
     }
 }
+
+// MARK: - Environment
 
 public struct LSliderStyleKey: EnvironmentKey {
     public static let defaultValue: AnyLSliderStyle = AnyLSliderStyle(DefaultLSliderStyle())
@@ -74,12 +106,8 @@ public struct LSliderStyleKey: EnvironmentKey {
 
 extension EnvironmentValues {
     public var linearSliderStyle: AnyLSliderStyle {
-        get {
-            return self[LSliderStyleKey.self]
-        }
-        set {
-            self[LSliderStyleKey.self] = newValue
-        }
+        get { self[LSliderStyleKey.self] }
+        set { self[LSliderStyleKey.self] = newValue }
     }
 }
 
@@ -92,32 +120,24 @@ extension View {
 // MARK: - Default LSlider Style
 
 public struct DefaultLSliderStyle: LSliderStyle, Sendable {
-    
+
     public init() {}
-    
-    public func makeThumb(configuration:  LSliderConfiguration) -> some View {
+
+    public func makeThumb(configuration: LSliderConfiguration) -> some View {
         Circle()
             .fill(configuration.isActive ? Color.yellow : Color.cyan)
             .frame(width: configuration.trackThickness, height: configuration.trackThickness)
     }
-    
-    public func makeTrack(configuration:  LSliderConfiguration) -> some View {
-        // When keepThumbInTrack is true, the thumb travels over a shorter range (inset by
-        // thickness/2 on each end). The filled region must end at the thumb's trailing edge,
-        // which is at: thumbCenter + thumbRadius
-        //   = (inset + pctFill*(L - 2*inset)) + inset
-        //   = 2*inset + pctFill*(L - 2*inset)
-        // The difference vs. pctFill*L is: 2*inset*(1 - pctFill)
-        // When keepThumbInTrack is false the thumb already travels the full range so we
-        // only need the standard half-thumb offset.
+
+    public func makeTrack(configuration: LSliderConfiguration) -> some View {
         let adjustment: Double = configuration.keepThumbInTrack
-        ? configuration.trackThickness * (1 - configuration.pctFill)
-        : configuration.trackThickness / 2
+            ? configuration.trackThickness * (1 - configuration.pctFill)
+            : configuration.trackThickness / 2
 
         return ZStack {
             AdaptiveLine(thickness: configuration.trackThickness, angle: configuration.angle)
                 .fill(.gray)
-            
+
             AdaptiveLine(
                 thickness: configuration.trackThickness,
                 angle: configuration.angle,
@@ -127,5 +147,35 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
             .fill(Color.blue)
             .mask(AdaptiveLine(thickness: configuration.trackThickness, angle: configuration.angle))
         }
+    }
+
+    /// A small circle that grows and brightens as the thumb approaches this tick mark.
+    public func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> some View {
+        let range = configuration.max - configuration.min
+        guard range > 0 else {
+            return AnyView(Circle().fill(Color.white.opacity(0.3)).frame(width: 6, height: 6))
+        }
+        // Normalised distance in [0, 1] between thumb and tick mark
+        let thumbPct  = (configuration.value - configuration.min) / range
+        let tickPct   = (tickValue          - configuration.min) / range
+        let distance  = abs(thumbPct - tickPct)
+
+        // Proximity is 1 when thumb is exactly on the tick, 0 when ≥ 20 % away
+        let proximity = max(0, 1 - distance / 0.20)
+
+        let baseSize:  Double = 5
+        let maxGrowth: Double = 7
+        let size = baseSize + maxGrowth * proximity
+
+        let baseOpacity:  Double = 0.30
+        let maxOpacity:   Double = 1.00
+        let opacity = baseOpacity + (maxOpacity - baseOpacity) * proximity
+
+        return AnyView(
+            Circle()
+                .fill(Color.white.opacity(opacity))
+                .frame(width: size, height: size)
+                .animation(.easeOut(duration: 0.1), value: proximity)
+        )
     }
 }
