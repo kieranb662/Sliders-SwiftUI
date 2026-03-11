@@ -3,13 +3,13 @@
 </p>
 
 <p align="center">
-    <img src="https://img.shields.io/badge/platforms-iOS_13_|macOS_10.15_| watchOS_6.0-blue.svg" alt="SwiftUI" />
-    <img src="https://img.shields.io/badge/Swift-5.1-orange.svg" alt="Swift 5.1" />
-    <img src="https://img.shields.io/badge/SwiftPM-compatible-green.svg" alt="Swift 5.1" />
+    <img src="https://img.shields.io/badge/platforms-iOS_16_|macOS_13_| watchOS_9.0-blue.svg" alt="SwiftUI" />
+    <img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift 6.0" />
+    <img src="https://img.shields.io/badge/SwiftPM-compatible-green.svg" alt="Swift 6.1" />
     <img src="https://img.shields.io/github/followers/kieranb662?label=Follow" alt="kieranb662 followers" />
 </p>
 
-**Sliders** is a compilation of all my stylable drag based SwiftUI components. It provides a variety of unique controls as well as an enhanced version of the normal `Slider` called an `LSlider`. You can try them all out quickly by clone the example [project](https://github.com/kieranb662/SlidersExamples)
+**Sliders** is a compilation of all my stylable drag based SwiftUI components. It provides a variety of unique controls as well as an enhanced version of the normal `Slider` called an `LSlider`. You can try them all out quickly by cloning the example [project](https://github.com/kieranb662/SlidersExamples)
 
 <p align="center">
     <img src="https://github.com/kieranb662/SlidersExamples/blob/master/Sliders%20Media/SlidersCollage.PNG" alt="Activity Rings Gif" >
@@ -68,37 +68,41 @@ The various components are:
 
  Both methods provide access to the sliders current state thru the `LSliderConfiguration` of the `LSlider `to be styled
 
-````Swift
-        struct LSliderConfiguration {
-            let isDisabled: Bool // whether or not the slider is current disables
-            let isActive: Bool // whether or not the thumb is dragging or not
-            let pctFill: Double // The percentage of the sliders track that is filled
-            let value: Double // The current value of the slider
-            let angle: Angle // The angle of the slider
-            let min: Double // The minimum value of the sliders range
-            let max: Double // The maximum value of the sliders range
-        }
- ````
+```Swift
+struct LSliderConfiguration {
+    let isDisabled: Bool // whether or not the slider is current disables
+    let isActive: Bool // whether or not the thumb is dragging or not
+    let pctFill: Double // The percentage of the sliders track that is filled
+    let value: Double // The current value of the slider
+    let angle: Angle // The angle of the slider
+    let min: Double // The minimum value of the sliders range
+    let max: Double // The maximum value of the sliders range
+}
+```
 
  To make this easier just copy and paste the following style based on the `DefaultLSliderStyle`. After creating your custom style
   apply it by calling the `linearSliderStyle` method on the `LSlider` or a view containing it.
 
- ````Swift
-        struct <#My Slider Style#>: LSliderStyle {
-            func makeThumb(configuration:  LSliderConfiguration) -> some View {
-                Circle()
-                    .fill(configuration.isActive ? Color.yellow : Color.white)
-                    .frame(width: 40, height: 40)
-            }
-            func makeTrack(configuration:  LSliderConfiguration) -> some View {
-                let style: StrokeStyle = .init(lineWidth: 10, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [], dashPhase: 0)
-                return AdaptiveLine(angle: configuration.angle)
-                    .stroke(Color.gray, style: style)
-                    .overlay(AdaptiveLine(angle: configuration.angle).trim(from: 0, to: CGFloat(configuration.pctFill)).stroke(Color.blue, style: style))
-            }
-        }
+```Swift
+struct <#My Slider Style#>: LSliderStyle {
+    func makeThumb(configuration:  LSliderConfiguration) -> some View {
+        Circle()
+            .fill(configuration.isActive ? Color.yellow : Color.white)
+            .frame(width: 40, height: 40)
+    }
 
- ````
+    func makeTrack(configuration:  LSliderConfiguration) -> some View {
+        let strokeStyle = StrokeStyle(lineWidth: 10, lineCap: .round)
+        return AdaptiveLine(angle: configuration.angle)
+            .stroke(Color.gray, style: strokeStyle)
+            .overlay(
+                AdaptiveLine(angle: configuration.angle)
+                    .trim(from: 0, to: CGFloat(configuration.pctFill))
+                    .stroke(Color.blue, style: strokeStyle)
+            )
+    }
+}
+```
 
 ## Radial Slider
 A Circular slider whose thumb is dragged causing it to follow the path of the circle
@@ -117,40 +121,39 @@ A Circular slider whose thumb is dragged causing it to follow the path of the ci
 
 Both methods provide access to state values of the radial slider thru the  `RSliderConfiguration` struct
 
-  ````Swift
-  
-       struct RSliderConfiguration {
-           let isDisabled: Bool // whether or not the slider is current disables
-           let isActive: Bool // whether or not the thumb is dragging or not
-           let pctFill: Double // The percentage of the sliders track that is filled
-           let value: Double // The current value of the slider
-           let angle: Angle //  The direction from the thumb to the slider center
-           let min: Double // The minimum value of the sliders range
-           let max: Double // The maximum value of the sliders range
-       }
-       
-  ````
+```Swift
+struct RSliderConfiguration {
+    let isDisabled: Bool // whether or not the slider is current disables
+    let isActive: Bool // whether or not the thumb is dragging or not
+    let pctFill: Double // The percentage of the sliders track that is filled
+    let value: Double // The current value of the slider
+    let angle: Angle //  The direction from the thumb to the slider center
+    let min: Double // The minimum value of the sliders range
+    let max: Double // The maximum value of the sliders range
+}
+```
    To make this easier just copy and paste the following style based on the `DefaultRSliderStyle`. After creating your custom style
    apply it by calling the `radialSliderStyle` method on the `RSlider` or a view containing it.
  
- ````Swift
- struct <#My Slider Style #>: RSliderStyle {
-     func makeThumb(configuration:  RSliderConfiguration) -> some View {
-         Circle()
-         .frame(width: 30, height:30)
-         .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
-     }
-
-     func makeTrack(configuration:  RSliderConfiguration) -> some View {
-         Circle()
-         .stroke(Color.gray, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-         .overlay(Circle()
-         .trim(from: 0, to: CGFloat(configuration.pctFill))
-         .stroke(Color.purple, style: StrokeStyle(lineWidth: 12, lineCap: .round)))
-
-     }
- }
-````
+```Swift
+struct <#My Slider Style #>: RSliderStyle {
+    func makeThumb(configuration:  RSliderConfiguration) -> some View {
+        Circle()
+            .frame(width: 30, height:30)
+            .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
+    }
+    
+    func makeTrack(configuration:  RSliderConfiguration) -> some View {
+        Circle()
+            .stroke(Color.gray, style: StrokeStyle(lineWidth: 10, lineCap: .round))
+            .overlay(
+                Circle()
+                    .trim(from: 0, to: CGFloat(configuration.pctFill))
+                    .stroke(Color.purple, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+            )
+    }
+}
+```
 ## Path Slider
  A View that turns any `Shape` into a slider. Its great for creating unique user experiences 
 
@@ -169,37 +172,39 @@ Both methods provide access to state values of the radial slider thru the  `RSli
 
  Both methods provide access to state values through the `PSliderConfiguration` struct
 ````Swift
- struct PSliderConfiguration {
-     let isDisabled: Bool // whether or not  the slider is disabled
-     let isActive: Bool // whether or not the thumb is currently dragging
-     let pctFill: Double  // The percentage of the sliders track that is filled
-     let value: Double // The current value of the slider
-     let angle: Angle // Angle of the thumb
-     let min: Double  // The minimum value of the sliders range
-     let max: Double // The maximum value of the sliders range
- }
+struct PSliderConfiguration {
+    let isDisabled: Bool // whether or not  the slider is disabled
+    let isActive: Bool // whether or not the thumb is currently dragging
+    let pctFill: Double  // The percentage of the sliders track that is filled
+    let value: Double // The current value of the slider
+    let angle: Angle // Angle of the thumb
+    let min: Double  // The minimum value of the sliders range
+    let max: Double // The maximum value of the sliders range
+}
 ````
  To make this easier just copy and paste the following style based on the `DefaultPSliderStyle`. After creating your custom style
   apply it by calling the `pathSliderStyle` method on the `PSlider` or a view containing it.
 
- ````Swift
- struct <#My PSlider Style#>: PSliderStyle {
+```Swift
+struct <#My PSlider Style#>: PSliderStyle {
      func makeThumb(configuration:  PSliderConfiguration) -> some View {
          Circle()
-         .frame(width: 30, height:30)
-         .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
+             .frame(width: 30, height:30)
+             .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
      }
 
-     func makeTrack(configuration:  PSliderConfiguration) -> some View {
-         configuration.shape
+    func makeTrack(configuration:  PSliderConfiguration) -> some View {
+        configuration.shape
              .stroke(Color.gray, lineWidth: 8)
              .overlay(
                  configuration.shape
-                 .trim(from: 0, to: CGFloat(configuration.pctFill))
-             .stroke(Color.purple, lineWidth: 10))
-     }
- }
- ````
+                     .trim(from: 0, to: CGFloat(configuration.pctFill))
+                     .stroke(Color.purple, lineWidth: 10)
+             )
+    }
+}
+```
+
 ## Overflow Slider
 
 A Slider which has a fixed frame but a movable track in the background. Used for values that have a discrete nature to them but would not necessarily fit on screen.
@@ -211,7 +216,6 @@ If the thumb is currently being dragged and reaches the minimum or maximum value
     - `range`: `ClosedRange<Double>` The minimum and maximum numbers that `value` can be
     - `isDisabled`: `Bool` Whether or not the slider should be disabled
 
-
 ## Styling The Slider
  
   To create a custom style for the slider you need to create a `OverflowSliderStyle` conforming struct. Conformance requires implementation of 2 methods
@@ -220,21 +224,24 @@ If the thumb is currently being dragged and reaches the minimum or maximum value
  2. `makeTrack`: which creates the draggable background track
  
   Both methods provide access to the sliders current state thru the `OverflowSliderConfiguration` of the `OverflowSlider `to be styled.
- ````Swift
-  struct OverflowSliderConfiguration {
-      let isDisabled: Bool // Whether the control is disabled or not
-      let thumbIsActive: Bool // Whether the thumb is currently dragging or not
-      let thumbIsAtLimit: Bool // Whether the thumb has reached its min/max displacement
-      let trackIsActive: Bool // Whether of not the track is dragging
-      let trackIsAtLimit: Bool // Whether the track has reached its min/max position
-      let value: Double // The current value of the slider
-      let min: Double // The minimum value of the sliders range
-      let max: Double // The maximum value of the sliders range
-      let tickSpacing: Double // The spacing of the sliders tick marks
-  }
- ````
+  
+```Swift
+struct OverflowSliderConfiguration {
+  let isDisabled: Bool // Whether the control is disabled or not
+  let thumbIsActive: Bool // Whether the thumb is currently dragging or not
+  let thumbIsAtLimit: Bool // Whether the thumb has reached its min/max displacement
+  let trackIsActive: Bool // Whether of not the track is dragging
+  let trackIsAtLimit: Bool // Whether the track has reached its min/max position
+  let value: Double // The current value of the slider
+  let min: Double // The minimum value of the sliders range
+  let max: Double // The maximum value of the sliders range
+  let tickSpacing: Double // The spacing of the sliders tick marks
+}
+```
+
   To make this easier just copy and paste the following style based on the `DefaultOverflowSliderStyle`. After creating your custom style apply it by calling the `overflowSliderStyle` method on the `OverflowSlider` or a view containing it.
- ````Swift
+  
+```Swift
 struct <#My OverflowSlider Style#>: OverflowSliderStyle {
     func makeThumb(configuration: OverflowSliderConfiguration) -> some View {
         RoundedRectangle(cornerRadius: 5)
@@ -242,6 +249,7 @@ struct <#My OverflowSlider Style#>: OverflowSliderStyle {
             .opacity(0.5)
             .frame(width: 20, height: 50)
     }
+
     func makeTrack(configuration: OverflowSliderConfiguration) -> some View {
         let totalLength = configuration.max-configuration.min
         let spacing = configuration.tickSpacing
@@ -251,7 +259,8 @@ struct <#My OverflowSlider Style#>: OverflowSliderStyle {
             .frame(width: CGFloat(totalLength))
     }
 }
- ````
+```
+
 ## Track Pad
 
 Essentially the 2D equaivalent of a normal `Slider`, This creates a draggable thumb and a rectangular area that the thumbs translation is restricted within
@@ -263,46 +272,50 @@ Essentially the 2D equaivalent of a normal `Slider`, This creates a draggable th
     - `isDisabled`: A `Bool` value describing whether the track pad responds to user input or not
 
 ### Styling
+
  To create a custom style for the `TrackPad` you need to create a `TrackPadStyle` conforming struct. Conformance requires implementation of 2 methods
  
  1.  `makeThumb`: which creates the draggable portion of the trackpad
  2.  `makeTrack`: which creates view containing the thumb
 
  Both methods provide access to state values of the track pad thru the `TrackPadConfiguration` struct
+ 
 ````Swift
-  struct TrackPadConfiguration {
-      let isDisabled: Bool // Whether or not the trackpad is disabled
-      let isActive: Bool // whether or not the thumb is dragging
-      let pctX: Double // (valueX-minX)/(maxX-minX)
-      let pctY: Double // (valueY-minY)/(maxY-minY)
-      let valueX: Double // The current value in the x direction
-      let valueY: Double // The current value in the y direction
-      let minX: Double // The minimum value from rangeX
-      let maxX: Double // The maximum value from rangeX
-      let minY: Double // The minimum value from rangeY
-      let maxY: Double // The maximum value from rangeY
-  }
-  
+struct TrackPadConfiguration {
+    let isDisabled: Bool // Whether or not the trackpad is disabled
+    let isActive: Bool // whether or not the thumb is dragging
+    let pctX: Double // (valueX-minX)/(maxX-minX)
+    let pctY: Double // (valueY-minY)/(maxY-minY)
+    let valueX: Double // The current value in the x direction
+    let valueY: Double // The current value in the y direction
+    let minX: Double // The minimum value from rangeX
+    let maxX: Double // The maximum value from rangeX
+    let minY: Double // The minimum value from rangeY
+    let maxY: Double // The maximum value from rangeY
+}
 ````
 
 To make this easier just copy and paste the following style based on the `DefaultTrackPadStyle`. After creating your custom style
 apply it by calling the `trackPadStyle` method on the `TrackPad` or a view containing it.
  
-  ````Swift
-  struct <#My TrackPad Style #>: TrackPadStyle {
-      func makeThumb(configuration:  TrackPadConfiguration) -> some View {
+```Swift
+struct <#My TrackPad Style #>: TrackPadStyle {
+    func makeThumb(configuration:  TrackPadConfiguration) -> some View {
           Circle()
               .fill(configuration.isActive ? Color.yellow : Color.black)
               .frame(width: 40, height: 40)
-      }
+    }
 
-      func makeTrack(configuration:  TrackPadConfiguration) -> some View {
-          RoundedRectangle(cornerRadius: 5)
-              .fill(Color.gray)
-              .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.blue))
-      }
-  }
-  ````
+    func makeTrack(configuration:  TrackPadConfiguration) -> some View {
+        RoundedRectangle(cornerRadius: 5)
+            .fill(Color.gray)
+            .overlay(
+                  RoundedRectangle(cornerRadius: 5)
+                      .stroke(Color.blue)
+            )
+    }
+}
+```
 
 ## Radial Track Pad
 
@@ -324,30 +337,34 @@ Conformance requires implementation of 2 methods
  2. `makeTrack`: which creates the background that the thumb will be contained in.
 
 Both methods provide read access to the state values of the `RadialPad` thru the `RadialPadConfiguration` struct
-````Swift
+
+```Swift
 struct RadialPadConfiguration {
      let isDisabled: Bool // whether or not the slider is current disables
      let isActive: Bool // whether or not the thumb is dragging or not
      let isAtLimit: Bool // Is true if the radial offset is equal to the pads radius
      let angle: Angle // The angle of the line between the pads center and the thumbs location, measured from the vector pointing in the trailing direction
      let radialOffset: Double // The Thumb's distance from the Track's center
- }
-````
+}
+```
+
 To make this easier just copy and paste the following style based on the `DefaultRadialPadStyle`. After creating your custom style
 apply it by calling the `radialPadStyle` method on the `RadialPad` or a view containing it.
-````Swift
+
+```Swift
 struct <#My RadialPad Style#>: RadialPadStyle {
     func makeTrack(configuration: RadialPadConfiguration) -> some View {
         Circle()
             .fill(Color.gray.opacity(0.4))
     }
+
     func makeThumb(configuration: RadialPadConfiguration) -> some View {
         Circle()
             .fill(Color.blue)
             .frame(width: 45, height: 45)
     }
 }
-```` 
+```
 
 ## Joystick
 
@@ -372,41 +389,47 @@ struct <#My RadialPad Style#>: RadialPadStyle {
 
   These 4 methods all provide access to the `JoystickConfiguration` .
   Make use of the various state values to customize the Joystick to your liking.
-````Swift
-   struct JoystickConfiguration {
-       let isDisabled: Bool // whether or not the slider is current disables
-       let isActive: Bool // True if the joystick thumb is dragging or if the joystick is locked
-       let isAtLimit: Bool // whether the offset of the thumb reached the radius of the circle
-       let isLocked: Bool // Whether the joystick is locked or not
-       let angle: Angle // The angle of the line between the pads center and the thumbs location, measured from the vector pointing in the trailing direction
-       let radialOffset: Double // The current displacement of the thumb from the track's center
-    }
-````
+  
+```Swift
+struct JoystickConfiguration {
+   let isDisabled: Bool // whether or not the slider is current disables
+   let isActive: Bool // True if the joystick thumb is dragging or if the joystick is locked
+   let isAtLimit: Bool // whether the offset of the thumb reached the radius of the circle
+   let isLocked: Bool // Whether the joystick is locked or not
+   let angle: Angle // The angle of the line between the pads center and the thumbs location, measured from the vector pointing in the trailing direction
+   let radialOffset: Double // The current displacement of the thumb from the track's center
+}
+```
+
  Once your custom style has been created, implement it by calling the `joystickStyle(_ :)` method on the `Joystick` or
  a view containing the `Joystick` to be styled. To make it easier try using the follow example based upon the `DefaultJoystickStyle`
-````Swift
-  struct <#My Joystick Style#>: JoystickStyle {
-      func makeHitBox(configuration: JoystickConfiguration) -> some View {
-          Rectangle()
-              .fill(Color.white.opacity(0.05))
-      }
-      func makeLockBox(configuration: JoystickConfiguration) -> some View {
-          Circle()
-              .fill(Color.black)
-              .overlay(Circle().fill(Color.yellow).scaleEffect(0.7))
-              .frame(width: 25, height: 25)
-      }
-      func makeTrack(configuration: JoystickConfiguration) -> some View {
-          Circle()
-              .fill(Color.gray.opacity(0.4))
-      }
-      func makeThumb(configuration: JoystickConfiguration) -> some View {
-          Circle()
-              .fill(Color.blue)
-              .frame(width: 45, height: 45)
-      }
-  }
-````
+ 
+```Swift
+struct <#My Joystick Style#>: JoystickStyle {
+    func makeHitBox(configuration: JoystickConfiguration) -> some View {
+      Rectangle()
+          .fill(Color.white.opacity(0.05))
+    }
+    
+    func makeLockBox(configuration: JoystickConfiguration) -> some View {
+      Circle()
+          .fill(Color.black)
+          .overlay(Circle().fill(Color.yellow).scaleEffect(0.7))
+          .frame(width: 25, height: 25)
+    }
+    
+    func makeTrack(configuration: JoystickConfiguration) -> some View {
+      Circle()
+          .fill(Color.gray.opacity(0.4))
+    }
+    
+    func makeThumb(configuration: JoystickConfiguration) -> some View {
+      Circle()
+          .fill(Color.blue)
+          .frame(width: 45, height: 45)
+    }
+}
+```
 
 
 
