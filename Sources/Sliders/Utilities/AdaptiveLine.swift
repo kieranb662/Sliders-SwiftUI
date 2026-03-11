@@ -61,44 +61,42 @@ public struct AdaptiveLine: Shape {
         let rect = rect.insetBy(dx: insetAmount, dy: insetAmount)
         let w = rect.width
         let h = rect.height
-        let big: CGFloat = 5000000
+        let T = thickness
         
-        let x1 = w/2 + big * CGFloat(cos(angle.radians))
-        let y1 = h/2 + big * CGFloat(sin(angle.radians))
-        let x2 = w/2 - big * CGFloat(cos(angle.radians))
-        let y2 = h/2 - big * CGFloat(sin(angle.radians))
+        let θ = angle.radians
+        let absCos = abs(cos(θ))
+        let absSin = abs(sin(θ))
+        let epsilon: Double = 1e-10
         
-        let points = lineRectIntersection(x1, y1, x2, y2, rect.minX, rect.minY, w, h)
-        
-        guard points.count > 1 else {
-            return Path { p in
-                p.move(to: CGPoint(x: rect.minX, y: rect.midY))
-                p.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
-            }
-        }
-        
-        let (p1, p2) = (points[0], points[1])
-        let distance = distance(from: p1, to: p2)
-        var rads: Double = angle.radians
-        rads.formTruncatingRemainder(dividingBy: .pi / 2)
-        
-        var p: Path
+        let p: Path
         
         switch cap {
         case .square:
-            let length = distance - thickness * tan(rads)
+            // Maximum length so that the rotated L×T rectangle fits inside w×h:
+            //   |cos θ|·(L/2) + |sin θ|·(T/2) ≤ w/2  →  L ≤ (w - T·|sin θ|) / |cos θ|
+            //   |sin θ|·(L/2) + |cos θ|·(T/2) ≤ h/2  →  L ≤ (h - T·|cos θ|) / |sin θ|
+            let rectMaxFromWidth:  Double = absCos > epsilon ? (w - T * absSin) / absCos : .infinity
+            let rectMaxFromHeight: Double = absSin > epsilon ? (h - T * absCos) / absSin : .infinity
+            let rectLength = max(0, min(rectMaxFromWidth, rectMaxFromHeight))
+            
             p = Rectangle()
-                .path(in: CGRect(x: -length/2, y: -thickness/2, width: length, height: thickness))
+                .path(in: CGRect(x: -rectLength / 2, y: -T / 2, width: rectLength, height: T))
         case .round:
-            // TODO: Come back with correct equation of inset
-            let dl: Double = 2 * (1/sqrt(2) - 0.5) * thickness * tan(rads)
-            let length: Double = distance - dl
+            // For a capsule, the extremal points are on the hemicircle caps (radius T/2),
+            // whose centers sit at ±(L/2 - T/2) along the axis. The constraint becomes:
+            //   |cos θ|·(L/2 - T/2) + T/2 ≤ w/2  →  L ≤ (w - T) / |cos θ| + T
+            //   |sin θ|·(L/2 - T/2) + T/2 ≤ h/2  →  L ≤ (h - T) / |sin θ| + T
+            let capsuleMaxFromWidth:  Double = absCos > epsilon ? (w - T) / absCos + T : .infinity
+            let capsuleMaxFromHeight: Double = absSin > epsilon ? (h - T) / absSin + T : .infinity
+            let capsuleLength = max(0, min(capsuleMaxFromWidth, capsuleMaxFromHeight))
+            
             p = Capsule()
-                .path(in: CGRect(x: -length/2, y: -thickness/2, width: length, height: thickness))
+                .path(in: CGRect(x: -capsuleLength / 2, y: -T / 2, width: capsuleLength, height: T))
         }
+        
         return p
-            .applying(.init(rotationAngle: angle.radians))
-            .offsetBy(dx: rect.width/2, dy: rect.height/2)
+            .applying(.init(rotationAngle: θ))
+            .offsetBy(dx: rect.midX, dy: rect.midY)
     }
 }
 
