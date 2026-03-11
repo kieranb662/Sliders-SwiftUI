@@ -107,6 +107,8 @@ public final class LSliderHapticManager: ObservableObject, Sendable {
     }
 }
 #else
+import Foundation
+
 /// Stub for platforms that don't support CoreHaptics (e.g. macOS < 10.15, watchOS).
 @MainActor
 public final class LSliderHapticManager: ObservableObject, Sendable {

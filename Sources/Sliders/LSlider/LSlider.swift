@@ -407,6 +407,7 @@ public struct LSlider: View {
 
 // MARK: - Preview Examples
 
+#if !os(watchOS)
 fileprivate struct LSliderExamples: View {
     @State var value1 = 0.5
     @State var value2 = 0.5
@@ -610,7 +611,117 @@ private struct BarLSliderStyle: LSliderStyle {
     }
 }
 
+
+#else
+
+fileprivate struct LSliderExamples: View {
+    @State var value1 = 0.5
+    @State var value2 = 0.5
+    @State var value3 = 3.0
+    @State var value4 = 0.5
+    @State var value5 = 0.5
+    @State var value6 = 3.0
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 24) {
+
+                // ── Basic slider (no tick marks) ──────────────────────────────
+                LSlider($value1, range: 0...1, keepThumbInTrack: true, trackThickness: 20)
+                    .frame(height: 60)
+
+                // ── Evenly-distributed tick mark count ───────────────────────
+                LSlider(
+                    $value2,
+                    range: 0...1,
+                    keepThumbInTrack: true,
+                    trackThickness: 20,
+                    tickMarkSpacing: .count(11),
+                    hapticFeedbackEnabled: true
+                )
+                .frame(height: 60)
+                Text("Value: \(value2, specifier: "%.2f")")
+                    .font(.caption)
+
+                // ── Fixed-step spacing ────────────────────────────────────────
+                LSlider(
+                    $value3,
+                    range: 0...10,
+                    keepThumbInTrack: true,
+                    trackThickness: 20,
+                    tickMarkSpacing: .spacing(1),
+                    hapticFeedbackEnabled: true
+                )
+                .frame(height: 60)
+                Text("Value: \(value3, specifier: "%.2f")")
+                    .font(.caption)
+
+                // ── Explicit values ───────────────────────────────────────────
+                LSlider(
+                    $value4,
+                    range: 0...1,
+                    keepThumbInTrack: true,
+                    trackThickness: 20,
+                    tickMarkSpacing: .values([0.0, 0.25, 0.5, 0.75, 1.0]),
+                    hapticFeedbackEnabled: false
+                )
+                .frame(height: 60)
+                Text("Value: \(value4, specifier: "%.2f")")
+                    .font(.caption)
+
+                // ── Affinity enabled (count) ──────────────────────────────────
+                LSlider(
+                    $value5,
+                    range: 0...1,
+                    keepThumbInTrack: true,
+                    trackThickness: 20,
+                    tickMarkSpacing: .count(11),
+                    hapticFeedbackEnabled: true,
+                    affinityEnabled: true,
+                    affinityRadius: 0.04,
+                    affinityResistance: 0.03
+                )
+                .frame(height: 60)
+                Text("Value: \(value5, specifier: "%.2f")")
+                    .font(.caption)
+
+                // ── Affinity enabled (spacing) ────────────────────────────────
+                LSlider(
+                    $value6,
+                    range: 0...10,
+                    keepThumbInTrack: true,
+                    trackThickness: 20,
+                    tickMarkSpacing: .spacing(1),
+                    hapticFeedbackEnabled: true,
+                    affinityEnabled: true,
+                    affinityRadius: 0.05,
+                    affinityResistance: 0.03
+                )
+                .frame(height: 60)
+                Text("Value: \(value6, specifier: "%.2f")")
+                    .font(.caption)
+                
+                // ── Diagonal slider with count-based ticks ───────────────────
+                LSlider(
+                    $value2,
+                    range: 0...1,
+                    angle: Angle(degrees: 325),
+                    keepThumbInTrack: true,
+                    trackThickness: 20,
+                    tickMarkSpacing: .count(5),
+                    hapticFeedbackEnabled: true,
+                    affinityEnabled: true
+                )
+                .frame(height: 120)
+            }
+            .padding()
+        }
+    }
+}
+
+#endif
+
+
 #Preview {
     LSliderExamples()
-        .frame(width: 380)
 }
