@@ -105,42 +105,6 @@ public final class LSliderHapticManager: ObservableObject, Sendable {
             // Best-effort; ignore playback failures.
         }
     }
-
-    /// Plays a "breaking free" haptic when the thumb snaps **off** a tick mark.
-    ///
-    /// A sharp transient is followed by a brief low-frequency rumble, conveying the
-    /// sensation of overcoming resistance and releasing from the snap position.
-    public func playSnapOut() {
-        guard isEngineReady, let engine else { return }
-
-        do {
-            // Sharp release transient
-            let snapSharpness = CHHapticEventParameter(parameterID: .hapticSharpness,  value: 1.0)
-            let snapIntensity = CHHapticEventParameter(parameterID: .hapticIntensity,  value: 0.9)
-            let snapEvent = CHHapticEvent(
-                eventType: .hapticTransient,
-                parameters: [snapSharpness, snapIntensity],
-                relativeTime: 0,
-                duration: 0.05
-            )
-
-            // Short low rumble — the "drag away" resistance decay
-            let rumbleSharpness = CHHapticEventParameter(parameterID: .hapticSharpness,  value: 0.1)
-            let rumbleIntensity = CHHapticEventParameter(parameterID: .hapticIntensity,  value: 0.25)
-            let rumbleEvent = CHHapticEvent(
-                eventType: .hapticContinuous,
-                parameters: [rumbleSharpness, rumbleIntensity],
-                relativeTime: 0.04,
-                duration: 0.10
-            )
-
-            let pattern = try CHHapticPattern(events: [snapEvent, rumbleEvent], parameters: [])
-            let player  = try engine.makePlayer(with: pattern)
-            try player.start(atTime: CHHapticTimeImmediate)
-        } catch {
-            // Best-effort; ignore playback failures.
-        }
-    }
 }
 #else
 /// Stub for platforms that don't support CoreHaptics (e.g. macOS < 10.15, watchOS).
@@ -150,6 +114,5 @@ public final class LSliderHapticManager: ObservableObject, Sendable {
     public func prepare() {}
     public func playTick(intensity: Float = 0.6) {}
     public func playSnapIn() {}
-    public func playSnapOut() {}
 }
 #endif

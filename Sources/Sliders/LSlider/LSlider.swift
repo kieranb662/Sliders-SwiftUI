@@ -323,10 +323,8 @@ public struct LSlider: View {
 
         // Affinity mode: dedicated snap-in / snap-out haptics replace the tick haptic.
         if affinityEnabled && tickMarkSpacing != nil {
-            switch transition {
-            case .snappedIn:  hapticManager.playSnapIn()
-            case .snappedOut: hapticManager.playSnapOut()
-            case .none:       break
+            if transition == .snappedIn {
+                hapticManager.playSnapIn()
             }
             return
         }
