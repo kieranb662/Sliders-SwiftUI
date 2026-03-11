@@ -52,7 +52,7 @@ public protocol LSliderStyle: Sendable {
     associatedtype Thumb: View
     associatedtype Track: View
     associatedtype TickMark: View
-
+    
     func makeThumb(configuration: LSliderConfiguration) -> Self.Thumb
     func makeTrack(configuration: LSliderConfiguration) -> Self.Track
     /// Returns the view displayed at a single tick mark position.
@@ -80,7 +80,7 @@ public struct AnyLSliderStyle: LSliderStyle, Sendable {
     private let _makeThumb: @Sendable (LSliderConfiguration) -> AnyView
     private let _makeTrack: @Sendable (LSliderConfiguration) -> AnyView
     private let _makeTickMark: @Sendable (LSliderConfiguration, Double) -> AnyView
-
+    
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
         _makeThumb(configuration)
     }
@@ -90,7 +90,7 @@ public struct AnyLSliderStyle: LSliderStyle, Sendable {
     public func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> some View {
         _makeTickMark(configuration, tickValue)
     }
-
+    
     public init<S: LSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -120,35 +120,39 @@ extension View {
 // MARK: - Default LSlider Style
 
 public struct DefaultLSliderStyle: LSliderStyle, Sendable {
-
+    
     public init() {}
-
+    
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
         Circle()
-            .fill(configuration.isActive ? Color.yellow : Color.cyan)
-            .frame(width: configuration.trackThickness, height: configuration.trackThickness)
+            .fill(configuration.isActive ? Color.white : Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855))
+            .frame(width: configuration.trackThickness * 2, height: configuration.trackThickness * 2)
+            .shadow(
+                color: Color.black.opacity(0.2),
+                radius: configuration.isActive ? 5 : 2
+            )
     }
-
+    
     public func makeTrack(configuration: LSliderConfiguration) -> some View {
         let adjustment: Double = configuration.keepThumbInTrack
-            ? configuration.trackThickness * (1 - configuration.pctFill)
-            : configuration.trackThickness / 2
-
+        ? configuration.trackThickness * (1 - configuration.pctFill)
+        : configuration.trackThickness / 2
+        
         return ZStack {
             AdaptiveLine(thickness: configuration.trackThickness, angle: configuration.angle)
-                .fill(.gray)
-
+                .fill(Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59))
+            
             AdaptiveLine(
                 thickness: configuration.trackThickness,
                 angle: configuration.angle,
                 percentFilled: configuration.pctFill,
                 adjustmentForThumb: adjustment
             )
-            .fill(Color.blue)
+            .fill(Color(.sRGB, red: 0.084, green: 0.247, blue: 0.602))
             .mask(AdaptiveLine(thickness: configuration.trackThickness, angle: configuration.angle))
         }
     }
-
+    
     /// A small circle that grows and brightens as the thumb approaches this tick mark.
     public func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> some View {
         let range = configuration.max - configuration.min
@@ -159,18 +163,18 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
         let thumbPct  = (configuration.value - configuration.min) / range
         let tickPct   = (tickValue          - configuration.min) / range
         let distance  = abs(thumbPct - tickPct)
-
+        
         // Proximity is 1 when thumb is exactly on the tick, 0 when ≥ 20 % away
         let proximity = max(0, 1 - distance / 0.20)
-
+        
         let baseSize:  Double = 5
         let maxGrowth: Double = 7
         let size = baseSize + maxGrowth * proximity
-
+        
         let baseOpacity:  Double = 0.30
         let maxOpacity:   Double = 1.00
         let opacity = baseOpacity + (maxOpacity - baseOpacity) * proximity
-
+        
         return AnyView(
             Circle()
                 .fill(Color.white.opacity(opacity))

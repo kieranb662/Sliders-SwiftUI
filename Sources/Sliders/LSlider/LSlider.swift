@@ -19,7 +19,6 @@ import SwiftUI
 ///     - value: `Binding<Double>` The value the slider should control
 ///     - range: `ClosedRange<Double>` The minimum and maximum numbers that `value` can be
 ///     - angle: `Angle` The angle you would like the slider to be at
-///     - isDisabled: `Bool` Whether or not the slider should be disabled
 ///     - keepThumbInTrack: `Bool` Whether the thumb is constrained to stay within the track's extent
 ///     - trackThickness: `Double` The thickness of the track
 ///     - tickMarkSpacing: `TickMarkSpacing?` How tick marks should be spaced, or `nil` to hide them
@@ -49,7 +48,7 @@ public struct LSlider: View {
     private var range: ClosedRange<Double> = 0...1
     private var angle: Angle = .zero
     private var keepThumbInTrack: Bool = false
-    private var trackThickness: Double = 40
+    private var trackThickness: Double = 20
     private var tickMarkSpacing: TickMarkSpacing? = nil
     private var hapticFeedbackEnabled: Bool = true
 
@@ -60,7 +59,7 @@ public struct LSlider: View {
         range: ClosedRange<Double>,
         angle: Angle,
         keepThumbInTrack: Bool = false,
-        trackThickness: Double = 40,
+        trackThickness: Double = 20,
         tickMarkSpacing: TickMarkSpacing? = nil,
         hapticFeedbackEnabled: Bool = true
     ) {
@@ -77,7 +76,7 @@ public struct LSlider: View {
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
         keepThumbInTrack: Bool = false,
-        trackThickness: Double = 40,
+        trackThickness: Double = 20,
         tickMarkSpacing: TickMarkSpacing? = nil,
         hapticFeedbackEnabled: Bool = true
     ) {
@@ -93,7 +92,7 @@ public struct LSlider: View {
         _ value: Binding<Double>,
         angle: Angle,
         keepThumbInTrack: Bool = false,
-        trackThickness: Double = 40,
+        trackThickness: Double = 20,
         tickMarkSpacing: TickMarkSpacing? = nil,
         hapticFeedbackEnabled: Bool = true
     ) {
@@ -259,7 +258,7 @@ public struct LSlider: View {
     // MARK: - Gesture
 
     private func makeGesture(_ proxy: GeometryProxy) -> some Gesture {
-        DragGesture(minimumDistance: 10, coordinateSpace: .named(space))
+        DragGesture(minimumDistance: 5, coordinateSpace: .named(space))
             .onChanged({ drag in
                 let (start, end) = calculateEndPoints(proxy)
                 let parameter = Double(calculateParameter(start, end, drag.location))
@@ -301,7 +300,7 @@ public struct LSlider: View {
                 // Thumb
                 style.makeThumb(configuration: config)
                     .offset(thumbOffset(geo))
-                    .gesture(makeGesture(geo))
+                    .simultaneousGesture(makeGesture(geo))
                     .allowsHitTesting(isEnabled)
             }
             .coordinateSpace(name: space)
@@ -323,7 +322,7 @@ fileprivate struct LSliderExamples: View {
 
                 // ── Basic slider (no tick marks) ──────────────────────────────
                 GroupBox("Basic – No Tick Marks") {
-                    LSlider($value1, range: 0...1, keepThumbInTrack: true, trackThickness: 40)
+                    LSlider($value1, range: 0...1, keepThumbInTrack: true, trackThickness: 20)
                         .frame(height: 60)
                 }
 
@@ -333,7 +332,7 @@ fileprivate struct LSliderExamples: View {
                         $value2,
                         range: 0...1,
                         keepThumbInTrack: true,
-                        trackThickness: 40,
+                        trackThickness: 20,
                         tickMarkSpacing: .count(11),
                         hapticFeedbackEnabled: true
                     )
@@ -348,7 +347,7 @@ fileprivate struct LSliderExamples: View {
                         $value3,
                         range: 0...10,
                         keepThumbInTrack: true,
-                        trackThickness: 40,
+                        trackThickness: 20,
                         tickMarkSpacing: .spacing(1),
                         hapticFeedbackEnabled: true
                     )
@@ -363,7 +362,7 @@ fileprivate struct LSliderExamples: View {
                         $value4,
                         range: 0...1,
                         keepThumbInTrack: true,
-                        trackThickness: 40,
+                        trackThickness: 20,
                         tickMarkSpacing: .values([0.0, 0.25, 0.5, 0.75, 1.0]),
                         hapticFeedbackEnabled: false
                     )
@@ -379,7 +378,7 @@ fileprivate struct LSliderExamples: View {
                         range: 0...1,
                         angle: Angle(degrees: 325),
                         keepThumbInTrack: true,
-                        trackThickness: 40,
+                        trackThickness: 20,
                         tickMarkSpacing: .count(5),
                         hapticFeedbackEnabled: true
                     )
@@ -414,7 +413,7 @@ private struct BarLSliderStyle: LSliderStyle {
     func makeThumb(configuration: LSliderConfiguration) -> some View {
         RoundedRectangle(cornerRadius: 4)
             .fill(configuration.isActive ? Color.orange : Color.white)
-            .frame(width: 14, height: configuration.trackThickness * 1.4)
+            .frame(width: configuration.trackThickness * 0.8, height: configuration.trackThickness * 1.4)
             .shadow(radius: 3)
     }
 
@@ -430,7 +429,8 @@ private struct BarLSliderStyle: LSliderStyle {
                 thickness: configuration.trackThickness,
                 angle: configuration.angle,
                 percentFilled: configuration.pctFill,
-                adjustmentForThumb: adjustment
+                cap: .square,
+                adjustmentForThumb: adjustment/2
             )
             .fill(Color.orange)
             .mask(AdaptiveLine(thickness: configuration.trackThickness, angle: configuration.angle))
