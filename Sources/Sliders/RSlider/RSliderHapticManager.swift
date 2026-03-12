@@ -28,8 +28,7 @@ public final class RSliderHapticManager: Sendable {
 
     /// The continuous wind-tension player (nil when not playing).
     private weak var tensionPlayer: CHHapticAdvancedPatternPlayer?
-    /// The last integer wind boundary that triggered a pop, used to debounce.
-    private var lastWindPop: Int = -1
+
 
     public init() {
         prepare()
@@ -152,12 +151,6 @@ public final class RSliderHapticManager: Sendable {
         let windInt   = Int(totalWind)          // number of completed winds
         let fraction  = totalWind - Double(windInt)   // 0…1 position within current wind
 
-        // Fire a pop when crossing into a new whole-wind boundary
-        if windInt != lastWindPop && windInt > 0 {
-            lastWindPop = windInt
-            playWindPop()
-        }
-
         // Ramp the continuous rumble intensity with the fraction
         // Use a curve so the last 20% of the wind feels noticeably stronger
         let curve = fraction * fraction             // quadratic ramp 0→1
@@ -207,7 +200,7 @@ public final class RSliderHapticManager: Sendable {
     /// Stops the continuous wind-tension haptic. Call this when dragging ends.
     public func stopContinuous() {
         guard let player = tensionPlayer else { return }
-        lastWindPop = -1
+
         do {
             try player.stop(atTime: CHHapticTimeImmediate)
         } catch { }
