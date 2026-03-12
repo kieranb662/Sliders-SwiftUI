@@ -18,14 +18,22 @@ public struct RSliderConfiguration {
     public let value: Double
     /// The direction from the thumb to the slider center
     public let angle: Angle
+    /// The angle on the slider that corresponds to the minimum value
+    public let originAngle: Angle
     /// The minimum value of the sliders range
     public let min: Double
     /// The maximum value of the sliders range
     public let max: Double
+    /// The fractional component within the current wind
+    public let withinWind: Double
     /// The current number of full rotations completed (fractional winds are possible)
     public let currentWind: Double
     /// The maximum number of winds the slider spans
     public let maxWinds: Double
+    /// The current percent of total value
+    public var percent: Double {
+        (value - min) / (max - min)
+    }
 }
 
 // MARK: - Style

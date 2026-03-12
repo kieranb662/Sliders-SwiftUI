@@ -7,231 +7,111 @@ import SwiftUI
 
 // MARK: - Preview Styles
 
-/// A style that shows a wind counter badge overlaid on the track.
-struct WindCounterRSliderStyle: RSliderStyle {
-    func makeThumb(configuration: RSliderConfiguration) -> some View {
-        Circle()
-            .frame(width: 24, height: 24)
-            .foregroundStyle(configuration.isActive ? Color.orange : Color.white)
-            .shadow(radius: configuration.isActive ? 6 : 2)
+struct CircularArc: Shape {
+    var percent: Double
+    var animatableData: Double {
+        get { percent }
+        set { percent = newValue }
     }
-
-    func makeTrack(configuration: RSliderConfiguration) -> some View {
-        let fill = configuration.maxWinds > 0
-            ? (configuration.value - configuration.min) / (configuration.max - configuration.min)
-            : 0.0
-        return ZStack {
-            Circle()
-                .stroke(Color.secondary.opacity(0.3), style: StrokeStyle(lineWidth: 12, lineCap: .round))
-            Circle()
-                .trim(from: 0, to: CGFloat(fill))
-                .stroke(
-                    LinearGradient(colors: [.orange, .red], startPoint: .leading, endPoint: .trailing),
-                    style: StrokeStyle(lineWidth: 12, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-            VStack(spacing: 2) {
-                Text("\(Int(configuration.currentWind))")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                Text("winds")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-        }
+    
+    var inset: CGFloat = 0.0
+    
+    func path(in rect: CGRect) -> Path {
+        let rect = rect.insetBy(dx: inset, dy: inset)
+        
+        return Circle()
+            .path(in: rect)
+            .trimmedPath(from: 0, to: percent)
     }
 }
 
-/// A minimal arc style that starts from the top (12 o'clock).
-struct ArcRSliderStyle: RSliderStyle {
+extension CircularArc: InsettableShape {
+    func inset(by amount: CGFloat) -> some InsettableShape {
+        var arc = self
+        arc.inset += amount
+        return arc
+    }
+}
+
+
+struct DiagnosticRSliderStyle: RSliderStyle {
+    let thickness = 24.0
+    
     func makeThumb(configuration: RSliderConfiguration) -> some View {
         Circle()
-            .frame(width: 20, height: 20)
-            .foregroundStyle(.white)
-            .overlay(Circle().stroke(Color.teal, lineWidth: 3))
-            .shadow(radius: 3)
+            .foregroundColor(configuration.isActive ? Color.orange : Color.white)
+            .frame(width: thickness, height: thickness)
+            .offset(x: -thickness / 2 * cos(configuration.angle.radians),
+                    y: -thickness / 2 * sin(configuration.angle.radians))
     }
-
+    
     func makeTrack(configuration: RSliderConfiguration) -> some View {
-        let fill = configuration.maxWinds > 0
-            ? (configuration.value - configuration.min) / (configuration.max - configuration.min)
-            : 0.0
         return ZStack {
             Circle()
-                .stroke(Color.teal.opacity(0.2), style: StrokeStyle(lineWidth: 8))
-            Circle()
-                .trim(from: 0, to: CGFloat(fill))
-                .stroke(Color.teal, style: StrokeStyle(lineWidth: 8, lineCap: .round))
-                // rotationEffect so trim starts from 12 o'clock (−90°)
-                .rotationEffect(.degrees(-90))
+                .strokeBorder(Color.gray, style: StrokeStyle(lineWidth: thickness, lineCap: .round))
+            
+            if configuration.maxWinds > 2 {
+                ForEach(0..<Int(configuration.maxWinds), id: \.self) { wind in
+                    
+                    if wind == Int(configuration.currentWind) {
+                        CircularArc(percent: configuration.withinWind)
+                            .strokeBorder(
+                                Color.orange
+                                    .mix(with: Color.black.opacity(0.2), by: Double(wind)/configuration.maxWinds),
+                                style: StrokeStyle(lineWidth: thickness, lineCap: .round)
+                            )
+                            .rotationEffect(configuration.originAngle)
+                        
+                    } else if wind < Int(configuration.currentWind) {
+                        CircularArc(percent: 1)
+                            .strokeBorder(
+                                Color.orange
+                                    .mix(with: Color.black.opacity(0.2), by: Double(wind)/configuration.maxWinds),
+                                lineWidth: thickness
+                            )
+                            .rotationEffect(configuration.originAngle)
+                    }
+                }
+            } else {
+                CircularArc(percent: configuration.percent == 1 && configuration.maxWinds >= 1 ? 1.0 : configuration.withinWind)
+                    .strokeBorder(Color.orange, style: StrokeStyle(lineWidth: thickness, lineCap: .round))
+                    .rotationEffect(configuration.originAngle)
+            }
+
+            VStack {
+                Text("withinWind: \(Text(configuration.withinWind, format: .number))")
+                Text("Current Wind: \(Text(configuration.currentWind, format: .number))")
+                Text("Value: \(Text(configuration.value, format: .number))")
+            }
+            .font(.caption)
         }
+        .aspectRatio(1, contentMode: .fit)
     }
 }
 
 // MARK: - Previews
 
-#Preview("Default Style – 1 Wind") {
+#Preview("Diagnotistic Style") {
     @Previewable @State var value = 0.5
     VStack(spacing: 16) {
-        RSlider($value)
-            .frame(width: 180, height: 180)
-        Text(String(format: "Value: %.2f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Default Style – 2 Winds") {
-    @Previewable @State var value = 0.0
-    VStack(spacing: 16) {
-        RSlider($value, maxWinds: 2)
-            .frame(width: 180, height: 180)
-        Text(String(format: "Value: %.2f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Default Style – Quarter Wind (0–90°)") {
-    @Previewable @State var value = 0.0
-    VStack(spacing: 16) {
-        RSlider($value, maxWinds: 0.25)
-            .frame(width: 180, height: 180)
-        Text(String(format: "Value: %.2f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Origin at Top (12 o'clock)") {
-    @Previewable @State var value = 0.0
-    VStack(spacing: 16) {
-        RSlider($value, originAngle: .degrees(-90))
-            .frame(width: 180, height: 180)
-        Text(String(format: "Value: %.2f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Origin at Top – 2 Winds") {
-    @Previewable @State var value = 0.0
-    VStack(spacing: 16) {
-        RSlider($value, originAngle: .degrees(-90), maxWinds: 2)
-            .frame(width: 180, height: 180)
-        Text(String(format: "Value: %.2f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Custom Range – 0 to 100") {
-    @Previewable @State var value = 50.0
-    VStack(spacing: 16) {
-        RSlider($value, range: 0...100, originAngle: .degrees(-90))
-            .frame(width: 180, height: 180)
-        Text(String(format: "Value: %.0f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Knob Style") {
-    @Previewable @State var value = 0.25
-    VStack(spacing: 16) {
-        RSlider($value)
-            .radialSliderStyle(KnobStyle())
-            .frame(width: 200, height: 200)
-        Text(String(format: "Value: %.2f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Knob Style – 3 Winds") {
-    @Previewable @State var value = 0.0
-    VStack(spacing: 16) {
-        RSlider($value, originAngle: .degrees(-90), maxWinds: 3)
-            .radialSliderStyle(KnobStyle())
-            .frame(width: 200, height: 200)
-        Text(String(format: "Value: %.2f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Arc Style – Top Origin") {
-    @Previewable @State var value = 0.0
-    VStack(spacing: 16) {
-        RSlider($value, originAngle: .degrees(-90))
-            .radialSliderStyle(ArcRSliderStyle())
-            .frame(width: 180, height: 180)
-        Text(String(format: "Value: %.2f", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Wind Counter – 3 Winds") {
-    @Previewable @State var value = 0.0
-    VStack(spacing: 16) {
-        RSlider($value, range: 0...100, originAngle: .degrees(-90), maxWinds: 3)
-            .radialSliderStyle(WindCounterRSliderStyle())
-            .frame(width: 200, height: 200)
-        Text(String(format: "Value: %.1f / 100", value))
-            .font(.caption)
-    }
-    .padding()
-}
-
-#Preview("Disabled") {
-    @Previewable @State var value = 0.6
-    VStack(spacing: 16) {
-        RSlider($value)
-            .disabled(true)
-            .frame(width: 180, height: 180)
-        Text("Disabled")
-            .font(.caption)
-            .foregroundStyle(.secondary)
-    }
-    .padding()
-}
-
-#Preview("Style Gallery") {
-    @Previewable @State var v1 = 0.3
-    @Previewable @State var v2 = 0.3
-    @Previewable @State var v3 = 0.3
-    @Previewable @State var v4 = 0.3
-
-    ScrollView {
-        VStack(spacing: 32) {
-            HStack(spacing: 32) {
-                VStack {
-                    RSlider($v1)
-                        .frame(width: 140, height: 140)
-                    Text("Default").font(.caption)
-                }
-                VStack {
-                    RSlider($v2)
-                        .radialSliderStyle(KnobStyle())
-                        .frame(width: 140, height: 140)
-                    Text("Knob").font(.caption)
-                }
-            }
-            HStack(spacing: 32) {
-                VStack {
-                    RSlider($v3, originAngle: .degrees(-90))
-                        .radialSliderStyle(ArcRSliderStyle())
-                        .frame(width: 140, height: 140)
-                    Text("Arc").font(.caption)
-                }
-                VStack {
-                    RSlider($v4, range: 0...100, originAngle: .degrees(-90), maxWinds: 2)
-                        .radialSliderStyle(WindCounterRSliderStyle())
-                        .frame(width: 140, height: 140)
-                    Text("Wind Counter").font(.caption)
-                }
-            }
+        HStack {
+            RSlider($value)
+                .radialSliderStyle(DiagnosticRSliderStyle())
+            
+            RSlider($value, originAngle: .degrees(90))
+                .radialSliderStyle(DiagnosticRSliderStyle())
         }
-        .padding()
+        
+        HStack {
+            RSlider($value, maxWinds: 3)
+                .radialSliderStyle(DiagnosticRSliderStyle())
+            
+            RSlider($value, maxWinds: 0.25)
+                .radialSliderStyle(DiagnosticRSliderStyle())
+        }
+        
+        Text(String(format: "Value: %.2f", value))
+            .font(.caption)
     }
+    .padding()
 }

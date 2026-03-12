@@ -10,7 +10,6 @@ import SwiftUI
 
 // MARK:  Radial Slider
 
-
 /// # Radial Slider
 ///  A Circular slider whose thumb is dragged causing it to follow the path of the circle
 ///
@@ -68,24 +67,24 @@ public struct RSlider: View {
     @State private var currentWind: Double = 0
     /// The raw [0,1) angle position from the last drag update, used to detect crossings
     @State private var lastRawAngle: Double = 0
-    @Binding public var value: Double
-    public let range: ClosedRange<Double>
+    @Binding private var value: Double
+    private let range: ClosedRange<Double>
     /// The angle on the circle that corresponds to the minimum value (default: `.zero` = 3 o'clock)
-    public let originAngle: Angle
+    private let originAngle: Angle
     /// Maximum number of full winds allowed (e.g. 2 = 0–720°, 0.25 = 0–90°). Default is 1.
-    public let maxWinds: Double
+    private let maxWinds: Double
+    /// A Flag that when true indicates the value grows in the clockwise direction
+    private let isClockwise: Bool // TODO: Implement using this
 
-    public init(_ value: Binding<Double>, originAngle: Angle = .zero, maxWinds: Double = 1) {
-        self._value = value
-        self.range = 0...1
-        self.originAngle = originAngle
-        self.maxWinds = maxWinds
-    }
-
-    public init(_ value: Binding<Double>, range: ClosedRange<Double>, originAngle: Angle = .zero, maxWinds: Double = 1) {
+    public init(_ value: Binding<Double>,
+                range: ClosedRange<Double> = 0...1,
+                originAngle: Angle = .zero,
+                isClockwise: Bool = true,
+                maxWinds: Double = 1) {
         self._value = value
         self.range = range
         self.originAngle = originAngle
+        self.isClockwise = isClockwise
         self.maxWinds = maxWinds
     }
 
@@ -112,6 +111,13 @@ public struct RSlider: View {
             // Crossed 0 going backward (e.g. 0.05 → 0.95)
             currentWind -= 1
         }
+        
+        if delta > 0.5 && currentWind == -1 {
+            currentWind = 0
+            value = range.lowerBound
+            return
+        }
+
         lastRawAngle = newRaw
 
         // Total fractional progress across all winds
@@ -119,25 +125,26 @@ public struct RSlider: View {
 
         // Clamp to [0, 1] across full wind range
         let clampedPct = Swift.max(0, Swift.min(1, totalPct))
-
-        // If we're at the boundary, also clamp currentWind so we don't drift
-        if totalPct < 0 {
-            currentWind = -newRaw
-        } else if totalPct > 1 {
-            currentWind = maxWinds - newRaw
-        }
-
+  
         value = clampedPct * (range.upperBound - range.lowerBound) + range.lowerBound
     }
-
+    
     private var configuration: RSliderConfiguration {
-        let pct = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+        // all computed values should be calculated based on the following
+        // the current value and the min and max values
+        let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+        let currentWindValue = percent * maxWinds
+        let withinWind = currentWindValue.truncatingRemainder(dividingBy: 1.0)
+        let currentAngle = originAngle + Angle.degrees(withinWind * 360)
+        
         return .init(isDisabled: !isEnabled,
                      isActive: isActive,
                      value: value,
-                     angle: Angle(degrees: pct * 360 * maxWinds + originAngle.degrees),
+                     angle: currentAngle,
+                     originAngle: originAngle,
                      min: range.lowerBound,
                      max: range.upperBound,
+                     withinWind: withinWind,
                      currentWind: currentWind,
                      maxWinds: maxWinds)
     }
@@ -151,6 +158,10 @@ public struct RSlider: View {
                 if !isActive {
                     // Initialise lastRawAngle on first touch to avoid a spurious wind jump
                     lastRawAngle = rawAngle(from: middle, dragValue.location)
+                    // Prevent having a lastRawAngle greater than 0.9 because of initial touch location on thumb
+                    if currentWind == 0 && value == range.lowerBound {
+                        lastRawAngle = 0
+                    }
                     isActive = true
                 }
                 updateValue(from: middle, location: dragValue.location)
@@ -175,11 +186,20 @@ public struct RSlider: View {
     public var body: some View {
         style.makeTrack(configuration: configuration)
             .overlay(GeometryReader { proxy in
-                ZStack(alignment: .center) {
+                ZStack(alignment: .topLeading) {
                     makeThumb(proxy)
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
             })
-            .padding()
+            .onAppear {
+                let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+                let currentWindValue = percent * maxWinds
+                currentWind = floor(currentWindValue)
+            }
+            .onChange(of: value) { oldValue, newValue in
+                let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+                let currentWindValue = percent * maxWinds
+                currentWind = floor(currentWindValue)
+            }
     }
 }
