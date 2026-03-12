@@ -148,8 +148,8 @@ public final class RSliderHapticManager: ObservableObject, Sendable {
     public func updateWindTension(_ totalWind: Double) {
         guard isEngineReady, let engine else { return }
 
-        let windInt   = Int(totalWind)          // number of completed winds
-        let fraction  = totalWind - Double(windInt)   // 0…1 position within current wind
+        let windInt  = Int(totalWind)
+        let fraction = totalWind - Double(windInt)
 
         // Fire a pop when crossing into a new whole-wind boundary
         if windInt != lastWindPop && windInt > 0 {
@@ -157,50 +157,36 @@ public final class RSliderHapticManager: ObservableObject, Sendable {
             playWindPop()
         }
 
-        // Ramp the continuous rumble intensity with the fraction
-        // Use a curve so the last 20% of the wind feels noticeably stronger
-        let curve = fraction * fraction             // quadratic ramp 0→1
+        // Ramp intensity quadratically with fractional position within the current wind
+        let curve         = fraction * fraction
         let buzzIntensity = Float(0.10 + 0.60 * curve)
         let buzzSharpness = Float(0.20 + 0.40 * curve)
 
-        if let player = tensionPlayer {
-            // Update the live parameters of the existing player
-            do {
-                let intensityParam = CHHapticDynamicParameter(
-                    parameterID: .hapticIntensityControl,
-                    value: buzzIntensity,
-                    relativeTime: 0
-                )
-                let sharpnessParam = CHHapticDynamicParameter(
-                    parameterID: .hapticSharpnessControl,
-                    value: buzzSharpness,
-                    relativeTime: 0
-                )
-                try player.sendParameters([intensityParam, sharpnessParam], atTime: CHHapticTimeImmediate)
-            } catch {
-                tensionPlayer = nil   // will recreate below
-            }
+        // Stop any in-flight player and create a fresh short-lived one.
+        // Using a self-expiring ~100 ms duration (longer than the ~16 ms drag event
+        // cadence) means the buzz dies naturally within one frame after the finger
+        // lifts — no looping, no lingering.
+        if let old = tensionPlayer {
+            try? old.stop(atTime: CHHapticTimeImmediate)
+            tensionPlayer = nil
         }
 
-        if tensionPlayer == nil {
-            // Start a new looping continuous player
-            do {
-                let continuousEvent = CHHapticEvent(
-                    eventType: .hapticContinuous,
-                    parameters: [
-                        CHHapticEventParameter(parameterID: .hapticIntensity,  value: buzzIntensity),
-                        CHHapticEventParameter(parameterID: .hapticSharpness,  value: buzzSharpness)
-                    ],
-                    relativeTime: 0,
-                    duration: 100   // long enough; we stop it manually
-                )
-                let pattern = try CHHapticPattern(events: [continuousEvent], parameters: [])
-                let player  = try engine.makeAdvancedPlayer(with: pattern)
-                player.loopEnabled = true
-                try player.start(atTime: CHHapticTimeImmediate)
-                tensionPlayer = player
-            } catch { }
-        }
+        do {
+            let continuousEvent = CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: buzzIntensity),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: buzzSharpness)
+                ],
+                relativeTime: 0,
+                duration: 0.10   // self-expires; stopContinuous is still called for safety
+            )
+            let pattern = try CHHapticPattern(events: [continuousEvent], parameters: [])
+            let player  = try engine.makeAdvancedPlayer(with: pattern)
+            player.loopEnabled = false
+            try player.start(atTime: CHHapticTimeImmediate)
+            tensionPlayer = player
+        } catch { }
     }
 
     /// Stops the continuous wind-tension haptic. Call this when dragging ends.
