@@ -320,25 +320,14 @@ public struct RSlider: View {
                 fireHapticsForNewValue(value, transition: transition)
             }
             .onEnded { dragValue in
-                // Stop continuous haptic first, before any other processing
+                updateValue(from: middle, location: dragValue.location)
+                let (_, transition) = applyAffinity(rawValue: value)
+                fireHapticsForNewValue(value, transition: transition)
+                isActive = false
+                lastHapticTickValue = nil
                 if tickSpacing == nil {
                     hapticManager.stopContinuous()
                 }
-                updateValue(from: middle, location: dragValue.location)
-                let (_, transition) = applyAffinity(rawValue: value)
-                // Only fire limit/tick haptics on end — wind tension is already stopped
-                if tickSpacing != nil {
-                    fireHapticsForNewValue(value, transition: transition)
-                } else {
-                    // Still check limit hit on release
-                    if !disableHaptics {
-                        let isAtLimit = value <= range.lowerBound || value >= range.upperBound
-                        if isAtLimit && !atLimit { hapticManager.playLimitHit() }
-                        atLimit = isAtLimit
-                    }
-                }
-                isActive = false
-                lastHapticTickValue = nil
             }
 
         // Place thumb at the correct angular position, accounting for originAngle
