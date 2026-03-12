@@ -228,6 +228,7 @@ import Foundation
 /// Stub for platforms that don't support CoreHaptics (e.g. macOS < 10.15, watchOS).
 @MainActor
 public final class RSliderHapticManager: ObservableObject, Sendable {
+    public static let shared = RSliderHapticManager()
     public init() {}
     public func prepare() {}
     public func playLimitHit() {}
