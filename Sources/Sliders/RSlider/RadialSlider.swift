@@ -250,7 +250,7 @@ public struct RSlider: View {
             }
         } else {
             // No tick marks → continuous wind tension
-            let totalWind = currentWind + (value - range.lowerBound) / (range.upperBound - range.lowerBound) * maxWinds
+            let totalWind = (value - range.lowerBound) / (range.upperBound - range.lowerBound) * maxWinds
             hapticManager.updateWindTension(totalWind)
         }
     }

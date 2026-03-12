@@ -27,7 +27,7 @@ public final class RSliderHapticManager: Sendable {
     private var isEngineReady = false
 
     /// The continuous wind-tension player (nil when not playing).
-    private var tensionPlayer: CHHapticAdvancedPatternPlayer?
+    private weak var tensionPlayer: CHHapticAdvancedPatternPlayer?
     /// The last integer wind boundary that triggered a pop, used to debounce.
     private var lastWindPop: Int = -1
 
