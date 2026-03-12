@@ -7,18 +7,6 @@
 
 import SwiftUI
 
-// MARK: - TickMarkSpacing
-
-/// Describes how tick marks should be spaced along the LSlider's dragging axis.
-public enum TickMarkSpacing: Sendable, Equatable {
-    /// Place a tick mark every `spacing` units in the slider's value domain.
-    case spacing(Double)
-    /// Distribute exactly `count` tick marks evenly across the slider's range (including endpoints).
-    case count(Int)
-    /// Place tick marks at the specified values within the slider's range.
-    case values([Double])
-}
-
 // MARK: - LSlider Configuration
 
 public struct LSliderConfiguration: Sendable {
