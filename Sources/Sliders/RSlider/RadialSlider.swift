@@ -33,7 +33,7 @@ import SwiftUI
 public struct RSlider: View {
     @Environment(\.radialSliderStyle) private var style: AnyRSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
-    @StateObject private var hapticManager = RSliderHapticManager()
+    @State private var hapticManager = RSliderHapticManager.shared
     @State private var isActive = false
     @State private var atLimit: Bool = false
     /// The last tick value the thumb has fired a haptic for, used to debounce.
