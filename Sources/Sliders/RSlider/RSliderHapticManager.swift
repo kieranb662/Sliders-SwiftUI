@@ -34,7 +34,7 @@ public final class RSliderHapticManager: ObservableObject, Sendable {
         prepare()
     }
     
-    static let shared = RSliderHapticManager()
+    public static let shared = RSliderHapticManager()
 
     // MARK: - Engine lifecycle
 
