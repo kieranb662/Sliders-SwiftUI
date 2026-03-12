@@ -110,6 +110,14 @@ struct DiagnosticRSliderStyle: RSliderStyle {
                 .radialSliderStyle(DiagnosticRSliderStyle())
         }
         
+        HStack {
+            RSlider($value, maxWinds: 3, tickSpacing: .count(10), affinityEnabled: true, affinityRadius: 0.005)
+                .radialSliderStyle(DiagnosticRSliderStyle())
+            
+            RSlider($value, maxWinds: 0.25, tickSpacing: .count(10), affinityEnabled: true)
+                .radialSliderStyle(DiagnosticRSliderStyle())
+        }
+        
         Text(String(format: "Value: %.2f", value))
             .font(.caption)
     }
