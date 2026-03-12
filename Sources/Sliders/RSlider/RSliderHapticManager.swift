@@ -20,7 +20,8 @@ import Foundation
 ///
 /// Call ``prepare()`` before the first drag event and ``stopContinuous()`` when dragging ends.
 @MainActor
-public final class RSliderHapticManager: ObservableObject, Sendable {
+@Observable
+public final class RSliderHapticManager: Sendable {
 
     private var engine: CHHapticEngine?
     private var isEngineReady = false
@@ -33,8 +34,6 @@ public final class RSliderHapticManager: ObservableObject, Sendable {
     public init() {
         prepare()
     }
-    
-    public static let shared = RSliderHapticManager()
 
     // MARK: - Engine lifecycle
 
@@ -227,8 +226,8 @@ import Foundation
 
 /// Stub for platforms that don't support CoreHaptics (e.g. macOS < 10.15, watchOS).
 @MainActor
-public final class RSliderHapticManager: ObservableObject, Sendable {
-    public static let shared = RSliderHapticManager()
+@Observable
+public final class RSliderHapticManager: Sendable {
     public init() {}
     public func prepare() {}
     public func playLimitHit() {}
