@@ -209,6 +209,7 @@ public struct KnobStyle: RSliderStyle {
 
 public struct RSlider: View {
     @Environment(\.radialSliderStyle) private var style: AnyRSliderStyle
+    @Environment(\.isEnabled) private var isEnabled: Bool
     @State private var isActive = false
     /// Tracks the cumulative number of full rotations (winds)
     @State private var currentWind: Double = 0
@@ -216,15 +217,13 @@ public struct RSlider: View {
     @State private var lastRawAngle: Double = 0
     @Binding public var value: Double
     public let range: ClosedRange<Double>
-    public let isDisabled: Bool
     /// The angle on the circle that corresponds to the minimum value (default: `.zero` = 3 o'clock)
     public let originAngle: Angle
     /// Maximum number of full winds allowed (e.g. 2 = 0–720°, 0.25 = 0–90°). Default is 1.
     public let maxWinds: Double
 
-    public init(_ value: Binding<Double>, isDisabled: Bool, originAngle: Angle = .zero, maxWinds: Double = 1) {
+    public init(_ value: Binding<Double>, originAngle: Angle = .zero, maxWinds: Double = 1) {
         self._value = value
-        self.isDisabled = isDisabled
         self.range = 0...1
         self.originAngle = originAngle
         self.maxWinds = maxWinds
@@ -233,23 +232,6 @@ public struct RSlider: View {
     public init(_ value: Binding<Double>, range: ClosedRange<Double>, originAngle: Angle = .zero, maxWinds: Double = 1) {
         self._value = value
         self.range = range
-        self.isDisabled = false
-        self.originAngle = originAngle
-        self.maxWinds = maxWinds
-    }
-
-    public init(_ value: Binding<Double>, range: ClosedRange<Double>, isDisabled: Bool, originAngle: Angle = .zero, maxWinds: Double = 1) {
-        self._value = value
-        self.isDisabled = isDisabled
-        self.range = range
-        self.originAngle = originAngle
-        self.maxWinds = maxWinds
-    }
-
-    public init(_ value: Binding<Double>, originAngle: Angle = .zero, maxWinds: Double = 1) {
-        self._value = value
-        self.range = 0...1
-        self.isDisabled = false
         self.originAngle = originAngle
         self.maxWinds = maxWinds
     }
@@ -297,7 +279,7 @@ public struct RSlider: View {
 
     private var configuration: RSliderConfiguration {
         let pct = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
-        return .init(isDisabled: isDisabled,
+        return .init(isDisabled: !isEnabled,
                      isActive: isActive,
                      value: value,
                      angle: Angle(degrees: pct * 360 * maxWinds + originAngle.degrees),
@@ -334,6 +316,7 @@ public struct RSlider: View {
         return style.makeThumb(configuration: configuration)
             .offset(x: pX, y: pY)
             .gesture(gesture)
+            .allowsHitTesting(isEnabled)
     }
 
     public var body: some View {
