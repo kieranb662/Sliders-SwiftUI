@@ -33,7 +33,7 @@ fileprivate struct TrackPadExamples: View {
 
                 // ── Custom ranges ─────────────────────────────────────────────
                 GroupBox("Custom Ranges (x: −1…1, y: 0…10)") {
-                    TrackPad(value: $point4, rangeX: -1...1, rangeY: 0...10)
+                    TrackPad($point4, rangeX: -1...1, rangeY: 0...10)
                         .frame(height: 220)
                     valueLabel(point4, rangeX: -1...1, rangeY: 0...10)
                 }
@@ -229,7 +229,7 @@ private struct CrosshairTrackPadStyle: TrackPadStyle {
 #Preview("Custom Ranges") {
     @Previewable @State var point = CGPoint(x: 0.0, y: 5.0)
     VStack(spacing: 12) {
-        TrackPad(value: $point, rangeX: -1...1, rangeY: 0...10)
+        TrackPad($point, rangeX: -1...1, rangeY: 0...10)
             .frame(height: 240)
         HStack(spacing: 16) {
             Label(String(format: "x: %.2f", point.x), systemImage: "arrow.left.arrow.right")

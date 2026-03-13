@@ -71,24 +71,28 @@ public struct TrackPad: View {
 
     // MARK: - Initialisers
 
-    public init(value: Binding<CGPoint>, rangeX: ClosedRange<CGFloat>, rangeY: ClosedRange<CGFloat>) {
+    public init(_ value: Binding<CGPoint>,
+                rangeX: ClosedRange<CGFloat> = 0...1,
+                rangeY: ClosedRange<CGFloat> = 0...1
+    ) {
         self._value = value
         self.rangeX = rangeX
         self.rangeY = rangeY
     }
 
-    public init(_ value: Binding<CGPoint>) {
-        self._value = value
-    }
-
     /// Use this initializer when the x and y ranges are the same.
-    public init(_ value: Binding<CGPoint>, range: ClosedRange<CGFloat>) {
+    public init(_ value: Binding<CGPoint>, range: ClosedRange<CGFloat> = 0...1) {
         self._value = value
         self.rangeX = range
         self.rangeY = range
     }
 
-    public init(x: Binding<Double>, y: Binding<Double>, rangeX: ClosedRange<CGFloat>, rangeY: ClosedRange<CGFloat>) {
+    public init(
+        x: Binding<Double>,
+        y: Binding<Double>,
+        rangeX: ClosedRange<CGFloat> = 0...1,
+        rangeY: ClosedRange<CGFloat> = 0...1
+    ) {
         self._value = Binding(
             get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
             set: {
@@ -100,18 +104,8 @@ public struct TrackPad: View {
         self.rangeY = rangeY
     }
 
-    public init(x: Binding<Double>, y: Binding<Double>) {
-        self._value = Binding(
-            get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
-            set: {
-                x.wrappedValue = Double($0.x)
-                y.wrappedValue = Double($0.y)
-            }
-        )
-    }
-
     /// Use this initializer when the x and y ranges are the same.
-    public init(x: Binding<Double>, y: Binding<Double>, range: ClosedRange<CGFloat>) {
+    public init(x: Binding<Double>, y: Binding<Double>, range: ClosedRange<CGFloat> = 0...1) {
         self._value = Binding(
             get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
             set: {
