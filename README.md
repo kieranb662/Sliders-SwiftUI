@@ -409,6 +409,296 @@ RSlider($value)
     .radialSliderStyle(.knob)
 ```
 
+## Double Radial Slider
+
+`DoubleRSlider` is a circular **range** slider with two independent thumbs — a lower (start) thumb and an upper (end) thumb — connected by a draggable active-track arc. All three elements respond to drag gestures, making it easy to select and pan a range of values on a circular track.
+
+### What it does
+
+- Lets the user define a range by dragging a **lower thumb** and an **upper thumb** independently around a full circle.
+- The **active-track arc** between the two thumbs can be dragged to shift the entire range while keeping its width constant.
+- Enforces a **`minimumDistance`** between the two thumbs so they can never overlap.
+- Supports tick marks, magnetic affinity (snap to tick), and haptic feedback — all independently configurable per thumb.
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `lowerValue` | `Binding<Double>` | required | The start (lower) value of the selected range |
+| `upperValue` | `Binding<Double>` | required | The end (upper) value of the selected range |
+| `range` | `ClosedRange<Double>` | `0...1` | The allowed value domain |
+| `originAngle` | `Angle` | `.zero` | The angle that corresponds to the minimum value (3 o'clock by default) |
+| `minimumDistance` | `Double?` | 5 % of span | Smallest gap in value units between the two thumbs |
+| `tickSpacing` | `TickMarkSpacing?` | `nil` | Tick mark placement. Use `nil` to hide tick marks |
+| `affinityEnabled` | `Bool` | `false` | Enables magnetic snap toward tick marks |
+| `affinityRadius` | `Double` | `0.04` | Snap pull radius as a fraction of the full value range |
+| `affinityResistance` | `Double` | `0.02` | Extra escape distance beyond `affinityRadius` |
+| `disableHaptics` | `Bool` | `false` | Suppresses all haptic feedback |
+
+### Basic Usage
+
+```swift
+@State private var lower = 0.25
+@State private var upper = 0.75
+
+DoubleRSlider(lowerValue: $lower, upperValue: $upper)
+    .frame(width: 220, height: 220)
+```
+
+### Custom Range and Origin Angle
+
+Set `range` to control the value domain and `originAngle` to place the minimum value at a specific position on the circle. An `originAngle` of `-.degrees(90)` puts the minimum at the top (12 o'clock).
+
+```swift
+@State private var startTemp = 15.0
+@State private var endTemp   = 25.0
+
+DoubleRSlider(
+    lowerValue: $startTemp,
+    upperValue: $endTemp,
+    range: 0...40,
+    originAngle: .degrees(-90)
+)
+.frame(width: 240, height: 240)
+```
+
+### Minimum Distance
+
+`minimumDistance` ensures the two thumbs never collapse on top of each other. Specify it in value-domain units. If omitted, it defaults to 5 % of the range span.
+
+```swift
+@State private var lower = 0.1
+@State private var upper = 0.9
+
+// Thumbs must stay at least 0.1 apart
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    minimumDistance: 0.1
+)
+.frame(width: 220, height: 220)
+```
+
+### Tick Marks
+
+Tick marks use the same `TickMarkSpacing` enum as the other sliders.
+
+**`.count(n)`** — evenly distribute `n` tick marks across the range:
+
+```swift
+@State private var lower = 0.0
+@State private var upper = 0.5
+
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    tickSpacing: .count(9)   // ticks at 0, 0.125, 0.25 … 1.0
+)
+.frame(width: 220, height: 220)
+```
+
+**`.spacing(step)`** — place a tick mark every `step` units:
+
+```swift
+@State private var lower = 0.0
+@State private var upper = 6.0
+
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...12,
+    tickSpacing: .spacing(1)   // ticks at 0, 1, 2 … 12
+)
+.frame(width: 220, height: 220)
+```
+
+**`.values([...])`** — place tick marks at specific values:
+
+```swift
+@State private var lower = 0.25
+@State private var upper = 0.75
+
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    tickSpacing: .values([0.0, 0.25, 0.5, 0.75, 1.0])
+)
+.frame(width: 220, height: 220)
+```
+
+### Tick Affinity (Snapping)
+
+When `affinityEnabled` is `true` and `tickSpacing` is set, each thumb is pulled magnetically onto the nearest tick mark when it comes within `affinityRadius` of one. The thumb stays locked to the tick until it is dragged beyond `affinityRadius + affinityResistance`.
+
+```swift
+@State private var lower = 0.0
+@State private var upper = 0.5
+
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    tickSpacing: .count(9),
+    affinityEnabled: true,
+    affinityRadius: 0.03,
+    affinityResistance: 0.015
+)
+.frame(width: 220, height: 220)
+```
+
+### Dragging the Active Track
+
+The filled arc between the two thumbs acts as a drag handle that shifts the entire range. The range width is held constant while both `lowerValue` and `upperValue` update together. This requires no special configuration — the gesture is always active on the arc.
+
+### Haptic Feedback
+
+Haptic feedback fires automatically (on supported platforms) when:
+
+- A thumb reaches the minimum or maximum of the range (limit hit).
+- A thumb crosses a tick mark (tick pulse, when `tickSpacing` is set).
+- A thumb snaps in or out of affinity with a tick mark (when `affinityEnabled` is `true`).
+
+Each thumb has its own independent haptic engine so their events never interfere with each other. Disable all haptics with `disableHaptics: true`.
+
+```swift
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    tickSpacing: .count(11),
+    disableHaptics: true
+)
+.frame(width: 220, height: 220)
+```
+
+### Styling the Slider
+
+Conform to `DoubleRSliderStyle` and implement four methods:
+
+- `makeLowerThumb(configuration:)` — the draggable lower-bound thumb
+- `makeUpperThumb(configuration:)` — the draggable upper-bound thumb
+- `makeTrack(configuration:)` — the full circular track with the filled arc
+- `makeTickMark(configuration:tickValue:)` — the view rendered at each tick position
+
+Apply a style using `.doubleRadialSliderStyle(_:)` on the slider or any ancestor view.
+
+All four methods receive a `DoubleRSliderConfiguration` that exposes the current state:
+
+```swift
+struct DoubleRSliderConfiguration {
+    let isDisabled: Bool          // Whether the slider is disabled
+    let isLowerActive: Bool       // Whether the lower thumb is being dragged
+    let isUpperActive: Bool       // Whether the upper thumb is being dragged
+    let isRangeActive: Bool       // Whether the active-track arc is being dragged
+    let lowerValue: Double        // The current lower value
+    let upperValue: Double        // The current upper value
+    let lowerAngle: Angle         // Angle on the circle for lowerValue
+    let upperAngle: Angle         // Angle on the circle for upperValue
+    let originAngle: Angle        // Angle that maps to the minimum value
+    let min: Double               // Lower bound of the range
+    let max: Double               // Upper bound of the range
+    let tickMarkSpacing: TickMarkSpacing?  // Tick spacing config, or nil
+    let tickValues: [Double]      // Resolved list of tick-mark values
+    let affinityEnabled: Bool     // Whether affinity snapping is on
+    let snappedLowerTickValue: Double?  // Tick the lower thumb is snapped to, or nil
+    let snappedUpperTickValue: Double?  // Tick the upper thumb is snapped to, or nil
+
+    var lowerPercent: Double  // lowerValue normalised to 0...1
+    var upperPercent: Double  // upperValue normalised to 0...1
+}
+```
+
+### Custom Style Example
+
+The following style draws a dark circular track with a teal filled arc and square thumbs that highlight when active:
+
+```swift
+struct TealRangeStyle: DoubleRSliderStyle {
+
+    func makeLowerThumb(configuration: DoubleRSliderConfiguration) -> some View {
+        let active = configuration.isLowerActive || configuration.isRangeActive
+        return RoundedRectangle(cornerRadius: 6)
+            .fill(active ? Color.teal : Color.white)
+            .frame(width: 28, height: 28)
+            .shadow(color: .black.opacity(0.25), radius: active ? 6 : 2)
+            // Counter-rotate the inset offset that DefaultDoubleRSliderStyle applies;
+            // for a fully custom style you position the thumb via makeTrack's rotationEffect.
+    }
+
+    func makeUpperThumb(configuration: DoubleRSliderConfiguration) -> some View {
+        let active = configuration.isUpperActive || configuration.isRangeActive
+        return RoundedRectangle(cornerRadius: 6)
+            .fill(active ? Color.teal : Color.white)
+            .frame(width: 28, height: 28)
+            .shadow(color: .black.opacity(0.25), radius: active ? 6 : 2)
+    }
+
+    func makeTrack(configuration: DoubleRSliderConfiguration) -> some View {
+        let arcLength = configuration.upperPercent - configuration.lowerPercent
+        return ZStack {
+            Circle()
+                .strokeBorder(Color(white: 0.2), lineWidth: 20)
+            CircularArc(percent: arcLength)
+                .strokeBorder(Color.teal, lineWidth: 20)
+                .rotationEffect(configuration.lowerAngle)
+        }
+        .padding(10)
+    }
+
+    func makeTickMark(configuration: DoubleRSliderConfiguration, tickValue: Double) -> some View {
+        Circle()
+            .fill(Color.white.opacity(0.5))
+            .frame(width: 5, height: 5)
+    }
+}
+```
+
+Apply it to a slider:
+
+```swift
+@State private var lower = 0.2
+@State private var upper = 0.8
+
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    tickSpacing: .count(9)
+)
+.doubleRadialSliderStyle(TealRangeStyle())
+.frame(width: 240, height: 240)
+```
+
+The modifier cascades through the view hierarchy, so you can style multiple sliders at once:
+
+```swift
+VStack {
+    DoubleRSlider(lowerValue: $lowerA, upperValue: $upperA)
+    DoubleRSlider(lowerValue: $lowerB, upperValue: $upperB)
+}
+.doubleRadialSliderStyle(TealRangeStyle())
+```
+
+You can also use the built-in default style with custom colours:
+
+```swift
+DoubleRSlider(lowerValue: $lower, upperValue: $upper)
+    .doubleRadialSliderStyle(
+        .default(
+            trackColor: Color(white: 0.25),
+            trackFilledColor: .indigo,
+            lowerThumbColor: .white,
+            upperThumbColor: .white,
+            activeThumbColor: .cyan,
+            trackThickness: 20
+        )
+    )
+    .frame(width: 220, height: 220)
+```
+
 ## Path Slider
  A View that turns any `Shape` into a slider. Its great for creating unique user experiences 
 
@@ -623,7 +913,7 @@ struct <#My RadialPad Style#>: RadialPadStyle {
 
 ## Joystick
 
- Joystick view used to control various activities such as moving a character on the screen. The View creates a Rectangular region to act as a hitbox for drag gestures. Once a drag is initiated the joystick appears on screen centered at the start location of the gesture. While dragging, the thumb of the joystick is limited be within the `radius` of the sticks background circle.
+ Joystick view used to control various activities such as moving a character on the screen. The View creates a Rectangular region to act as a hitbox for drag gestures. Once a drag is initiated the joystick appears on screen centered at the start location of the gesture. While dragging, the thumb of the joystick is limited be within the `radius` of the background circle.
 
  - **parameters**:
      - `state`: `Binding<JoyState>`  you provide a binding to a Joystate  value which allows you to maintain access to all of the Joysticks state values
@@ -685,8 +975,3 @@ struct <#My Joystick Style#>: JoystickStyle {
     }
 }
 ```
-
-
-
-
-
