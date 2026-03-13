@@ -19,25 +19,25 @@ fileprivate struct TrackPadExamples: View {
     @State var point6 = CGPoint(x: 0.5, y: 0.5)
     @State var point7 = CGPoint(x: 0.5, y: 0.5)
     @State var point8 = CGPoint(x: 0.5, y: 0.5)
-
+    
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-
+                
                 // ── Default style ─────────────────────────────────────────────
                 GroupBox("Default Style") {
                     TrackPad($point1)
                         .frame(height: 220)
                     valueLabel(point1, rangeX: 0...1, rangeY: 0...1)
                 }
-
+                
                 // ── Custom ranges ─────────────────────────────────────────────
                 GroupBox("Custom Ranges (x: −1…1, y: 0…10)") {
                     TrackPad($point4, rangeX: -1...1, rangeY: 0...10)
                         .frame(height: 220)
                     valueLabel(point4, rangeX: -1...1, rangeY: 0...10)
                 }
-
+                
                 // ── showPreviousValue — default indicator ─────────────────────
                 GroupBox("showPreviousValue — default indicator") {
                     TrackPad($point2)
@@ -48,7 +48,7 @@ fileprivate struct TrackPadExamples: View {
                         .foregroundStyle(.secondary)
                     valueLabel(point2, rangeX: 0...1, rangeY: 0...1)
                 }
-
+                
                 // ── showPreviousValue — tight affinity ────────────────────────
                 GroupBox("showPreviousValue — tight affinity (radius 3%, resistance 1%)") {
                     TrackPad($point3)
@@ -58,7 +58,7 @@ fileprivate struct TrackPadExamples: View {
                         .frame(height: 220)
                     valueLabel(point3, rangeX: 0...1, rangeY: 0...1)
                 }
-
+                
                 // ── showPreviousValue — loose affinity ────────────────────────
                 GroupBox("showPreviousValue — loose affinity (radius 12%, velocity ≤350)") {
                     TrackPad($point5)
@@ -71,7 +71,7 @@ fileprivate struct TrackPadExamples: View {
                         .foregroundStyle(.secondary)
                     valueLabel(point5, rangeX: 0...1, rangeY: 0...1)
                 }
-
+                
                 // ── Custom style (.default preset with large thumb) ───────────
                 GroupBox(".default(thumbSize: 48) preset + showPreviousValue") {
                     TrackPad($point6)
@@ -80,7 +80,7 @@ fileprivate struct TrackPadExamples: View {
                         .frame(height: 220)
                     valueLabel(point6, rangeX: 0...1, rangeY: 0...1)
                 }
-
+                
                 // ── Custom CrosshairTrackPadStyle ─────────────────────────────
                 GroupBox("Custom CrosshairTrackPadStyle + diamond indicator") {
                     TrackPad($point7)
@@ -89,7 +89,7 @@ fileprivate struct TrackPadExamples: View {
                         .frame(height: 220)
                     valueLabel(point7, rangeX: 0...1, rangeY: 0...1)
                 }
-
+                
                 // ── Disabled state ────────────────────────────────────────────
                 GroupBox("Disabled") {
                     TrackPad($point8)
@@ -102,7 +102,7 @@ fileprivate struct TrackPadExamples: View {
             .padding()
         }
     }
-
+    
     @ViewBuilder
     private func valueLabel(_ point: CGPoint, rangeX: ClosedRange<CGFloat>, rangeY: ClosedRange<CGFloat>) -> some View {
         HStack(spacing: 16) {
@@ -119,7 +119,7 @@ fileprivate struct TrackPadExamples: View {
 
 /// A crosshair-style track pad with a dot thumb and a 4×4 grid of guide dots.
 private struct CrosshairTrackPadStyle: TrackPadStyle {
-
+    
     func makeThumb(configuration: TrackPadConfiguration) -> some View {
         ZStack {
             Circle()
@@ -134,7 +134,7 @@ private struct CrosshairTrackPadStyle: TrackPadStyle {
         .shadow(color: .black.opacity(0.25), radius: configuration.isActive ? 8 : 3)
         .animation(.easeOut(duration: 0.1), value: configuration.isActive)
     }
-
+    
     func makeTrack(configuration: TrackPadConfiguration) -> some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
@@ -146,7 +146,7 @@ private struct CrosshairTrackPadStyle: TrackPadStyle {
                             lineWidth: 1
                         )
                 )
-
+            
             // 4×4 grid of guide dots
             GeometryReader { geo in
                 let cols = 4
@@ -165,14 +165,14 @@ private struct CrosshairTrackPadStyle: TrackPadStyle {
             }
         }
     }
-
+    
     /// Custom previous-value indicator: a filled diamond marker.
     func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> some View {
         let snapped = configuration.isSnappedToPrevious
         let size: Double = snapped ? 14 : 9
         let fillColor = Color(.sRGB, red: 0.084, green: 0.247, blue: 0.602)
             .opacity(snapped ? 0.85 : 0.40)
-
+        
         return ZStack {
             Rectangle()
                 .fill(fillColor)

@@ -52,41 +52,42 @@ public struct TrackPad: View {
     @State private var previousValue: CGPoint? = nil
     /// Whether the thumb is currently magnetically snapped to the previous-value position.
     @State private var isSnappedToPrevious: Bool = false
-
+    
     // MARK: Inputs
     @Binding public var value: CGPoint
     public var rangeX: ClosedRange<CGFloat> = 0...1
     public var rangeY: ClosedRange<CGFloat> = 0...1
-
+    
     /// When `true`, a visual indicator marks the last committed position and affinity snap
     /// is enabled near it.
     public var showPreviousValue: Bool = false
-
+    
     /// Fraction of the track diagonal within which the previous-value snap activates.
     public var previousValueAffinityRadius: Double = 0.06
     /// Extra fraction beyond `previousValueAffinityRadius` before the snap releases.
     public var previousValueAffinityResistance: Double = 0.03
     /// Maximum drag velocity (pts/s) at which the snap can engage.
     public var previousValueVelocityThreshold: Double = 180.0
-
+    
     // MARK: - Initialisers
-
-    public init(_ value: Binding<CGPoint>,
-                rangeX: ClosedRange<CGFloat> = 0...1,
-                rangeY: ClosedRange<CGFloat> = 0...1
+    
+    public init(
+        _ value: Binding<CGPoint>,
+        rangeX: ClosedRange<CGFloat> = 0...1,
+        rangeY: ClosedRange<CGFloat> = 0...1
     ) {
         self._value = value
         self.rangeX = rangeX
         self.rangeY = rangeY
     }
-
+    
     /// Use this initializer when the x and y ranges are the same.
     public init(_ value: Binding<CGPoint>, range: ClosedRange<CGFloat> = 0...1) {
         self._value = value
         self.rangeX = range
         self.rangeY = range
     }
-
+    
     public init(
         x: Binding<Double>,
         y: Binding<Double>,
@@ -103,7 +104,7 @@ public struct TrackPad: View {
         self.rangeX = rangeX
         self.rangeY = rangeY
     }
-
+    
     /// Use this initializer when the x and y ranges are the same.
     public init(x: Binding<Double>, y: Binding<Double>, range: ClosedRange<CGFloat> = 0...1) {
         self._value = Binding(
@@ -116,25 +117,25 @@ public struct TrackPad: View {
         self.rangeX = range
         self.rangeY = range
     }
-
+    
     // MARK: - Configuration
-
+    
     private func makeConfiguration() -> TrackPadConfiguration {
         let pctX = Double((value.x - rangeX.lowerBound) / (rangeX.upperBound - rangeX.lowerBound))
         let pctY = Double((value.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound))
-
+        
         var prevPctX: Double? = nil
         var prevPctY: Double? = nil
         var prevValX: Double? = nil
         var prevValY: Double? = nil
-
+        
         if let prev = previousValue {
             prevPctX = Double((prev.x - rangeX.lowerBound) / (rangeX.upperBound - rangeX.lowerBound))
             prevPctY = Double((prev.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound))
             prevValX = Double(prev.x)
             prevValY = Double(prev.y)
         }
-
+        
         return TrackPadConfiguration(
             isDisabled: !isEnabled,
             isActive: isActive,
@@ -154,9 +155,9 @@ public struct TrackPad: View {
             isSnappedToPrevious: isSnappedToPrevious
         )
     }
-
+    
     // MARK: - Fluent configuration modifiers
-
+    
     /// Shows or hides the previous-value indicator.
     ///
     /// When `true`, a visual marker is shown at the last committed position and
@@ -166,7 +167,7 @@ public struct TrackPad: View {
         copy.showPreviousValue = show
         return copy
     }
-
+    
     /// Sets the affinity pull radius for the previous-value indicator.
     ///
     /// - Parameter radius: Fraction of the track diagonal within which the snap activates.
@@ -175,7 +176,7 @@ public struct TrackPad: View {
         copy.previousValueAffinityRadius = radius
         return copy
     }
-
+    
     /// Sets the affinity resistance for the previous-value indicator.
     ///
     /// - Parameter resistance: Extra fraction beyond the pull radius the drag must travel to escape.
@@ -184,7 +185,7 @@ public struct TrackPad: View {
         copy.previousValueAffinityResistance = resistance
         return copy
     }
-
+    
     /// Sets the maximum drag velocity at which the previous-value snap can engage.
     ///
     /// - Parameter threshold: Speed in points per second. Drags faster than this pass through freely.
@@ -193,9 +194,9 @@ public struct TrackPad: View {
         copy.previousValueVelocityThreshold = threshold
         return copy
     }
-
+    
     // MARK: - Calculations
-
+    
     /// Converts a drag location into a clamped `value`, firing edge haptics as needed.
     /// Returns the raw (unconstrained) normalised fractions before clamping.
     private func constrainValue(_ proxy: GeometryProxy, _ location: CGPoint) {
@@ -203,7 +204,7 @@ public struct TrackPad: View {
         let h = proxy.size.height
         let pctX = (location.x / w).clamped(to: 0...1)
         let pctY = (location.y / h).clamped(to: 0...1)
-
+        
         // Horizontal haptic handling
         if pctX == 1 || pctX == 0 {
             if !atXLimit { impactOccured() }
@@ -218,12 +219,12 @@ public struct TrackPad: View {
         } else {
             atYLimit = false
         }
-
+        
         let newX = pctX * (rangeX.upperBound - rangeX.lowerBound) + rangeX.lowerBound
         let newY = pctY * (rangeY.upperBound - rangeY.lowerBound) + rangeY.lowerBound
         value = CGPoint(x: newX, y: newY)
     }
-
+    
     /// Applies previous-value affinity, potentially snapping `value` to `previousValue`.
     ///
     /// - Parameters:
@@ -231,31 +232,31 @@ public struct TrackPad: View {
     ///   - velocity: The current drag velocity in points per second.
     private func applyPreviousValueAffinity(_ proxy: GeometryProxy, velocity: CGSize) {
         guard showPreviousValue, let prev = previousValue else { return }
-
+        
         let w = Double(proxy.size.width)
         let h = Double(proxy.size.height)
         let diagonal = (w * w + h * h).squareRoot()
         guard diagonal > 0 else { return }
-
+        
         // Current position in normalised [0,1] space
         let currentPctX = Double((value.x - rangeX.lowerBound) / (rangeX.upperBound - rangeX.lowerBound))
         let currentPctY = Double((value.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound))
-
+        
         // Previous position in normalised [0,1] space
         let prevPctX = Double((prev.x - rangeX.lowerBound) / (rangeX.upperBound - rangeX.lowerBound))
         let prevPctY = Double((prev.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound))
-
+        
         // Distance in screen space between current thumb and previous-value position
         let dx = (currentPctX - prevPctX) * w
         let dy = (currentPctY - prevPctY) * h
         let screenDistance = (dx * dx + dy * dy).squareRoot()
         let normalisedDistance = screenDistance / diagonal
-
+        
         let speed = (Double(velocity.width) * Double(velocity.width) + Double(velocity.height) * Double(velocity.height)).squareRoot()
-
+        
         let pullRadius     = previousValueAffinityRadius
         let resistRadius   = previousValueAffinityRadius + previousValueAffinityResistance
-
+        
         if isSnappedToPrevious {
             // ── Hold phase: stay snapped until drag escapes resistance zone ──
             if normalisedDistance > resistRadius {
@@ -273,7 +274,7 @@ public struct TrackPad: View {
             }
         }
     }
-
+    
     private func thumbOffset(_ proxy: GeometryProxy) -> CGSize {
         let w = proxy.size.width
         let h = proxy.size.height
@@ -281,7 +282,7 @@ public struct TrackPad: View {
         let pctY = (value.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound)
         return CGSize(width: w * (pctX - 0.5), height: h * (pctY - 0.5))
     }
-
+    
     private func previousValueOffset(_ proxy: GeometryProxy) -> CGSize {
         guard let prev = previousValue else { return .zero }
         let w = proxy.size.width
@@ -290,25 +291,25 @@ public struct TrackPad: View {
         let pctY = (prev.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound)
         return CGSize(width: w * (pctX - 0.5), height: h * (pctY - 0.5))
     }
-
+    
     // MARK: - Haptics
-
+    
     private func impactOccured() {
 #if os(iOS)
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
 #endif
     }
-
+    
     private func playSnapHaptic() {
 #if os(iOS)
         let generator = UIImpactFeedbackGenerator(style: .soft)
         generator.impactOccurred(intensity: 0.7)
 #endif
     }
-
+    
     // MARK: - View
-
+    
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: makeConfiguration())
@@ -319,7 +320,7 @@ public struct TrackPad: View {
                         style.makePreviousValueIndicator(configuration: makeConfiguration())
                             .offset(previousValueOffset(proxy))
                     }
-
+                    
                     // Thumb
                     style.makeThumb(configuration: makeConfiguration())
                         .offset(thumbOffset(proxy))

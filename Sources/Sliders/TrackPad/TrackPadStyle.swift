@@ -26,7 +26,7 @@ public struct TrackPadConfiguration: Sendable {
     public let isDisabled: Bool
     /// Whether the user is actively dragging the thumb.
     public let isActive: Bool
-
+    
     // MARK: Current position
     /// `(valueX − minX) / (maxX − minX)` — horizontal fill fraction in `[0, 1]`.
     public let pctX: Double
@@ -36,7 +36,7 @@ public struct TrackPadConfiguration: Sendable {
     public let valueX: Double
     /// The current value in the y direction.
     public let valueY: Double
-
+    
     // MARK: Range bounds
     /// The minimum value from `rangeX`.
     public let minX: Double
@@ -46,7 +46,7 @@ public struct TrackPadConfiguration: Sendable {
     public let minY: Double
     /// The maximum value from `rangeY`.
     public let maxY: Double
-
+    
     // MARK: Previous value
     /// Whether the previous-value indicator should be shown.
     ///
@@ -83,13 +83,13 @@ public protocol TrackPadStyle: Sendable {
     associatedtype Track: View
     /// The view used to mark the last committed position (previous value indicator).
     associatedtype PreviousValueIndicator: View
-
+    
     /// Creates the draggable thumb.
     func makeThumb(configuration: TrackPadConfiguration) -> Self.Thumb
-
+    
     /// Creates the track background.
     func makeTrack(configuration: TrackPadConfiguration) -> Self.Track
-
+    
     /// Creates the view shown at the previous-value position.
     ///
     /// ``TrackPad`` places this view at the correct offset automatically; you only need to
@@ -110,7 +110,7 @@ public extension TrackPadStyle {
     func makePreviousValueIndicatorTypeErased(configuration: TrackPadConfiguration) -> AnyView {
         AnyView(self.makePreviousValueIndicator(configuration: configuration))
     }
-
+    
     /// Default previous-value indicator: a dim ring with a small crosshair that brightens
     /// and scales up when `isSnappedToPrevious` is `true`.
     func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> some View {
@@ -118,7 +118,7 @@ public extension TrackPadStyle {
         let ringSize: Double = snapped ? 22 : 16
         let ringOpacity: Double = snapped ? 0.90 : 0.45
         let crossSize: Double = snapped ? 8 : 5
-
+        
         return ZStack {
             Circle()
                 .strokeBorder(
@@ -126,7 +126,7 @@ public extension TrackPadStyle {
                     lineWidth: snapped ? 2.5 : 1.5
                 )
                 .frame(width: ringSize, height: ringSize)
-
+            
             // Crosshair
             Rectangle()
                 .fill(Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855).opacity(ringOpacity))
@@ -148,7 +148,7 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
     private let _makeThumb: @Sendable (TrackPadConfiguration) -> AnyView
     private let _makeTrack: @Sendable (TrackPadConfiguration) -> AnyView
     private let _makePreviousValueIndicator: @Sendable (TrackPadConfiguration) -> AnyView
-
+    
     public func makeThumb(configuration: TrackPadConfiguration) -> some View {
         _makeThumb(configuration)
     }
@@ -158,7 +158,7 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
     public func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> some View {
         _makePreviousValueIndicator(configuration)
     }
-
+    
     public init<S: TrackPadStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -195,7 +195,7 @@ extension View {
 public extension TrackPadStyle where Self == DefaultTrackPadStyle {
     /// The built-in default track-pad style.
     static var `default`: DefaultTrackPadStyle { DefaultTrackPadStyle() }
-
+    
     /// The built-in default track-pad style with customisable colours.
     ///
     /// Usage:
@@ -230,13 +230,13 @@ public extension TrackPadStyle where Self == DefaultTrackPadStyle {
 ///   matching the thumb behaviour of the linear and radial sliders.
 /// - Previous-value indicator: inherited from the protocol default — a blue ring + crosshair.
 public struct DefaultTrackPadStyle: TrackPadStyle, Sendable {
-
+    
     let trackColor: Color
     let trackStrokeColor: Color
     let thumbInactiveColor: Color
     let thumbActiveColor: Color
     let thumbSize: Double
-
+    
     /// Creates the default track-pad style with customisable parameters.
     public init(
         trackColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59).opacity(0.25),
@@ -251,7 +251,7 @@ public struct DefaultTrackPadStyle: TrackPadStyle, Sendable {
         self.thumbActiveColor = thumbActiveColor
         self.thumbSize = thumbSize
     }
-
+    
     public func makeThumb(configuration: TrackPadConfiguration) -> some View {
         Circle()
             .fill(configuration.isActive ? thumbActiveColor : thumbInactiveColor)
@@ -265,7 +265,7 @@ public struct DefaultTrackPadStyle: TrackPadStyle, Sendable {
                     .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
             )
     }
-
+    
     public func makeTrack(configuration: TrackPadConfiguration) -> some View {
         RoundedRectangle(cornerRadius: 12)
             .fill(trackColor)
