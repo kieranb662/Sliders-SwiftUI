@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-    <img src="https://img.shields.io/badge/platforms-iOS_16_|macOS_13_| watchOS_9.0-blue.svg" alt="SwiftUI" />
+    <img src="https://img.shields.io/badge/platforms-iOS_26_|macOS_26_| watchOS_26-blue.svg" alt="SwiftUI" />
     <img src="https://img.shields.io/badge/Swift-6.0-orange.svg" alt="Swift 6.0" />
     <img src="https://img.shields.io/badge/SwiftPM-compatible-green.svg" alt="Swift 6.1" />
     <img src="https://img.shields.io/github/followers/kieranb662?label=Follow" alt="kieranb662 followers" />
@@ -34,9 +34,9 @@ The various components are:
 
 **Sliders** as a default requires the SwiftUI Framework to be operational and since the `DragGesture` is required only these platforms can make use of the library:
 
-* macOS 13 or Greater 
-* iOS 16 or Greater 
-* watchOS 9 or Greater
+* macOS 26 or Greater 
+* iOS 26 or Greater 
+* watchOS 26 or Greater
 
 ## How To Add To Your Project
 
@@ -933,7 +933,7 @@ To create a custom style, conform to `DoubleRSliderStyle` and implement:
 - `makeLowerThumb(configuration:)`
 - `makeUpperThumb(configuration:)`
 - `makeTrack(configuration:)`
-- `makeTickMark(configuration:tickValue:)`
+- `makeTickMark(configuration:tickValue:)` — the view rendered at each tick position (has a default implementation)
 
 Apply a style using `.doubleRadialSliderStyle(_:)` on the slider or any ancestor view.
 
@@ -1145,170 +1145,386 @@ struct <#My OverflowSlider Style#>: OverflowSliderStyle {
 
 ## Track Pad
 
-Essentially the 2D equaivalent of a normal `Slider`, This creates a draggable thumb and a rectangular area that the thumbs translation is restricted within
+`TrackPad` is the 2-D equivalent of a `Slider`. A draggable thumb moves freely inside a
+rectangular area, controlling independent x and y values simultaneously. Lift your finger
+to commit the position; drag the thumb slowly back near the ghost marker to snap back to
+the last committed location. A full tick-mark grid lets you divide both axes into discrete
+steps with magnetic snap-to-grid behaviour.
 
-- **parameters**:
-    - `value`: A `CGPoint ` representing the two values being controlled by the trackpad in the x, and y directions
-    - `rangeX`: A `ClosedRange<CGFloat>` defining the minimum and maximum of  the `value` parameters  x component
-    - `rangeY`: A `ClosedRange<CGFloat>` defining the minimum and maximum of  the `value` parameters  y component
-    - `isDisabled`: A `Bool` value describing whether the track pad responds to user input or not
+### What it does
+
+- Controls a `CGPoint` value by dragging a thumb anywhere inside a rectangular track.
+- Each axis has its own independent `ClosedRange`, so x and y can cover completely
+  different domains.
+- **Previous-value indicator** — a ghost marker is left at the last committed position
+  (when the user lifts their finger). Drag slowly near it to snap back; fast swipes pass
+  through freely.
+- **Tick marks** — divide one or both axes into a regular grid. The thumb snaps magnetically
+  to the nearest intersection when moving slowly.
+- **Haptic feedback** — fires when the thumb hits a track edge (iOS), and softly when it
+  snaps to a previous-value position or a tick-mark intersection.
+- Fully stylable via the `TrackPadStyle` protocol.
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `value` | `Binding<CGPoint>` | required | The point whose x and y components the trackpad controls |
+| `rangeX` | `ClosedRange<CGFloat>` | `0...1` | Valid domain for the x axis |
+| `rangeY` | `ClosedRange<CGFloat>` | `0...1` | Valid domain for the y axis |
+| `showPreviousValue` | `Bool` | `false` | Show a ghost marker at the last committed position and enable affinity snap |
+| `previousValueAffinityRadius` | `Double` | `0.06` | Fraction of the track diagonal within which the previous-value snap activates |
+| `previousValueAffinityResistance` | `Double` | `0.03` | Extra fraction beyond the pull radius the drag must travel to escape the snap |
+| `previousValueVelocityThreshold` | `Double` | `180` | Max drag speed (pts/s) at which the snap can engage — fast swipes pass through |
+| `tickCountX` | `Int` | `0` | Number of equal intervals along the x-axis (`0` = no tick marks) |
+| `tickCountY` | `Int` | `0` | Number of equal intervals along the y-axis (`0` = no tick marks) |
+| `tickAffinityRadius` | `Double` | `0.05` | Fraction of the track diagonal within which the thumb snaps to the nearest tick |
+| `tickAffinityResistance` | `Double` | `0.02` | Extra fraction beyond the pull radius the drag must travel to escape a tick snap |
+| `tickAffinityVelocityThreshold` | `Double` | `150` | Max drag speed (pts/s) at which tick snapping can engage |
+
+### Basic Usage
+
+A `TrackPad` over the default `0...1` range on both axes:
+
+```swift
+@State var point = CGPoint(x: 0.5, y: 0.5)
+
+TrackPad($point)
+    .frame(height: 260)
+```
+
+### Custom Ranges
+
+Pass `rangeX` and `rangeY` independently when the axes cover different domains:
+
+```swift
+@State var point = CGPoint(x: 0.0, y: 5.0)
+
+TrackPad($point, rangeX: -1...1, rangeY: 0...10)
+    .frame(height: 260)
+```
+
+When both axes share the same domain, use the single `range` convenience initialiser:
+
+```swift
+@State var point = CGPoint(x: 50, y: 50)
+
+TrackPad($point, range: 0...100)
+    .frame(height: 260)
+```
+
+### Double Bindings
+
+If your model stores x and y as separate `Double` properties you can bind to them directly
+without a `CGPoint` wrapper:
+
+```swift
+@State var pan: Double = 0.0
+@State var tilt: Double = 0.0
+
+// Independent ranges
+TrackPad(x: $pan, y: $tilt, rangeX: -1...1, rangeY: -1...1)
+    .frame(height: 260)
+
+// Shared range
+TrackPad(x: $pan, y: $tilt, range: -1...1)
+    .frame(height: 260)
+```
+
+### Previous Value Indicator
+
+Enable `showPreviousValue` to leave a ghost marker at the position where the user last
+lifted their finger. Dragging slowly back towards the marker will magnetically snap the
+thumb to it.
+
+```swift
+@State var point = CGPoint(x: 0.5, y: 0.5)
+
+TrackPad($point)
+    .showPreviousValue(true)
+    .frame(height: 260)
+```
+
+#### Tuning the Affinity
+
+The snap behaviour is controlled by three modifiers. All distances are expressed as a
+fraction of the track diagonal so they scale correctly with any frame size.
+
+| Modifier | Description |
+|---|---|
+| `.previousValueAffinityRadius(_:)` | How close (fraction of diagonal) the thumb must be to activate the snap |
+| `.previousValueAffinityResistance(_:)` | Extra fraction beyond the radius the drag must travel to break out |
+| `.previousValueVelocityThreshold(_:)` | Maximum drag speed (pts/s) at which the snap can engage |
+
+**Tight affinity** — snaps only when the thumb is within 3 % of the diagonal and moving
+very slowly:
+
+```swift
+TrackPad($point)
+    .showPreviousValue(true)
+    .previousValueAffinityRadius(0.03)
+    .previousValueAffinityResistance(0.01)
+    .frame(height: 260)
+```
+
+**Loose affinity** — larger pull zone, tolerates faster movement:
+
+```swift
+TrackPad($point)
+    .showPreviousValue(true)
+    .previousValueAffinityRadius(0.12)
+    .previousValueVelocityThreshold(350)
+    .frame(height: 260)
+```
+
+### Tick Marks
+
+Set `tickCountX` and/or `tickCountY` to positive integers to divide the track into a
+regular grid. When both axes have ticks, the intersections also act as snap points.
+
+#### Grid (both axes)
+
+`.tickCount(_:)` is a convenience that sets the same interval count on both axes at once:
+
+```swift
+@State var point = CGPoint(x: 0.5, y: 0.5)
+
+// 4×4 grid — 5 lines on each axis, 25 intersection snap points
+TrackPad($point)
+    .tickCount(4)
+    .frame(height: 260)
+```
+
+#### Independent axis counts
+
+```swift
+// 3 columns, 5 rows
+TrackPad($point)
+    .tickCountX(3)
+    .tickCountY(5)
+    .frame(height: 260)
+```
+
+#### Single-axis tick lines
+
+When only one axis has ticks, guide lines are drawn and single-axis snapping is applied:
+
+```swift
+// Vertical guide lines only — snaps to nearest x column
+TrackPad($point)
+    .tickCountX(4)
+    .frame(height: 260)
+
+// Horizontal guide lines only — snaps to nearest y row
+TrackPad($point)
+    .tickCountY(4)
+    .frame(height: 260)
+```
+
+#### Tuning Tick Affinity
+
+The tick snap behaviour mirrors the previous-value affinity and is independently tunable:
+
+| Modifier | Description |
+|---|---|
+| `.tickAffinityRadius(_:)` | How close (fraction of diagonal) the thumb must be to snap to a tick |
+| `.tickAffinityResistance(_:)` | Extra fraction beyond the radius the drag must travel to escape |
+| `.tickAffinityVelocityThreshold(_:)` | Maximum drag speed (pts/s) at which the snap can engage |
+
+**Generous pull zone** — easy to land on intersections, forgiving of imprecise drags:
+
+```swift
+TrackPad($point)
+    .tickCount(3)
+    .tickAffinityRadius(0.10)
+    .tickAffinityResistance(0.04)
+    .frame(height: 260)
+```
+
+**Precise grid** — only snaps when the thumb is very close and moving slowly:
+
+```swift
+TrackPad($point)
+    .tickCount(8)
+    .tickAffinityRadius(0.025)
+    .tickAffinityResistance(0.010)
+    .tickAffinityVelocityThreshold(80)
+    .frame(height: 260)
+```
+
+### Haptic Feedback
+
+Haptic feedback fires automatically on supported platforms (iOS) in three situations:
+
+- **Edge hit** — medium impact when the thumb reaches the boundary of the track on either axis.
+- **Previous-value snap** — soft impact at reduced intensity when the thumb locks onto the ghost position.
+- **Tick snap** — soft impact at reduced intensity when the thumb locks onto a tick intersection.
+
+There is no parameter to disable haptics on `TrackPad`; you can suppress them system-wide
+using the `.allowsHitTesting(false)` modifier or by disabling the view.
 
 ### Styling
 
- To create a custom style for the `TrackPad` you need to create a `TrackPadStyle` conforming struct. Conformance requires implementation of 2 methods
- 
- 1.  `makeThumb`: which creates the draggable portion of the trackpad
- 2.  `makeTrack`: which creates the background that the thumb will be contained in.
+Conform to `TrackPadStyle` to fully customise the track, thumb, previous-value indicator,
+and tick-mark grid. Apply the style with `.trackPadStyle(_:)` on the `TrackPad` or any
+ancestor view — it cascades through the view hierarchy.
 
- Both methods provide read access to the state values of the track pad thru the `TrackPadConfiguration` struct
- 
-````Swift
+#### TrackPadConfiguration
+
+All style methods receive a `TrackPadConfiguration` describing the current state:
+
+```swift
 struct TrackPadConfiguration {
-    let isDisabled: Bool // Whether or not the trackpad is disabled
-    let isActive: Bool // whether or not the thumb is dragging
-    let pctX: Double // (valueX-minX)/(maxX-minX)
-    let pctY: Double // (valueY-minY)/(maxY-minY)
-    let valueX: Double // The current value in the x direction
-    let valueY: Double // The current value in the y direction
-    let minX: Double // The minimum value from rangeX
-    let maxX: Double // The maximum value from rangeX
-    let minY: Double // The minimum value from rangeY
-    let maxY: Double // The maximum value from rangeY
-}
-````
+    // Core state
+    let isDisabled: Bool        // Whether the trackpad is disabled
+    let isActive: Bool          // Whether the thumb is currently being dragged
 
-To make this easier just copy and paste the following style based on the `DefaultTrackPadStyle`. After creating your custom style
-apply it by calling the `trackPadStyle` method on the `TrackPad` or a view containing it.
- 
-```Swift
-struct <#My TrackPad Style #>: TrackPadStyle {
-    func makeThumb(configuration:  TrackPadConfiguration) -> some View {
-          Circle()
-              .fill(configuration.isActive ? Color.yellow : Color.black)
-              .frame(width: 40, height: 40)
+    // Current position
+    let pctX: Double            // (valueX − minX) / (maxX − minX) — horizontal fill [0, 1]
+    let pctY: Double            // (valueY − minY) / (maxY − minY) — vertical fill [0, 1]
+    let valueX: Double          // Current value on the x-axis
+    let valueY: Double          // Current value on the y-axis
+
+    // Range bounds
+    let minX: Double            // Lower bound of rangeX
+    let maxX: Double            // Upper bound of rangeX
+    let minY: Double            // Lower bound of rangeY
+    let maxY: Double            // Upper bound of rangeY
+
+    // Previous value
+    let showPreviousValue: Bool // Whether the previous-value indicator is enabled
+    let previousPctX: Double?   // Normalised x fraction of last committed position, or nil
+    let previousPctY: Double?   // Normalised y fraction of last committed position, or nil
+    let previousValueX: Double? // Domain x value of last committed position, or nil
+    let previousValueY: Double? // Domain y value of last committed position, or nil
+    let isSnappedToPrevious: Bool // true while thumb is locked onto the previous position
+
+    // Tick marks
+    let tickCountX: Int         // Number of x-axis intervals (0 = none)
+    let tickCountY: Int         // Number of y-axis intervals (0 = none)
+    let isSnappedToTick: Bool   // true while thumb is locked onto a tick intersection
+    let snappedTickPctX: Double? // Normalised x fraction of the snapped tick, or nil
+    let snappedTickPctY: Double? // Normalised y fraction of the snapped tick, or nil
+}
+```
+
+#### TrackPadStyle Protocol
+
+Conform to `TrackPadStyle` and implement the required methods. `makePreviousValueIndicator`
+and `makeTickMarks` have default implementations — override only when you need a custom look.
+
+```swift
+protocol TrackPadStyle {
+    func makeThumb(configuration: TrackPadConfiguration) -> some View
+    func makeTrack(configuration: TrackPadConfiguration) -> some View
+
+    // Optional — default implementations provided
+    func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> some View
+    func makeTickMarks(configuration: TrackPadConfiguration) -> some View
+}
+```
+
+#### Custom Style Example
+
+The following style draws a dark navy track with a guide-dot grid, a two-layer dot thumb,
+and a filled diamond as the previous-value indicator:
+
+```swift
+struct CrosshairTrackPadStyle: TrackPadStyle {
+
+    func makeThumb(configuration: TrackPadConfiguration) -> some View {
+        ZStack {
+            Circle()
+                .fill(configuration.isActive ? Color.blue.opacity(0.8) : Color.blue)
+                .frame(width: 20, height: 20)
+            Circle()
+                .fill(Color.white)
+                .frame(width: 6, height: 6)
+        }
+        .shadow(color: .black.opacity(0.25), radius: configuration.isActive ? 8 : 3)
+        .animation(.easeOut(duration: 0.1), value: configuration.isActive)
     }
 
-    func makeTrack(configuration:  TrackPadConfiguration) -> some View {
-        RoundedRectangle(cornerRadius: 5)
-            .fill(Color.gray)
-            .overlay(
-                  RoundedRectangle(cornerRadius: 5)
-                      .stroke(Color.blue)
-            )
+    func makeTrack(configuration: TrackPadConfiguration) -> some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.blue.opacity(0.12))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .strokeBorder(Color.blue.opacity(0.4), lineWidth: 1)
+                )
+            // 4×4 guide-dot grid
+            GeometryReader { geo in
+                let cols = 4; let rows = 4
+                ForEach(0..<cols, id: \.self) { col in
+                    ForEach(0..<rows, id: \.self) { row in
+                        Circle()
+                            .fill(Color.blue.opacity(0.3))
+                            .frame(width: 3, height: 3)
+                            .position(
+                                x: geo.size.width  * CGFloat(col + 1) / CGFloat(cols + 1),
+                                y: geo.size.height * CGFloat(row + 1) / CGFloat(rows + 1)
+                            )
+                    }
+                }
+            }
+        }
+    }
+
+    // Custom diamond previous-value indicator
+    func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> some View {
+        let snapped = configuration.isSnappedToPrevious
+        let size: Double = snapped ? 14 : 9
+        return Rectangle()
+            .fill(Color.blue.opacity(snapped ? 0.85 : 0.40))
+            .frame(width: size, height: size)
+            .rotationEffect(.degrees(45))
+            .animation(.easeOut(duration: 0.15), value: snapped)
     }
 }
 ```
 
-## Radial Track Pad
+Apply the style:
 
-A control that constrains the drag gesture of the thumb to be contained within the radius of the track.
-Similar to a joystick, with the difference being that the thumb stays fixed at the  gestures end location when the drag is finished.
-- **parameters**:
-  - `offset`: `Binding<Double>` The distance measured from the tracks center to the thumbs location
-  - `angle`: `Binding<Angle>`  The angle of the line between the pads center and the thumbs location, measured from the vector pointing in the trailing direction
-  - `isDisabled`: `Bool`  value describing if the sliders state is disabled (default is `false`)
+```swift
+@State var point = CGPoint(x: 0.5, y: 0.5)
 
-**note**: There is no need to define the radius of the track because the `RadialPad` automatically adjusts to the geometry of its container.
-
-### Styling
-
-To create a custom style for the `RadialPad` you need to create a `RadialPadStyle` conforming struct.
-Conformance requires implementation of 2 methods
-
- 1. `makeThumb`: which creates the draggable portion of the `RadialPad`
- 2. `makeTrack`: which creates the background that the thumb will be contained in.
-
-Both methods provide read access to the state values of the `RadialPad` thru the `RadialPadConfiguration` struct
-
-```Swift
-struct RadialPadConfiguration {
-     let isDisabled: Bool // whether or not the slider is current disables
-     let isActive: Bool // whether or not the thumb is dragging or not
-     let isAtLimit: Bool // Is true if the radial offset is equal to the pads radius
-     let angle: Angle // The angle of the line between the pads center and the thumbs location, measured from the vector pointing in the trailing direction
-     let radialOffset: Double // The Thumb's distance from the Track's center
-}
+TrackPad($point)
+    .showPreviousValue(true)
+    .trackPadStyle(CrosshairTrackPadStyle())
+    .frame(height: 260)
 ```
 
-To make this easier just copy and paste the following style based on the `DefaultRadialPadStyle`. After creating your custom style
-apply it by calling the `radialPadStyle` method on the `RadialPad` or a view containing it.
+The modifier cascades, so you can style multiple track pads at once:
 
-```Swift
-struct <#My RadialPad Style#>: RadialPadStyle {
-    func makeTrack(configuration: RadialPadConfiguration) -> some View {
-        Circle()
-            .fill(Color.gray.opacity(0.4))
-    }
-
-    func makeThumb(configuration: RadialPadConfiguration) -> some View {
-        Circle()
-            .fill(Color.blue)
-            .frame(width: 45, height: 45)
-    }
+```swift
+VStack {
+    TrackPad($pointA)
+    TrackPad($pointB)
 }
+.trackPadStyle(CrosshairTrackPadStyle())
 ```
 
-## Joystick
+### Built-in Default Style
 
- Joystick view used to control various activities such as moving a character on the screen. The View creates a Rectangular region to act as a hitbox for drag gestures. Once a drag is initiated the joystick appears on screen centered at the start location of the gesture. While dragging, the thumb of the joystick is limited be within the `radius` of the background circle.
+The built-in `DefaultTrackPadStyle` can be used directly or customised via named parameters:
 
- - **parameters**:
-     - `state`: `Binding<JoyState>`  you provide a binding to a Joystate  value which allows you to maintain access to all of the Joysticks state values
-     - `radius`: `Double` The radius of the track
-     - `canLock`: A boolean value describing whether the joystick has locking behavior (**default: true**)
-     - `isDisabled`: `Bool` whether the joystick allows hit testing or not (**default: false**)
+```swift
+// Use the built-in defaults
+TrackPad($point)
+    .trackPadStyle(.default)
+    .frame(height: 260)
 
-
-### Style
-
- The Joystick can be themed and styled by making a custom struct conforming to the `JoystickStyle`
- protocol. Conformance requires that you implement 4 methods
- 
- 1.  `makeHitBox` - Creates the rectangular region that responds the the users touch
- 2. `makeLockBox` - Creates a view such that if the drag gestures location is contained within the lockbox, the joystick goes into the locked state
- 3.  `makeTrack` - Creates the circular track that contains the joystick thumb
- 4.   `makeThumb` - Creates the part of the joystick the moves when dragging
-
-  These 4 methods all provide access to the `JoystickConfiguration` .
-  Make use of the various state values to customize the Joystick to your liking.
-  
-```Swift
-struct JoystickConfiguration {
-   let isDisabled: Bool // whether or not the slider is current disables
-   let isActive: Bool // True if the joystick thumb is dragging or if the joystick is locked
-   let isAtLimit: Bool // whether the offset of the thumb reached the radius of the circle
-   let isLocked: Bool // Whether the joystick is locked or not
-   let angle: Angle // The angle of the line between the pads center and the thumbs location, measured from the vector pointing in the trailing direction
-   let radialOffset: Double // The current displacement of the thumb from the track's center
-}
-```
-
- Once your custom style has been created, implement it by calling the `joystickStyle(_ :)` method on the `Joystick` or
- a view containing the `Joystick` to be styled. To make it easier try using the follow example based upon the `DefaultJoystickStyle`
- 
-```Swift
-struct <#My Joystick Style#>: JoystickStyle {
-    func makeHitBox(configuration: JoystickConfiguration) -> some View {
-      Rectangle()
-          .fill(Color.white.opacity(0.05))
-    }
-    
-    func makeLockBox(configuration: JoystickConfiguration) -> some View {
-      Circle()
-          .fill(Color.black)
-          .overlay(Circle().fill(Color.yellow).scaleEffect(0.7))
-          .frame(width: 25, height: 25)
-    }
-    
-    func makeTrack(configuration: JoystickConfiguration) -> some View {
-      Circle()
-          .fill(Color.gray.opacity(0.4))
-    }
-    
-    func makeThumb(configuration: JoystickConfiguration) -> some View {
-      Circle()
-          .fill(Color.blue)
-          .frame(width: 45, height: 45)
-    }
-}
+// Customise colours and thumb size
+TrackPad($point)
+    .trackPadStyle(
+        .default(
+            trackColor: Color.indigo.opacity(0.15),
+            trackStrokeColor: Color.indigo,
+            thumbInactiveColor: Color.indigo,
+            thumbActiveColor: Color.white,
+            thumbSize: 44
+        )
+    )
+    .frame(height: 260)
 ```
