@@ -92,36 +92,71 @@ public protocol DoubleLSliderStyle: Sendable {
     associatedtype UpperLabel: View
 
     /// Creates the lower (start) draggable thumb view.
+    ///
+    /// - Parameter configuration: The current slider configuration.
     func makeLowerThumb(configuration: DoubleLSliderConfiguration) -> Self.LowerThumb
 
     /// Creates the upper (end) draggable thumb view.
+    ///
+    /// - Parameter configuration: The current slider configuration.
     func makeUpperThumb(configuration: DoubleLSliderConfiguration) -> Self.UpperThumb
 
     /// Creates the track view, including the filled portion between the two thumbs.
+    ///
+    /// - Parameter configuration: The current slider configuration.
     func makeTrack(configuration: DoubleLSliderConfiguration) -> Self.Track
 
     /// Creates the view rendered at a single tick-mark position.
+    ///
+    /// This method is called once per value in ``DoubleLSliderConfiguration/tickValues``.
+    ///
+    /// - Parameters:
+    ///   - configuration: The current slider configuration.
+    ///   - tickValue: The value (in the slider's domain) at which this tick mark sits.
     func makeTickMark(configuration: DoubleLSliderConfiguration, tickValue: Double) -> Self.TickMark
 
     /// Creates the styled container for the lower thumb label.
+    ///
+    /// - Parameters:
+    ///   - configuration: The current slider configuration.
+    ///   - content: The pre-styled label view provided by the caller.
     func makeLowerLabel(configuration: DoubleLSliderConfiguration, content: AnyView) -> Self.LowerLabel
 
     /// Creates the styled container for the upper thumb label.
+    ///
+    /// - Parameters:
+    ///   - configuration: The current slider configuration.
+    ///   - content: The pre-styled label view provided by the caller.
     func makeUpperLabel(configuration: DoubleLSliderConfiguration, content: AnyView) -> Self.UpperLabel
 }
 
 // MARK: - Default TickMark
 
 public extension DoubleLSliderStyle {
+    /// Returns a type-erased ``AnyView`` wrapping the lower thumb produced by ``makeLowerThumb(configuration:)``.
+    ///
+    /// Used internally by ``AnyDoubleLSliderStyle`` to store the style without a concrete type.
     func makeLowerThumbTypeErased(configuration: DoubleLSliderConfiguration) -> AnyView {
         AnyView(self.makeLowerThumb(configuration: configuration))
     }
+
+    /// Returns a type-erased ``AnyView`` wrapping the upper thumb produced by ``makeUpperThumb(configuration:)``.
+    ///
+    /// Used internally by ``AnyDoubleLSliderStyle`` to store the style without a concrete type.
     func makeUpperThumbTypeErased(configuration: DoubleLSliderConfiguration) -> AnyView {
         AnyView(self.makeUpperThumb(configuration: configuration))
     }
+
+    /// Returns a type-erased ``AnyView`` wrapping the track produced by ``makeTrack(configuration:)``.
+    ///
+    /// Used internally by ``AnyDoubleLSliderStyle`` to store the style without a concrete type.
     func makeTrackTypeErased(configuration: DoubleLSliderConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
     }
+
+    /// Returns a type-erased ``AnyView`` wrapping the tick mark produced by ``makeTickMark(configuration:tickValue:)``.
+    ///
+    /// Used internally by ``AnyDoubleLSliderStyle`` to store the style without a concrete type.
     func makeTickMarkTypeErased(configuration: DoubleLSliderConfiguration, tickValue: Double) -> AnyView {
         AnyView(self.makeTickMark(configuration: configuration, tickValue: tickValue))
     }
@@ -159,6 +194,9 @@ public extension DoubleLSliderStyle {
     }
 
     /// Default lower label: the current lower value in a floating capsule.
+    ///
+    /// The capsule fades in and scales up while the lower thumb (or range) is active.
+    /// Override ``makeLowerLabel(configuration:content:)`` in your style to provide a different container.
     func makeLowerLabel(configuration: DoubleLSliderConfiguration, content: AnyView) -> some View {
         let isActive = configuration.isLowerActive || configuration.isRangeActive
         return content
@@ -175,6 +213,9 @@ public extension DoubleLSliderStyle {
     }
 
     /// Default upper label: the current upper value in a floating capsule.
+    ///
+    /// The capsule fades in and scales up while the upper thumb (or range) is active.
+    /// Override ``makeUpperLabel(configuration:content:)`` in your style to provide a different container.
     func makeUpperLabel(configuration: DoubleLSliderConfiguration, content: AnyView) -> some View {
         let isActive = configuration.isUpperActive || configuration.isRangeActive
         return content
@@ -194,6 +235,9 @@ public extension DoubleLSliderStyle {
 // MARK: - AnyDoubleLSliderStyle
 
 /// A type-erased ``DoubleLSliderStyle``.
+///
+/// ``DoubleLSlider`` stores its style in the SwiftUI environment, which requires a concrete type.
+/// `AnyDoubleLSliderStyle` wraps any style and forwards the view-building calls.
 public struct AnyDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
     private let _makeLowerThumb: @Sendable (DoubleLSliderConfiguration) -> AnyView
     private let _makeUpperThumb: @Sendable (DoubleLSliderConfiguration) -> AnyView
@@ -202,25 +246,39 @@ public struct AnyDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
     private let _makeLowerLabel: @Sendable (DoubleLSliderConfiguration, AnyView) -> AnyView
     private let _makeUpperLabel: @Sendable (DoubleLSliderConfiguration, AnyView) -> AnyView
 
+    /// Forwards to the wrapped style's ``DoubleLSliderStyle/makeLowerThumb(configuration:)`` implementation.
     public func makeLowerThumb(configuration: DoubleLSliderConfiguration) -> some View {
         _makeLowerThumb(configuration)
     }
+
+    /// Forwards to the wrapped style's ``DoubleLSliderStyle/makeUpperThumb(configuration:)`` implementation.
     public func makeUpperThumb(configuration: DoubleLSliderConfiguration) -> some View {
         _makeUpperThumb(configuration)
     }
+
+    /// Forwards to the wrapped style's ``DoubleLSliderStyle/makeTrack(configuration:)`` implementation.
     public func makeTrack(configuration: DoubleLSliderConfiguration) -> some View {
         _makeTrack(configuration)
     }
+
+    /// Forwards to the wrapped style's ``DoubleLSliderStyle/makeTickMark(configuration:tickValue:)`` implementation.
     public func makeTickMark(configuration: DoubleLSliderConfiguration, tickValue: Double) -> some View {
         _makeTickMark(configuration, tickValue)
     }
+
+    /// Forwards to the wrapped style's ``DoubleLSliderStyle/makeLowerLabel(configuration:content:)`` implementation.
     public func makeLowerLabel(configuration: DoubleLSliderConfiguration, content: AnyView) -> some View {
         _makeLowerLabel(configuration, content)
     }
+
+    /// Forwards to the wrapped style's ``DoubleLSliderStyle/makeUpperLabel(configuration:content:)`` implementation.
     public func makeUpperLabel(configuration: DoubleLSliderConfiguration, content: AnyView) -> some View {
         _makeUpperLabel(configuration, content)
     }
 
+    /// Creates a type-erased wrapper around `style`.
+    ///
+    /// - Parameter style: Any concrete ``DoubleLSliderStyle`` to wrap.
     public init<S: DoubleLSliderStyle>(_ style: S) {
         self._makeLowerThumb = style.makeLowerThumbTypeErased
         self._makeUpperThumb = style.makeUpperThumbTypeErased
@@ -234,12 +292,19 @@ public struct AnyDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
 // MARK: - Environment
 
 /// The environment key used to store the current ``DoubleLSliderStyle``.
+///
+/// The default value is ``AnyDoubleLSliderStyle`` wrapping ``DefaultDoubleLSliderStyle``.
 public struct DoubleLSliderStyleKey: EnvironmentKey {
+    /// The default style used when no custom style is provided.
+    ///
+    /// Defaults to ``DefaultDoubleLSliderStyle``.
     public static let defaultValue: AnyDoubleLSliderStyle = AnyDoubleLSliderStyle(DefaultDoubleLSliderStyle())
 }
 
 extension EnvironmentValues {
     /// The current double linear slider style used by ``DoubleLSlider``.
+    ///
+    /// Set this value using ``SwiftUI/View/doubleLSliderStyle(_:)``.
     public var doubleLSliderStyle: AnyDoubleLSliderStyle {
         get { self[DoubleLSliderStyleKey.self] }
         set { self[DoubleLSliderStyleKey.self] = newValue }
@@ -248,6 +313,9 @@ extension EnvironmentValues {
 
 extension View {
     /// Sets the style for ``DoubleLSlider`` instances within this view hierarchy.
+    ///
+    /// - Parameter style: The style to apply. Must conform to ``DoubleLSliderStyle``.
+    /// - Returns: A view that uses `style` to render any descendant ``DoubleLSlider``.
     public func doubleLSliderStyle<S: DoubleLSliderStyle>(_ style: S) -> some View {
         environment(\.doubleLSliderStyle, AnyDoubleLSliderStyle(style))
     }
@@ -259,7 +327,16 @@ public extension DoubleLSliderStyle where Self == DefaultDoubleLSliderStyle {
     /// The built-in default double linear slider style.
     static var `default`: DefaultDoubleLSliderStyle { DefaultDoubleLSliderStyle() }
 
-    /// The built-in default double linear slider style with customisable parameters.
+    /// Returns the built-in default style with customisable colours and thickness.
+    ///
+    /// - Parameters:
+    ///   - trackColor: The colour of the unfilled track portion.
+    ///   - trackFilledColor: The colour of the filled portion between the two thumbs.
+    ///   - lowerThumbColor: The resting colour of the lower thumb.
+    ///   - upperThumbColor: The resting colour of the upper thumb.
+    ///   - activeThumbColor: The colour of a thumb (or both) while being dragged.
+    ///   - trackThickness: The thickness used when sizing the thumbs and track.
+    /// - Returns: A configured ``DefaultDoubleLSliderStyle``.
     static func `default`(
         trackColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
         trackFilledColor: Color = Color(.sRGB, red: 0.084, green: 0.247, blue: 0.602),
@@ -294,6 +371,15 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
     let activeThumbColor: Color
     let trackThickness: Double
 
+    /// Creates the default style with customisable colours and track thickness.
+    ///
+    /// - Parameters:
+    ///   - trackColor: The colour of the unfilled track portion.
+    ///   - trackFilledColor: The colour of the filled portion between the two thumbs.
+    ///   - lowerThumbColor: The resting colour of the lower thumb.
+    ///   - upperThumbColor: The resting colour of the upper thumb.
+    ///   - activeThumbColor: The colour of a thumb (or both) while being dragged.
+    ///   - trackThickness: The thickness used when sizing the thumbs and track.
     public init(
         trackColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
         trackFilledColor: Color = Color(.sRGB, red: 0.084, green: 0.247, blue: 0.602),
@@ -310,6 +396,7 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
         self.trackThickness = trackThickness
     }
 
+    /// Creates the lower thumb: a circle that turns white while the user is dragging it (or the range).
     public func makeLowerThumb(configuration: DoubleLSliderConfiguration) -> some View {
         let isActive = configuration.isLowerActive || configuration.isRangeActive
         return Circle()
@@ -318,6 +405,7 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
             .shadow(color: Color.black.opacity(0.2), radius: isActive ? 5 : 2)
     }
 
+    /// Creates the upper thumb: a circle that turns white while the user is dragging it (or the range).
     public func makeUpperThumb(configuration: DoubleLSliderConfiguration) -> some View {
         let isActive = configuration.isUpperActive || configuration.isRangeActive
         return Circle()
@@ -326,6 +414,7 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
             .shadow(color: Color.black.opacity(0.2), radius: isActive ? 5 : 2)
     }
 
+    /// Creates the track: a rounded capsule with a filled portion spanning the lower to upper value.
     public func makeTrack(configuration: DoubleLSliderConfiguration) -> some View {
         let lo = configuration.lowerPercent
         let hi = configuration.upperPercent
@@ -371,6 +460,7 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
         }
     }
 
+    /// Creates a tick-mark indicator: a small circle that grows and brightens as either thumb approaches.
     public func makeTickMark(configuration: DoubleLSliderConfiguration, tickValue: Double) -> some View {
         let range = configuration.max - configuration.min
         guard range > 0 else {
@@ -392,6 +482,7 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
         )
     }
 
+    /// Creates the lower thumb label container: the lower value in a floating capsule.
     public func makeLowerLabel(configuration: DoubleLSliderConfiguration, content: AnyView) -> some View {
         let isActive = configuration.isLowerActive || configuration.isRangeActive
         return content
@@ -407,6 +498,7 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
             .animation(.easeOut(duration: 0.15), value: isActive)
     }
 
+    /// Creates the upper thumb label container: the upper value in a floating capsule.
     public func makeUpperLabel(configuration: DoubleLSliderConfiguration, content: AnyView) -> some View {
         let isActive = configuration.isUpperActive || configuration.isRangeActive
         return content

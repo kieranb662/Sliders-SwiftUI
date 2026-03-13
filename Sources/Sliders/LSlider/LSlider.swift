@@ -39,28 +39,15 @@ import SwiftUI
 ///   position moves beyond `affinityRadius + affinityResistance`, giving a tactile
 ///   resistance feel before the thumb escapes.
 ///
-/// - parameters:
-///     - value: `Binding<Double>` The value the slider should control
-///     - range: `ClosedRange<Double>` The minimum and maximum numbers that `value` can be
-///     - angle: `Angle` The angle you would like the slider to be at
-///     - keepThumbInTrack: `Bool` Whether the thumb is constrained to stay within the track's extent
-///     - trackThickness: `Double` The thickness of the track
-///     - tickMarkSpacing: `TickMarkSpacing?` How tick marks should be spaced, or `nil` to hide them
-///     - hapticFeedbackEnabled: `Bool` Whether crossing a tick mark triggers haptic feedback
-///     - affinityEnabled: `Bool` Whether the thumb snaps magnetically to tick marks (requires `tickMarkSpacing != nil`)
-///     - affinityRadius: `Double` Fraction of the total range within which a tick attracts the thumb (default 0.04)
-///     - affinityResistance: `Double` Extra fraction beyond `affinityRadius` the drag must travel to escape a snap (default 0.02)
-///     - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
-///
 /// ## Styling The Slider
 ///
-/// Conform to `LSliderStyle` and implement:
-///   - `makeThumb` – the draggable thumb view
-///   - `makeTrack` – the track/fill view
-///   - `makeTickMark(configuration:tickValue:)` – the view shown at each tick position
-///   - `makeLabel(configuration:content:)` – (optional, default provided) the container for the floating label
+/// Conform to ``LSliderStyle`` and implement:
+///   - ``LSliderStyle/makeThumb(configuration:)`` – the draggable thumb view
+///   - ``LSliderStyle/makeTrack(configuration:)`` – the track/fill view
+///   - ``LSliderStyle/makeTickMark(configuration:tickValue:)`` – the view shown at each tick position
+///   - ``LSliderStyle/makeLabel(configuration:content:)`` – (optional, default provided) the container for the floating label
 ///
-/// Apply your style with `.linearSliderStyle(MyStyle())`.
+/// Apply your style with ``SwiftUI/View/linearSliderStyle(_:)``.
 public struct LSlider<LabelView: View>: View {
     // MARK: State and Setup
     @Environment(\.linearSliderStyle) private var style: AnyLSliderStyle
@@ -76,18 +63,37 @@ public struct LSlider<LabelView: View>: View {
     private let space: String = "Slider"
 
     // MARK: Input
+
+    /// The current value controlled by the slider.
     @Binding private var value: Double
+
+    /// The allowed value domain.
     private var range: ClosedRange<Double> = 0...1
+
+    /// The angle at which the track is drawn.
     private var angle: Angle = .zero
+
+    /// Whether the thumb's centre is constrained to the track's extent.
     private var keepThumbInTrack: Bool = false
+
+    /// The thickness of the track, used for layout and default styling.
     private var trackThickness: Double = 20
+
+    /// The tick-mark spacing configuration, or `nil` to hide tick marks.
     private var tickMarkSpacing: TickMarkSpacing? = nil
+
+    /// Whether crossing a tick mark triggers haptic feedback.
     private var hapticFeedbackEnabled: Bool = true
+
+    /// Whether the thumb snaps magnetically to nearby tick marks.
     private var affinityEnabled: Bool = false
+
     /// Pull radius as a fraction of the total value range.
     private var affinityRadius: Double = 0.04
+
     /// Extra escape distance (fraction of range) beyond the pull radius needed to leave a snap.
     private var affinityResistance: Double = 0.02
+
     /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
     private var allowsSingleTapSelect: Bool = false
 
@@ -475,6 +481,7 @@ public struct LSlider<LabelView: View>: View {
     /// Enables or disables placing the thumb by tapping directly on the track.
     ///
     /// - Parameter allows: When `true`, a single tap on the track moves the thumb to that position.
+    /// - Returns: A modified ``LSlider`` with the updated tap-select behaviour.
     public func allowsSingleTapSelect(_ allows: Bool) -> LSlider {
         var copy = self
         copy.allowsSingleTapSelect = allows

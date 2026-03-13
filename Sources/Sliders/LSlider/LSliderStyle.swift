@@ -11,12 +11,12 @@ import SwiftUI
 
 /// A value type describing the current state of an ``LSlider``.
 ///
-/// Instances of `LSliderConfiguration` are provided to an ``LSliderStyle`` so your style can
-/// render the thumb, track, and tick marks based on the slider’s live interaction state.
+/// Instances of ``LSliderConfiguration`` are provided to an ``LSliderStyle`` so your style can
+/// render the thumb, track, and tick marks based on the slider's live interaction state.
 public struct LSliderConfiguration: Sendable {
     /// Whether the slider is disabled.
     ///
-    /// This is derived from SwiftUI’s `\.isEnabled` environment value.
+    /// This is derived from SwiftUI's `\.isEnabled` environment value.
     public let isDisabled: Bool
 
     /// Whether the user is actively dragging the thumb.
@@ -24,7 +24,7 @@ public struct LSliderConfiguration: Sendable {
 
     /// The normalized fill percent in the range `[0, 1]`.
     ///
-    /// This value is computed from `value`, `min`, and `max`.
+    /// This value is computed from ``value``, ``min``, and ``max``.
     public let pctFill: Double
 
     /// The current value of the slider.
@@ -33,13 +33,13 @@ public struct LSliderConfiguration: Sendable {
     /// the user is dragging.
     public let value: Double
 
-    /// The angle of the slider’s track.
+    /// The angle of the slider's track.
     public let angle: Angle
 
-    /// The minimum value of the slider’s range.
+    /// The minimum value of the slider's range.
     public let min: Double
 
-    /// The maximum value of the slider’s range.
+    /// The maximum value of the slider's range.
     public let max: Double
 
     /// Whether the thumb is constrained to stay within the visual extent of the track.
@@ -63,7 +63,7 @@ public struct LSliderConfiguration: Sendable {
 
     /// The tick-mark value the thumb is currently snapped to, or `nil` when not snapped.
     ///
-    /// Styles can use this to highlight the tick mark that is currently “captured”.
+    /// Styles can use this to highlight the tick mark that is currently "captured".
     public let snappedTickValue: Double?
 }
 
@@ -111,27 +111,39 @@ public protocol LSliderStyle: Sendable {
 }
 
 public extension LSliderStyle {
-    /// Type-erases ``makeThumb(configuration:)`` for storage in ``AnyLSliderStyle``.
+    /// Returns a type-erased ``AnyView`` wrapping the thumb produced by ``makeThumb(configuration:)``.
+    ///
+    /// Used internally by ``AnyLSliderStyle`` to store the style without a concrete type.
     func makeThumbTypeErased(configuration: LSliderConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
     }
 
-    /// Type-erases ``makeTrack(configuration:)`` for storage in ``AnyLSliderStyle``.
+    /// Returns a type-erased ``AnyView`` wrapping the track produced by ``makeTrack(configuration:)``.
+    ///
+    /// Used internally by ``AnyLSliderStyle`` to store the style without a concrete type.
     func makeTrackTypeErased(configuration: LSliderConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
     }
 
-    /// Type-erases ``makeTickMark(configuration:tickValue:)`` for storage in ``AnyLSliderStyle``.
+    /// Returns a type-erased ``AnyView`` wrapping the tick mark produced by ``makeTickMark(configuration:tickValue:)``.
+    ///
+    /// Used internally by ``AnyLSliderStyle`` to store the style without a concrete type.
     func makeTickMarkTypeErased(configuration: LSliderConfiguration, tickValue: Double) -> AnyView {
         AnyView(self.makeTickMark(configuration: configuration, tickValue: tickValue))
     }
 
-    /// Type-erases ``makeLabel(configuration:content:)`` for storage in ``AnyLSliderStyle``.
+    /// Returns a type-erased ``AnyView`` wrapping the label container produced by ``makeLabel(configuration:content:)``.
+    ///
+    /// Used internally by ``AnyLSliderStyle`` to store the style without a concrete type.
     func makeLabelTypeErased(configuration: LSliderConfiguration, content: AnyView) -> AnyView {
         AnyView(self.makeLabel(configuration: configuration, content: content))
     }
 
-    /// Default label: the current value in a floating capsule.
+    /// Default label implementation: displays the current value in a floating capsule.
+    ///
+    /// The capsule fades in and scales up while the thumb is active, then fades out when
+    /// the user lifts their finger. Override ``makeLabel(configuration:content:)`` in your
+    /// style to provide a different container.
     func makeLabel(configuration: LSliderConfiguration, content: AnyView) -> some View {
         content
             .padding(.horizontal, 8)
@@ -151,7 +163,7 @@ public extension LSliderStyle {
 
 /// A type-erased ``LSliderStyle``.
 ///
-/// `LSlider` stores its style in the SwiftUI environment, which requires a concrete type.
+/// ``LSlider`` stores its style in the SwiftUI environment, which requires a concrete type.
 /// `AnyLSliderStyle` wraps any style and forwards the view-building calls.
 public struct AnyLSliderStyle: LSliderStyle, Sendable {
     private let _makeThumb: @Sendable (LSliderConfiguration) -> AnyView
@@ -159,23 +171,29 @@ public struct AnyLSliderStyle: LSliderStyle, Sendable {
     private let _makeTickMark: @Sendable (LSliderConfiguration, Double) -> AnyView
     private let _makeLabel: @Sendable (LSliderConfiguration, AnyView) -> AnyView
 
+    /// Forwards to the wrapped style's ``LSliderStyle/makeThumb(configuration:)`` implementation.
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
         _makeThumb(configuration)
     }
 
+    /// Forwards to the wrapped style's ``LSliderStyle/makeTrack(configuration:)`` implementation.
     public func makeTrack(configuration: LSliderConfiguration) -> some View {
         _makeTrack(configuration)
     }
 
+    /// Forwards to the wrapped style's ``LSliderStyle/makeTickMark(configuration:tickValue:)`` implementation.
     public func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> some View {
         _makeTickMark(configuration, tickValue)
     }
 
+    /// Forwards to the wrapped style's ``LSliderStyle/makeLabel(configuration:content:)`` implementation.
     public func makeLabel(configuration: LSliderConfiguration, content: AnyView) -> some View {
         _makeLabel(configuration, content)
     }
 
     /// Creates a type-erased wrapper around `style`.
+    ///
+    /// - Parameter style: Any concrete ``LSliderStyle`` to wrap.
     public init<S: LSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -187,13 +205,19 @@ public struct AnyLSliderStyle: LSliderStyle, Sendable {
 // MARK: - Environment
 
 /// An environment key used to store the current ``LSliderStyle``.
+///
+/// The default value is ``AnyLSliderStyle`` wrapping ``DefaultLSliderStyle``.
 public struct LSliderStyleKey: EnvironmentKey {
     /// The default style used when no custom style is provided.
+    ///
+    /// Defaults to ``DefaultLSliderStyle``.
     public static let defaultValue: AnyLSliderStyle = AnyLSliderStyle(DefaultLSliderStyle())
 }
 
 extension EnvironmentValues {
     /// The current linear slider style used by ``LSlider``.
+    ///
+    /// Set this value using ``SwiftUI/View/linearSliderStyle(_:)``.
     public var linearSliderStyle: AnyLSliderStyle {
         get { self[LSliderStyleKey.self] }
         set { self[LSliderStyleKey.self] = newValue }
@@ -203,7 +227,7 @@ extension EnvironmentValues {
 extension View {
     /// Sets the style for ``LSlider`` instances within this view hierarchy.
     ///
-    /// - Parameter style: The style to apply.
+    /// - Parameter style: The style to apply. Must conform to ``LSliderStyle``.
     /// - Returns: A view that uses `style` to render any descendant ``LSlider``.
     public func linearSliderStyle<S>(_ style: S) -> some View where S: LSliderStyle {
         environment(\.linearSliderStyle, AnyLSliderStyle(style))
@@ -221,6 +245,7 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
     /// Creates the default style.
     public init() {}
 
+    /// Creates the thumb: a circle that turns white while the user is dragging.
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
         Circle()
             .fill(configuration.isActive ? Color.white : Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855))
@@ -231,6 +256,7 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
             )
     }
 
+    /// Creates the track: a rounded capsule with a filled portion up to the current value.
     public func makeTrack(configuration: LSliderConfiguration) -> some View {
         let adjustment: Double = configuration.keepThumbInTrack
         ? configuration.trackThickness * (1 - configuration.pctFill)
@@ -251,7 +277,7 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
         }
     }
 
-    /// A small circle that grows and brightens as the thumb approaches this tick mark.
+    /// Creates a tick-mark indicator: a small circle that grows and brightens as the thumb approaches.
     public func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> some View {
         let range = configuration.max - configuration.min
         guard range > 0 else {

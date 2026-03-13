@@ -36,13 +36,13 @@ import SwiftUI
 /// Label visibility is controlled by the `.labelsVisibility(_:)` environment modifier.
 ///
 /// # Styling
-/// Provide a custom ``DoubleLSliderStyle`` via `.doubleLSliderStyle(_:)`. Implement:
-///   - `makeLowerThumb` – the draggable lower-thumb view
-///   - `makeUpperThumb` – the draggable upper-thumb view
-///   - `makeTrack` – the full track / fill view
-///   - `makeTickMark(configuration:tickValue:)` – the view shown at each tick position
-///   - `makeLowerLabel(configuration:content:)` – (optional, default provided) the container for the lower floating label
-///   - `makeUpperLabel(configuration:content:)` – (optional, default provided) the container for the upper floating label
+/// Provide a custom ``DoubleLSliderStyle`` via ``SwiftUI/View/doubleLSliderStyle(_:)``. Implement:
+///   - ``DoubleLSliderStyle/makeLowerThumb(configuration:)`` – the draggable lower-thumb view
+///   - ``DoubleLSliderStyle/makeUpperThumb(configuration:)`` – the draggable upper-thumb view
+///   - ``DoubleLSliderStyle/makeTrack(configuration:)`` – the full track / fill view
+///   - ``DoubleLSliderStyle/makeTickMark(configuration:tickValue:)`` – the view shown at each tick position
+///   - ``DoubleLSliderStyle/makeLowerLabel(configuration:content:)`` – (optional, default provided) the container for the lower floating label
+///   - ``DoubleLSliderStyle/makeUpperLabel(configuration:content:)`` – (optional, default provided) the container for the upper floating label
 ///
 /// # Minimum Distance
 /// `minimumDistance` (in value-domain units) ensures the two thumbs never overlap.
@@ -72,27 +72,50 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
     @State private var snappedLowerTick: Double? = nil
     @State private var snappedUpperTick: Double? = nil
 
-    // Range drag: the parameter [0,1] along the track at the start of each drag event.
+    /// The parameter `[0, 1]` along the track at the start of each range drag event.
     @State private var rangeDragLastParameter: Double = 0
 
     private let space = "DoubleLSlider"
 
+    /// A binding to the start of the selected range.
     @Binding private var lowerValue: Double
+
+    /// A binding to the end of the selected range.
     @Binding private var upperValue: Double
 
+    /// The allowed value domain.
     private let range: ClosedRange<Double>
+
+    /// The angle at which the track is drawn.
     private let angle: Angle
+
+    /// Whether the thumb centres are constrained to the track's extent.
     private let keepThumbInTrack: Bool
+
+    /// The thickness of the track, used for layout and default styling.
     private let trackThickness: Double
+
+    /// The minimum gap (in value units) that must be maintained between the two thumbs.
     private let minimumDistance: Double
+
+    /// The tick-mark spacing configuration, or `nil` to hide tick marks.
     private let tickMarkSpacing: TickMarkSpacing?
+
+    /// Whether crossing a tick mark triggers haptic feedback.
     private let hapticFeedbackEnabled: Bool
+
+    /// Whether thumbs snap magnetically to nearby tick marks.
     private let affinityEnabled: Bool
+
+    /// Pull radius as a fraction of the value range.
     private let affinityRadius: Double
+
+    /// Extra escape distance beyond `affinityRadius` needed to leave a snap.
     private let affinityResistance: Double
 
     /// The user-provided label view for the lower (start) thumb.
     private var lowerLabel: (Double) -> LowerLabel
+
     /// The user-provided label view for the upper (end) thumb.
     private var upperLabel: (Double) -> UpperLabel
 
@@ -365,6 +388,9 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
     // MARK: - Subview Builders
 
     /// The lower thumb positioned along the track with its drag gesture attached.
+    ///
+    /// Hit-testing is disabled while the upper thumb or range drag is already active,
+    /// preventing conflicting simultaneous gestures.
     private func makeLowerThumbView(_ proxy: GeometryProxy) -> some View {
         let (start, end) = calculateEndPoints(proxy)
 
@@ -403,6 +429,9 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
     }
 
     /// The upper thumb positioned along the track with its drag gesture attached.
+    ///
+    /// Hit-testing is disabled while the lower thumb or range drag is already active,
+    /// preventing conflicting simultaneous gestures.
     private func makeUpperThumbView(_ proxy: GeometryProxy) -> some View {
         let (start, end) = calculateEndPoints(proxy)
 
@@ -444,6 +473,7 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
     ///
     /// The hit area is a rotated capsule whose length spans the distance between the two
     /// thumb centres, giving a precise and comfortable drag target.
+    /// Hit-testing is disabled while either individual thumb is being dragged.
     private func makeRangeOverlay(_ proxy: GeometryProxy) -> some View {
         let (start, end) = calculateEndPoints(proxy)
         let span = range.upperBound - range.lowerBound

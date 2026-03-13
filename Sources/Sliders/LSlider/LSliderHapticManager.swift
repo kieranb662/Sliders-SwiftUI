@@ -9,13 +9,13 @@
 import CoreHaptics
 import Foundation
 
-/// A best-effort Core Haptics helper used by ``LSlider``.
+/// A best-effort Core Haptics helper used by ``LSlider`` and ``DoubleLSlider``.
 ///
-/// `LSlider` uses this manager to play:
-/// - a subtle “tick” when the thumb crosses a tick mark (when tick marks are enabled)
-/// - a two-pulse “snap-in” when tick-mark affinity pulls the thumb onto a tick
+/// `LSliderHapticManager` is used to play:
+/// - a subtle "tick" when the thumb crosses a tick mark (when tick marks are enabled)
+/// - a two-pulse "snap-in" when tick-mark affinity pulls the thumb onto a tick
 ///
-/// On hardware that doesn’t support haptics, all playback methods silently do nothing.
+/// On hardware that doesn't support haptics, all playback methods silently do nothing.
 ///
 /// - Important: Haptics are inherently best-effort. Playback may fail due to system
 ///   conditions, user settings, or engine interruptions. Errors are intentionally ignored
@@ -81,7 +81,7 @@ public final class LSliderHapticManager: ObservableObject, Sendable {
         }
     }
 
-    /// Plays a two-pulse “magnetic pull” haptic when the thumb snaps **onto** a tick mark.
+    /// Plays a two-pulse "magnetic pull" haptic when the thumb snaps **onto** a tick mark.
     ///
     /// A soft leading pulse is immediately followed by a firmer landing pulse, giving the
     /// sensation of the thumb being drawn in and settling into place.
@@ -120,22 +120,24 @@ public final class LSliderHapticManager: ObservableObject, Sendable {
 #else
 import Foundation
 
-/// A no-op haptics implementation for platforms that don’t support Core Haptics.
+/// A no-op haptics implementation for platforms that don't support Core Haptics.
 ///
 /// This type mirrors the API of the Core Haptics-backed ``LSliderHapticManager`` so that
-/// ``LSlider`` can compile and run everywhere.
+/// ``LSlider`` and ``DoubleLSlider`` can compile and run everywhere.
 @MainActor
 public final class LSliderHapticManager: ObservableObject, Sendable {
     /// Creates a no-op manager.
     public init() {}
 
-    /// No-op.
+    /// No-op on platforms that don't support Core Haptics.
     public func prepare() {}
 
-    /// No-op.
+    /// No-op on platforms that don't support Core Haptics.
+    ///
+    /// - Parameter intensity: Ignored.
     public func playTick(intensity: Float = 0.6) {}
 
-    /// No-op.
+    /// No-op on platforms that don't support Core Haptics.
     public func playSnapIn() {}
 }
 #endif
