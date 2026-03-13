@@ -104,6 +104,11 @@ public struct TrackPad: View {
     /// Maximum drag speed (pts/s) at which tick-mark snapping can engage.
     public var tickAffinityVelocityThreshold: Double = 150.0
 
+    // MARK: Single-tap select
+
+    /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
+    public var allowsSingleTapSelect: Bool = false
+
     // MARK: - Initialisers
 
     /// Creates a `TrackPad` with independent x and y ranges.
@@ -320,6 +325,15 @@ public struct TrackPad: View {
         return copy
     }
 
+    /// Enables or disables placing the thumb by tapping directly on the track.
+    ///
+    /// - Parameter allows: When `true`, a single tap on the track moves the thumb to that position.
+    public func allowsSingleTapSelect(_ allows: Bool) -> TrackPad {
+        var copy = self
+        copy.allowsSingleTapSelect = allows
+        return copy
+    }
+
     // MARK: - Calculations
     
     /// Converts a drag location into a clamped `value`, firing edge haptics as needed.
@@ -509,6 +523,26 @@ public struct TrackPad: View {
                     if showPreviousValue, previousValue != nil {
                         style.makePreviousValueIndicator(configuration: makeConfiguration())
                             .offset(previousValueOffset(proxy))
+                    }
+                    
+                    // Track tap gesture
+                    if allowsSingleTapSelect {
+                        Rectangle()
+                            .fill(Color.clear)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                SpatialTapGesture(coordinateSpace: .named(space))
+                                    .onEnded { tap in
+                                        constrainValue(proxy, tap.location)
+                                        isActive = false
+                                        isSnappedToPrevious = false
+                                        isSnappedToTick = false
+                                        snappedTickPct = nil
+                                        if showPreviousValue {
+                                            previousValue = value
+                                        }
+                                    }
+                            )
                     }
 
                     // Thumb

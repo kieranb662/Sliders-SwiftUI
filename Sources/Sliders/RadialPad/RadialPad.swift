@@ -101,6 +101,11 @@ public struct RadialPad: View {
     /// Maximum drag speed (pts/s) at which tick-mark snapping can engage.
     public var tickAffinityVelocityThreshold: Double = 150.0
 
+    // MARK: Single-tap select
+
+    /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
+    public var allowsSingleTapSelect: Bool = false
+
     // MARK: - Initialisers
 
     public init(offset: Binding<Double>, angle: Binding<Angle>) {
@@ -153,6 +158,11 @@ public struct RadialPad: View {
     /// Sets the maximum drag speed at which tick-mark snapping can engage.
     public func tickAffinityVelocityThreshold(_ threshold: Double) -> RadialPad {
         var copy = self; copy.tickAffinityVelocityThreshold = threshold; return copy
+    }
+
+    /// Enables or disables placing the thumb by tapping directly on the track.
+    public func allowsSingleTapSelect(_ allows: Bool) -> RadialPad {
+        var copy = self; copy.allowsSingleTapSelect = allows; return copy
     }
 
     // MARK: - Configuration builder
@@ -345,6 +355,26 @@ public struct RadialPad: View {
                     if showPreviousValue, let prev = previousValue {
                         style.makePreviousValueIndicator(configuration: makeConfiguration())
                             .offset(thumbOffset(proxy, r: prev.radialOffset, theta: prev.angle))
+                    }
+                    
+                    // ── Track tap gesture ─────────────────────────────────────
+                    if allowsSingleTapSelect {
+                        Circle()
+                            .fill(Color.clear)
+                            .contentShape(Circle())
+                            .gesture(
+                                SpatialTapGesture(coordinateSpace: .named(space))
+                                    .onEnded { tap in
+                                        updatePosition(proxy, location: tap.location)
+                                        isActive = false
+                                        isSnappedToPrevious = false
+                                        isSnappedToTick = false
+                                        snappedTick = nil
+                                        if showPreviousValue {
+                                            previousValue = (radialOffset: offset, angle: angle)
+                                        }
+                                    }
+                            )
                     }
 
                     // ── Thumb ─────────────────────────────────────────────────

@@ -104,7 +104,7 @@ struct DiagnosticRSliderStyle: RSliderStyle {
     @Previewable @State var c = 0.75
     
     VStack(spacing: 16) {
-        RSlider($a)
+        RSlider($a, allowsSingleTapSelect: true)
             
         RSlider($b, tickSpacing: .count(10))
         

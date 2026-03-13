@@ -59,6 +59,8 @@ public struct RSlider: View {
     private let affinityResistance: Double
     /// When `true` all haptic feedback is suppressed.
     private let disableHaptics: Bool
+    /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
+    private let allowsSingleTapSelect: Bool
 
     /// Creates a radial (circular) slider.
     ///
@@ -105,7 +107,8 @@ public struct RSlider: View {
                 affinityEnabled: Bool = false,
                 affinityRadius: Double = 0.04,
                 affinityResistance: Double = 0.02,
-                disableHaptics: Bool = false) {
+                disableHaptics: Bool = false,
+                allowsSingleTapSelect: Bool = false) {
         self._value = value
         self.range = range
         self.originAngle = originAngle
@@ -115,6 +118,7 @@ public struct RSlider: View {
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
         self.disableHaptics = disableHaptics
+        self.allowsSingleTapSelect = allowsSingleTapSelect
     }
 
     // MARK: - Tick mark value resolution
@@ -435,6 +439,36 @@ public struct RSlider: View {
                     ForEach(ticks, id: \.self) { tickValue in
                         style.makeTickMark(configuration: config, tickValue: tickValue)
                             .offset(tickMarkOffset(radius: r, tickValue: tickValue))
+                    }
+                    // Track tap gesture (rendered below thumb so thumb drag takes priority)
+                    if allowsSingleTapSelect {
+                        Circle()
+                            .fill(Color.clear)
+                            .contentShape(Circle())
+                            .gesture(
+                                SpatialTapGesture()
+                                    .onEnded { tap in
+                                        // Convert tap location (local) to global for rawAngle.
+                                        let globalCenter = CGPoint(
+                                            x: proxy.frame(in: .global).midX,
+                                            y: proxy.frame(in: .global).midY
+                                        )
+                                        let globalTap = CGPoint(
+                                            x: proxy.frame(in: .global).minX + tap.location.x,
+                                            y: proxy.frame(in: .global).minY + tap.location.y
+                                        )
+                                        let tappedRaw = rawAngle(from: globalCenter, globalTap)
+                                        let totalPct = tappedRaw / maxWinds
+                                        let clampedPct = Swift.max(0, Swift.min(1, totalPct))
+                                        let rawValue = clampedPct * (range.upperBound - range.lowerBound) + range.lowerBound
+                                        let (snappedValue, transition) = applyAffinity(rawValue: rawValue)
+                                        value = snappedValue
+                                        currentWind = 0
+                                        lastRawAngle = tappedRaw
+                                        fireHapticsForNewValue(snappedValue, transition: transition)
+                                    }
+                            )
+                            .allowsHitTesting(isEnabled)
                     }
                     // Thumb
                     makeThumb(proxy)

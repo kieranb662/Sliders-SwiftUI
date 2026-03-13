@@ -45,6 +45,7 @@ fileprivate struct RadialPadExamples: View {
                 // ── Default style ─────────────────────────────────────────────
                 GroupBox("Default Style") {
                     RadialPad(offset: $offset1, angle: $angle1)
+                        .allowsSingleTapSelect(true)
                         .frame(width: 220, height: 220)
                     polarLabel(offset: offset1, angle: angle1)
                 }

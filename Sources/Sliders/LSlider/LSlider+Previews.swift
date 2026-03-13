@@ -25,6 +25,7 @@ fileprivate struct LSliderExamples: View {
                 // ── Basic slider (no tick marks) ──────────────────────────────
                 GroupBox("Basic – No Tick Marks") {
                     LSlider($value1, range: 0...1, keepThumbInTrack: true, trackThickness: 20)
+                        .allowsSingleTapSelect(true)
                         .frame(height: 60)
                 }
 

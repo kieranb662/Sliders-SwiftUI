@@ -153,6 +153,8 @@ fileprivate struct TrackPadExamples: View {
     }
 }
 
+#endif  // !os(watchOS)
+
 // MARK: - Custom Preview Style
 
 /// A crosshair-style track pad with a dot thumb and a 4×4 grid of guide dots.
@@ -225,14 +227,13 @@ private struct CrosshairTrackPadStyle: TrackPadStyle {
     }
 }
 
-#endif  // !os(watchOS)
-
 // MARK: - Previews
 
 #Preview("Default Style") {
     @Previewable @State var point = CGPoint(x: 0.5, y: 0.5)
     VStack(spacing: 12) {
         TrackPad($point)
+            .allowsSingleTapSelect(true)
             .frame(height: 240)
         HStack(spacing: 16) {
             Label(String(format: "x: %.2f", point.x), systemImage: "arrow.left.arrow.right")

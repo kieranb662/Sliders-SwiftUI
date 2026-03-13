@@ -71,6 +71,8 @@ public struct LSlider: View {
     private var affinityRadius: Double = 0.04
     /// Extra escape distance (fraction of range) beyond the pull radius needed to leave a snap.
     private var affinityResistance: Double = 0.02
+    /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
+    private var allowsSingleTapSelect: Bool = false
 
     // MARK: - Initialisers
 
@@ -437,6 +439,15 @@ public struct LSlider: View {
             })
     }
 
+    /// Enables or disables placing the thumb by tapping directly on the track.
+    ///
+    /// - Parameter allows: When `true`, a single tap on the track moves the thumb to that position.
+    public func allowsSingleTapSelect(_ allows: Bool) -> LSlider {
+        var copy = self
+        copy.allowsSingleTapSelect = allows
+        return copy
+    }
+
     // MARK: - View
 
     public var body: some View {
@@ -452,6 +463,28 @@ public struct LSlider: View {
                 ForEach(ticks, id: \.self) { tickValue in
                     style.makeTickMark(configuration: config, tickValue: tickValue)
                         .offset(tickMarkOffset(geo, tickValue: tickValue))
+                }
+
+                // Track tap gesture (rendered below thumb so thumb drag takes priority)
+                if allowsSingleTapSelect {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .contentShape(Rectangle())
+                        .gesture(
+                            SpatialTapGesture(coordinateSpace: .named(space))
+                                .onEnded { tap in
+                                    let (start, end) = calculateEndPoints(geo)
+                                    let parameter = Double(calculateParameter(start, end, tap.location))
+                                    impactHandler(parameter == 1 || parameter == 0)
+                                    let rawValue = (range.upperBound - range.lowerBound) * parameter + range.lowerBound
+                                    let (newValue, transition) = applyAffinity(rawValue: rawValue)
+                                    value = newValue
+                                    fireTickHapticIfNeeded(newValue: newValue, transition: transition)
+                                    isActive = false
+                                    lastHapticTickValue = nil
+                                }
+                        )
+                        .allowsHitTesting(isEnabled)
                 }
 
                 // Thumb
