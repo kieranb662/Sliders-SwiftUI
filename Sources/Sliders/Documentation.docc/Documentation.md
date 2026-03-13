@@ -1,10 +1,10 @@
 # ``Sliders``
 
-@Image(source: sliders-logo.png, alt: "The Sliders Framework logo.")
-
 A collection of fully stylable, drag-based SwiftUI controls — including linear, radial, range, and 2D sliders.
 
 ## Overview
+
+@Image(source: sliders-logo.png, alt: "The Sliders Framework logo.")
 
 **Sliders** provides drop-in replacements and extensions for SwiftUI's built-in `Slider`, designed to fill the gaps the standard toolkit leaves behind.
 
