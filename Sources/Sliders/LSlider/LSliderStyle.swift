@@ -285,7 +285,7 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
     /// or grey when the slider is disabled.
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
         let color: Color = configuration.isDisabled
-        ? thumbActiveColor.mix(with: thumbDisabledColor, by: 0.5)
+        ? thumbInactiveColor.mix(with: thumbDisabledColor, by: 0.5)
             : (configuration.isActive ? thumbActiveColor : thumbInactiveColor)
 
         return Circle()

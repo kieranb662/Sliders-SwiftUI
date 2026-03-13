@@ -321,6 +321,8 @@ public extension RadialPadStyle where Self == DefaultRadialPadStyle {
         trackStrokeColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
         thumbInactiveColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
         thumbActiveColor: Color = Color.white,
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         thumbSize: Double = 36
     ) -> DefaultRadialPadStyle {
         DefaultRadialPadStyle(
@@ -328,6 +330,8 @@ public extension RadialPadStyle where Self == DefaultRadialPadStyle {
             trackStrokeColor: trackStrokeColor,
             thumbInactiveColor: thumbInactiveColor,
             thumbActiveColor: thumbActiveColor,
+            thumbDisabledColor: thumbDisabledColor,
+            trackDisabledColor: trackDisabledColor,
             thumbSize: thumbSize
         )
     }
@@ -349,6 +353,8 @@ public struct DefaultRadialPadStyle: RadialPadStyle, Sendable {
     let trackStrokeColor: Color
     let thumbInactiveColor: Color
     let thumbActiveColor: Color
+    let thumbDisabledColor: Color
+    let trackDisabledColor: Color
     let thumbSize: Double
 
     public init(
@@ -356,29 +362,39 @@ public struct DefaultRadialPadStyle: RadialPadStyle, Sendable {
         trackStrokeColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
         thumbInactiveColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
         thumbActiveColor: Color = Color.white,
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         thumbSize: Double = 36
     ) {
         self.trackColor = trackColor
         self.trackStrokeColor = trackStrokeColor
         self.thumbInactiveColor = thumbInactiveColor
         self.thumbActiveColor = thumbActiveColor
+        self.thumbDisabledColor = thumbDisabledColor
+        self.trackDisabledColor = trackDisabledColor
         self.thumbSize = thumbSize
     }
 
     public func makeTrack(configuration: RadialPadConfiguration) -> some View {
-        Circle()
+        let strokeColor = configuration.isDisabled ? trackDisabledColor : trackStrokeColor
+        return Circle()
             .fill(trackColor)
             .overlay(
                 Circle()
-                    .strokeBorder(trackStrokeColor.opacity(0.6), lineWidth: 1)
+                    .strokeBorder(strokeColor.opacity(0.6), lineWidth: 1)
             )
+            .opacity(configuration.isDisabled ? 0.5 : 1.0)
     }
 
     public func makeThumb(configuration: RadialPadConfiguration) -> some View {
-        Circle()
-            .fill(configuration.isActive ? thumbActiveColor : thumbInactiveColor)
+        let color: Color = configuration.isDisabled
+            ? thumbInactiveColor.mix(with: thumbDisabledColor, by: 0.5)
+            : (configuration.isActive ? thumbActiveColor : thumbInactiveColor)
+        return Circle()
+            .fill(color)
             .frame(width: thumbSize, height: thumbSize)
-            .shadow(radius: configuration.isActive ? 3 : 0)
+            .shadow(radius: configuration.isDisabled ? 0 : (configuration.isActive ? 3 : 0))
+            .opacity(configuration.isDisabled ? 0.6 : 1.0)
     }
 
     // makePreviousValueIndicator and makeTickMarks use the protocol default implementations
