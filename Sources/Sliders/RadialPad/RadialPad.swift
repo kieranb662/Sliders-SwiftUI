@@ -53,21 +53,15 @@ import SwiftUI
 
 public struct RadialPad: View {
     @Environment(\.radialPadStyle) private var style: AnyRadialPadStyle
+    @Environment(\.isEnabled) private var isEnabled
     private let space: String = "Radial Pad"
     @Binding public var offset: Double
     @Binding public var angle: Angle
     @State private var isActive: Bool = false
-    public var isDisabled: Bool = false
     
     public init(offset: Binding<Double>, angle: Binding<Angle>) {
         self._offset = offset
         self._angle = angle
-    }
-    
-    public init(offset: Binding<Double>, angle: Binding<Angle>, isDisabled: Bool) {
-        self._offset = offset
-        self._angle = angle
-        self.isDisabled = isDisabled
     }
     
     private func thumbOffset(_ proxy: GeometryProxy) -> CGSize {
@@ -78,7 +72,7 @@ public struct RadialPad: View {
     }
     
     private var configuration: RadialPadConfiguration {
-        return .init(isDisabled, isActive, offset == 1, angle, offset)
+        return .init(!isEnabled, isActive, offset == 1, angle, offset)
     }
     
     private func makeGesture(_ proxy: GeometryProxy) -> some Gesture {
@@ -110,6 +104,7 @@ public struct RadialPad: View {
                             style.makeThumb(configuration: configuration)
                                 .offset(thumbOffset(proxy))
                                 .gesture(makeGesture(proxy))
+                                .allowsHitTesting(isEnabled)
                         }
                         .frame(width: proxy.size.width, height: proxy.size.height)
                     }
