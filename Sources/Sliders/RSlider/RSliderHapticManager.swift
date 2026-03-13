@@ -27,12 +27,10 @@ public final class RSliderHapticManager: Sendable {
     private var isEngineReady = false
 
     /// The continuous wind-tension player (nil when not playing).
-    private weak var tensionPlayer: CHHapticAdvancedPatternPlayer?
-
-
-    public init() {
-        prepare()
-    }
+    private var player: CHHapticAdvancedPatternPlayer?
+    
+    // Current tension: 0.0 (relaxed) → 1.0 (fully wound)
+    private var tension: Float = 0.0
 
     // MARK: - Engine lifecycle
 
@@ -41,6 +39,7 @@ public final class RSliderHapticManager: Sendable {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         do {
             let newEngine = try CHHapticEngine()
+            newEngine.isAutoShutdownEnabled = false
             newEngine.resetHandler = { [weak self] in
                 Task { @MainActor in
                     self?.isEngineReady = false
@@ -50,7 +49,7 @@ public final class RSliderHapticManager: Sendable {
             newEngine.stoppedHandler = { [weak self] _ in
                 Task { @MainActor in
                     self?.isEngineReady = false
-                    self?.tensionPlayer = nil
+                    self?.player = nil
                 }
             }
             try newEngine.start()
@@ -60,7 +59,159 @@ public final class RSliderHapticManager: Sendable {
             isEngineReady = false
         }
     }
-
+    
+    // Call this continuously as the user winds (gestureProgress: 0.0 → 1.0)
+    public func updateWindTension(_ gestureProgress: Float) {
+        let previousTension = tension
+        tension = gestureProgress
+        
+        // Play a "tick" haptic when crossing tension thresholds
+        let tickInterval: Float = 0.1
+        let previousTick = floor(previousTension / tickInterval)
+        let currentTick = floor(tension / tickInterval)
+        
+        if currentTick > previousTick {
+            playTensionTick(at: tension)
+        }
+        
+        // Play continuous friction buzz while winding
+        updateContinuousHaptic(tension: tension)
+    }
+    
+    // Discrete "click" feeling at each wind increment
+    private func playTensionTick(at tension: Float) {
+        guard let engine else { return }
+        
+        // Sharpness increases faster than intensity — spring gets "crisper" as it tightens
+        let intensity = 0.3 + (tension * 0.7)           // 0.3 → 1.0
+        let sharpness = 0.2 + (tension * 0.8)            // 0.2 → 1.0 (leads intensity)
+        let attackTime = Double(0.015 - tension * 0.010) // Gets snappier under tension
+        
+        let event = CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: sharpness),
+                CHHapticEventParameter(parameterID: .attackTime, value: Float(attackTime)),
+                CHHapticEventParameter(parameterID: .decayTime, value: 0.05),
+                CHHapticEventParameter(parameterID: .sustained, value: 0)
+            ],
+            relativeTime: 0
+        )
+        
+        do {
+            let pattern = try CHHapticPattern(events: [event], parameters: [])
+            let player = try engine.makePlayer(with: pattern)
+            try player.start(atTime: CHHapticTimeImmediate)
+        } catch {
+            print("Tick error: \(error)")
+        }
+    }
+    
+    // Continuous low hum — represents spring friction/resistance
+    private func updateContinuousHaptic(tension: Float) {
+        // Use dynamic parameters to update a running player
+        guard let _ = engine else { return }
+        
+        if player == nil {
+            startContinuousPlayer()
+        }
+        
+        // Scale friction buzz intensity with tension
+        let frictionIntensity = tension * 0.25  // Subtle — ticks are the star
+        let frictionSharpness = 0.3 + tension * 0.4
+        
+        do {
+            try player?.sendParameters([
+                CHHapticDynamicParameter(
+                    parameterID: .hapticIntensityControl,
+                    value: frictionIntensity,
+                    relativeTime: 0
+                ),
+                CHHapticDynamicParameter(
+                    parameterID: .hapticSharpnessControl,
+                    value: frictionSharpness,
+                    relativeTime: 0
+                )
+            ], atTime: CHHapticTimeImmediate)
+        } catch {
+            print("Dynamic parameter error: \(error)")
+        }
+    }
+    
+    private func startContinuousPlayer() {
+        guard let engine else { return }
+        do {
+            let event = CHHapticEvent(
+                eventType: .hapticContinuous,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: 0.01),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.3)
+                ],
+                relativeTime: 0,
+                duration: 60  // Long duration — we'll stop it manually
+            )
+            let pattern = try CHHapticPattern(events: [event], parameters: [])
+            player = try engine.makeAdvancedPlayer(with: pattern)
+            try player?.start(atTime: CHHapticTimeImmediate)
+        } catch {
+            print("Continuous player error: \(error)")
+        }
+    }
+    
+    // Call when user releases — spring snaps back
+    public func releaseSpring() {
+        playReleaseSnap()
+        stopContinuous()
+        tension = 0.0
+    }
+    
+    private func playReleaseSnap() {
+        guard let engine else { return }
+        
+        // Sharp burst followed by diminishing bounces — spring settling
+        var events: [CHHapticEvent] = []
+        
+        // Initial snap — full tension release
+        events.append(CHHapticEvent(
+            eventType: .hapticTransient,
+            parameters: [
+                CHHapticEventParameter(parameterID: .hapticIntensity, value: 1.0),
+                CHHapticEventParameter(parameterID: .hapticSharpness, value: 1.0),
+                CHHapticEventParameter(parameterID: .attackTime, value: 0.001),
+            ],
+            relativeTime: 0
+        ))
+        
+        // Diminishing bounces — spring oscillating to rest
+        let bounceTimes: [Double] = [0.08, 0.18, 0.30, 0.44]
+        let bounceIntensities: [Float] = [0.6, 0.35, 0.18, 0.08]
+        
+        for (time, intensity) in zip(bounceTimes, bounceIntensities) {
+            events.append(CHHapticEvent(
+                eventType: .hapticTransient,
+                parameters: [
+                    CHHapticEventParameter(parameterID: .hapticIntensity, value: intensity),
+                    CHHapticEventParameter(parameterID: .hapticSharpness, value: intensity * 0.8),
+                ],
+                relativeTime: time
+            ))
+        }
+        
+        do {
+            let pattern = try CHHapticPattern(events: events, parameters: [])
+            let snapPlayer = try engine.makePlayer(with: pattern)
+            try snapPlayer.start(atTime: CHHapticTimeImmediate)
+        } catch {
+            print("Release snap error: \(error)")
+        }
+    }
+    
+    private func stopContinuous() {
+        try? player?.stop(atTime: CHHapticTimeImmediate)
+        player = nil
+    }
+    
     // MARK: - Transient events
 
     /// Plays a sharp impact haptic when the slider hits its minimum or maximum boundary.
@@ -132,100 +283,6 @@ public final class RSliderHapticManager: Sendable {
             try player.start(atTime: CHHapticTimeImmediate)
         } catch { }
     }
-
-    // MARK: - Continuous wind-tension haptic
-
-    /// Updates the continuous wind-tension haptic to reflect the current dragging position.
-    ///
-    /// - Parameter totalWind: The total fractional wind position, e.g. `currentWind + withinWind`.
-    ///   This value increases monotonically as the slider is wound up.
-    ///
-    /// The intensity of the continuous buzz ramps linearly with the fractional part of each wind
-    /// (0 at the start of a wind, maximum just before the next integer crossing).
-    /// Each time an integer wind boundary is crossed a crisp transient "pop" fires.
-    ///
-    /// Call ``stopContinuous()`` when dragging ends.
-    public func updateWindTension(_ totalWind: Double) {
-        guard isEngineReady, let engine else { return }
-
-        let windInt   = Int(totalWind)          // number of completed winds
-        let fraction  = totalWind - Double(windInt)   // 0…1 position within current wind
-
-        // Ramp the continuous rumble intensity with the fraction
-        // Use a curve so the last 20% of the wind feels noticeably stronger
-        let curve = fraction * fraction             // quadratic ramp 0→1
-        let buzzIntensity = Float(0.10 + 0.60 * curve)
-        let buzzSharpness = Float(0.20 + 0.40 * curve)
-
-        if let player = tensionPlayer {
-            // Update the live parameters of the existing player
-            do {
-                let intensityParam = CHHapticDynamicParameter(
-                    parameterID: .hapticIntensityControl,
-                    value: buzzIntensity,
-                    relativeTime: 0
-                )
-                let sharpnessParam = CHHapticDynamicParameter(
-                    parameterID: .hapticSharpnessControl,
-                    value: buzzSharpness,
-                    relativeTime: 0
-                )
-                try player.sendParameters([intensityParam, sharpnessParam], atTime: CHHapticTimeImmediate)
-            } catch {
-                tensionPlayer = nil   // will recreate below
-            }
-        }
-
-        if tensionPlayer == nil {
-            // Start a new looping continuous player
-            do {
-                let continuousEvent = CHHapticEvent(
-                    eventType: .hapticContinuous,
-                    parameters: [
-                        CHHapticEventParameter(parameterID: .hapticIntensity,  value: buzzIntensity),
-                        CHHapticEventParameter(parameterID: .hapticSharpness,  value: buzzSharpness)
-                    ],
-                    relativeTime: 0,
-                    duration: 100   // long enough; we stop it manually
-                )
-                let pattern = try CHHapticPattern(events: [continuousEvent], parameters: [])
-                let player  = try engine.makeAdvancedPlayer(with: pattern)
-                player.loopEnabled = true
-                try player.start(atTime: CHHapticTimeImmediate)
-                tensionPlayer = player
-            } catch { }
-        }
-    }
-
-    /// Stops the continuous wind-tension haptic. Call this when dragging ends.
-    public func stopContinuous() {
-        guard let player = tensionPlayer else { return }
-
-        do {
-            try player.stop(atTime: CHHapticTimeImmediate)
-        } catch { }
-        tensionPlayer = nil
-    }
-
-    // MARK: - Private helpers
-
-    /// Fires a crisp "pop" transient to mark a full-wind crossing.
-    private func playWindPop() {
-        guard isEngineReady, let engine else { return }
-        do {
-            let sharpness = CHHapticEventParameter(parameterID: .hapticSharpness, value: 0.9)
-            let intensity = CHHapticEventParameter(parameterID: .hapticIntensity,  value: 0.9)
-            let event = CHHapticEvent(
-                eventType: .hapticTransient,
-                parameters: [sharpness, intensity],
-                relativeTime: 0,
-                duration: 0.08
-            )
-            let pattern = try CHHapticPattern(events: [event], parameters: [])
-            let player  = try engine.makePlayer(with: pattern)
-            try player.start(atTime: CHHapticTimeImmediate)
-        } catch { }
-    }
 }
 
 #else
@@ -240,7 +297,7 @@ public final class RSliderHapticManager: Sendable {
     public func playLimitHit() {}
     public func playTick(intensity: Float = 0.6) {}
     public func playSnapIn() {}
-    public func updateWindTension(_ totalWind: Double) {}
-    public func stopContinuous() {}
+    public func updateWindTension(_ gestureProgress: Float) {}
+    public func releaseSpring() {}
 }
 #endif

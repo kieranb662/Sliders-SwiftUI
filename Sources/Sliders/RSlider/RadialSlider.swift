@@ -251,7 +251,7 @@ public struct RSlider: View {
         } else {
             // No tick marks → continuous wind tension
             let totalWind = (value - range.lowerBound) / (range.upperBound - range.lowerBound) * maxWinds
-            hapticManager.updateWindTension(totalWind)
+            hapticManager.updateWindTension(Float(totalWind))
         }
     }
     
@@ -326,7 +326,7 @@ public struct RSlider: View {
                 isActive = false
                 lastHapticTickValue = nil
                 if tickSpacing == nil {
-                    hapticManager.stopContinuous()
+                    hapticManager.releaseSpring()
                 }
             }
 
@@ -363,6 +363,7 @@ public struct RSlider: View {
                 .frame(width: proxy.size.width, height: proxy.size.height)
             })
             .onAppear {
+                hapticManager.prepare()
                 let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
                 let currentWindValue = percent * maxWinds
                 currentWind = floor(currentWindValue)
