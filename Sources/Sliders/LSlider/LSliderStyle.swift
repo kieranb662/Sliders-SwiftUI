@@ -242,29 +242,73 @@ extension View {
 /// ``LSliderConfiguration/trackThickness``.
 public struct DefaultLSliderStyle: LSliderStyle, Sendable {
 
-    /// Creates the default style.
-    public init() {}
+    let trackColor: Color
+    let trackFilledColor: Color
+    let thumbInactiveColor: Color
+    let thumbActiveColor: Color
+    let thumbDisabledColor: Color
+    let trackDisabledColor: Color
+    let tickMarkBaseSize: Double
+    let tickMarkMaxGrowth: Double
+    let tickMarkBaseOpacity: Double
+    let tickMarkMaxOpacity: Double
+    let tickMarkProximityThreshold: Double
 
-    /// Creates the thumb: a circle that turns white while the user is dragging.
+    /// Creates the default style with customizable colors and tick-mark appearance.
+    public init(
+        trackColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
+        trackFilledColor: Color = Color(.sRGB, red: 0.084, green: 0.247, blue: 0.602),
+        thumbInactiveColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
+        thumbActiveColor: Color = Color.white,
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        tickMarkBaseSize: Double = 5,
+        tickMarkMaxGrowth: Double = 7,
+        tickMarkBaseOpacity: Double = 0.30,
+        tickMarkMaxOpacity: Double = 1.00,
+        tickMarkProximityThreshold: Double = 0.20
+    ) {
+        self.trackColor = trackColor
+        self.trackFilledColor = trackFilledColor
+        self.thumbInactiveColor = thumbInactiveColor
+        self.thumbActiveColor = thumbActiveColor
+        self.thumbDisabledColor = thumbDisabledColor
+        self.trackDisabledColor = trackDisabledColor
+        self.tickMarkBaseSize = tickMarkBaseSize
+        self.tickMarkMaxGrowth = tickMarkMaxGrowth
+        self.tickMarkBaseOpacity = tickMarkBaseOpacity
+        self.tickMarkMaxOpacity = tickMarkMaxOpacity
+        self.tickMarkProximityThreshold = tickMarkProximityThreshold
+    }
+
+    /// Creates the thumb: a circle that turns white while the user is dragging,
+    /// or grey when the slider is disabled.
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
-        Circle()
-            .fill(configuration.isActive ? Color.white : Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855))
+        let color: Color = configuration.isDisabled
+        ? thumbActiveColor.mix(with: thumbDisabledColor, by: 0.5)
+            : (configuration.isActive ? thumbActiveColor : thumbInactiveColor)
+
+        return Circle()
+            .fill(color)
             .frame(width: configuration.trackThickness * 2, height: configuration.trackThickness * 2)
             .shadow(
-                color: Color.black.opacity(0.2),
+                color: Color.black.opacity(configuration.isDisabled ? 0.0 : 0.2),
                 radius: configuration.isActive ? 5 : 2
             )
     }
 
     /// Creates the track: a rounded capsule with a filled portion up to the current value.
+    /// When disabled, both the empty and filled portions use `trackDisabledColor`.
     public func makeTrack(configuration: LSliderConfiguration) -> some View {
         let adjustment: Double = configuration.keepThumbInTrack
-        ? configuration.trackThickness * (1 - configuration.pctFill)
-        : configuration.trackThickness / 2
+            ? configuration.trackThickness * (1 - configuration.pctFill)
+            : configuration.trackThickness / 2
+
+        let filledColor = configuration.isDisabled ? trackFilledColor.mix(with: trackDisabledColor, by: 0.5) : trackFilledColor
 
         return ZStack {
             AdaptiveLine(thickness: configuration.trackThickness, angle: configuration.angle)
-                .fill(Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59))
+                .fill(trackColor)
 
             AdaptiveLine(
                 thickness: configuration.trackThickness,
@@ -272,38 +316,73 @@ public struct DefaultLSliderStyle: LSliderStyle, Sendable {
                 percentFilled: configuration.pctFill,
                 adjustmentForThumb: adjustment
             )
-            .fill(Color(.sRGB, red: 0.084, green: 0.247, blue: 0.602))
+            .fill(filledColor)
             .mask(AdaptiveLine(thickness: configuration.trackThickness, angle: configuration.angle))
         }
+        .opacity(configuration.isDisabled ? 0.5 : 1.0)
     }
 
     /// Creates a tick-mark indicator: a small circle that grows and brightens as the thumb approaches.
     public func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> some View {
         let range = configuration.max - configuration.min
         guard range > 0 else {
-            return AnyView(Circle().fill(Color.white.opacity(0.3)).frame(width: 6, height: 6))
+            return AnyView(Circle().fill(Color.white.opacity(tickMarkBaseOpacity)).frame(width: tickMarkBaseSize, height: tickMarkBaseSize))
         }
         // Normalised distance in [0, 1] between thumb and tick mark
         let thumbPct  = (configuration.value - configuration.min) / range
         let tickPct   = (tickValue          - configuration.min) / range
         let distance  = abs(thumbPct - tickPct)
 
-        // Proximity is 1 when thumb is exactly on the tick, 0 when ≥ 20 % away
-        let proximity = max(0, 1 - distance / 0.20)
+        // Proximity is 1 when thumb is exactly on the tick, 0 when ≥ proximityThreshold away
+        let proximity = max(0, 1 - distance / tickMarkProximityThreshold)
 
-        let baseSize:  Double = 5
-        let maxGrowth: Double = 7
-        let size = baseSize + maxGrowth * proximity
-
-        let baseOpacity:  Double = 0.30
-        let maxOpacity:   Double = 1.00
-        let opacity = baseOpacity + (maxOpacity - baseOpacity) * proximity
+        let size = tickMarkBaseSize + tickMarkMaxGrowth * proximity
+        let opacity = tickMarkBaseOpacity + (tickMarkMaxOpacity - tickMarkBaseOpacity) * proximity
 
         return AnyView(
             Circle()
                 .fill(Color.white.opacity(opacity))
                 .frame(width: size, height: size)
                 .animation(.easeOut(duration: 0.1), value: proximity)
+        )
+    }
+}
+
+// MARK: - SwiftUI-style presets
+
+public extension LSliderStyle where Self == DefaultLSliderStyle {
+    /// The built-in default linear slider style.
+    static var `default`: DefaultLSliderStyle { DefaultLSliderStyle() }
+
+    /// The built-in default linear slider style, with customizable parameters.
+    ///
+    /// Usage:
+    /// `LSlider($value).linearSliderStyle(.default(trackThickness: 12))`
+    static func `default`(
+        trackColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
+        trackFilledColor: Color = Color(.sRGB, red: 0.084, green: 0.247, blue: 0.602),
+        thumbInactiveColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
+        thumbActiveColor: Color = Color.white,
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        tickMarkBaseSize: Double = 5,
+        tickMarkMaxGrowth: Double = 7,
+        tickMarkBaseOpacity: Double = 0.30,
+        tickMarkMaxOpacity: Double = 1.00,
+        tickMarkProximityThreshold: Double = 0.20
+    ) -> DefaultLSliderStyle {
+        DefaultLSliderStyle(
+            trackColor: trackColor,
+            trackFilledColor: trackFilledColor,
+            thumbInactiveColor: thumbInactiveColor,
+            thumbActiveColor: thumbActiveColor,
+            thumbDisabledColor: thumbDisabledColor,
+            trackDisabledColor: trackDisabledColor,
+            tickMarkBaseSize: tickMarkBaseSize,
+            tickMarkMaxGrowth: tickMarkMaxGrowth,
+            tickMarkBaseOpacity: tickMarkBaseOpacity,
+            tickMarkMaxOpacity: tickMarkMaxOpacity,
+            tickMarkProximityThreshold: tickMarkProximityThreshold
         )
     }
 }

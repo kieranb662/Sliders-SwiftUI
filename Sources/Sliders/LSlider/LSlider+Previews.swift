@@ -28,6 +28,14 @@ fileprivate struct LSliderExamples: View {
                         .allowsSingleTapSelect(true)
                         .frame(height: 60)
                 }
+                
+                // ── Basic slider (no tick marks) ──────────────────────────────
+                GroupBox("Disabled – No Tick Marks") {
+                    LSlider($value1, range: 0...1, keepThumbInTrack: true, trackThickness: 20)
+                        .allowsSingleTapSelect(true)
+                        .disabled(true)
+                        .frame(height: 60)
+                }
 
                 // ── Evenly-distributed tick mark count ───────────────────────
                 GroupBox("count(11) — 11 evenly spaced ticks, haptics on") {
