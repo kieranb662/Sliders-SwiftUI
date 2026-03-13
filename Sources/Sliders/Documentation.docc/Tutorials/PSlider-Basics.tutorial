@@ -1,0 +1,77 @@
+@Tutorial(time: 10) {
+    @Intro(title: "Using PSlider with the Default Style") {
+        ``PSlider`` turns any SwiftUI `Shape` into a slider whose thumb travels along the
+        shape's path. In this tutorial you'll explore its configuration options — from
+        basic shapes to custom ranges and styling.
+
+        @Image(source: PSlider_Basics_Step_1.png, alt: "A PSlider on a Circle shape")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``PSlider`` using a built-in shape, then
+            customise its range.
+
+            @Image(source: PSlider_Basics_Step_1.png, alt: "A minimal PSlider")
+        }
+
+        @Steps {
+            @Step {
+                Add ``PSlider`` to your view by passing a `@State` binding and a `Shape`.
+                The default range is `0...1`.
+
+                @Code(name: "ContentView.swift", file: PSlider_Basics_Step_1.swift) {
+                    @Image(source: PSlider_Basics_Step_1.png, alt: "PSlider with Circle shape")
+                }
+            }
+
+            @Step {
+                Specify a custom `range` to map the slider to a different value domain.
+
+                @Code(name: "ContentView.swift", file: PSlider_Basics_Step_2.swift) {
+                    @Image(source: PSlider_Basics_Step_2.png, alt: "PSlider with range 0–100")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Custom Shapes") {
+        @ContentAndMedia {
+            Any conforming `Shape` works — including `RoundedRectangle` and your own
+            custom shapes.
+
+            @Image(source: PSlider_Basics_Step_3.png, alt: "PSlider on a RoundedRectangle")
+        }
+
+        @Steps {
+            @Step {
+                Use a `RoundedRectangle` or any other `Shape` as the slider's track.
+
+                @Code(name: "ContentView.swift", file: PSlider_Basics_Step_3.swift) {
+                    @Image(source: PSlider_Basics_Step_3.png, alt: "PSlider with RoundedRectangle shape")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Custom Style") {
+        @ContentAndMedia {
+            Conform to ``PSliderStyle`` to customise the thumb and track appearance.
+
+            @Image(source: PSlider_Basics_Step_4.png, alt: "PSlider with a custom style")
+        }
+
+        @Steps {
+            @Step {
+                Create a custom style and apply it with `.pathSliderStyle(_:)`.
+
+                @Code(name: "ContentView.swift", file: PSlider_Basics_Step_4.swift) {
+                    @Image(source: PSlider_Basics_Step_4.png, alt: "PSlider with purple custom style")
+                }
+            }
+        }
+    }
+}

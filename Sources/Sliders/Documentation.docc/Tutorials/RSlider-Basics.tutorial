@@ -1,0 +1,118 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Using RSlider with the Default Style") {
+        ``RSlider`` is a circular slider whose thumb travels around a configurable arc.
+        In this tutorial you'll explore every configuration option the default style
+        offers — from a minimal setup to winds, tick marks, affinity snapping, and
+        custom labels.
+
+        @Image(source: RSlider_Basics_Step_1.png, alt: "A circular RSlider with default styling")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``RSlider``, then customise its range and
+            origin angle.
+
+            @Image(source: RSlider_Basics_Step_1.png, alt: "A minimal RSlider")
+        }
+
+        @Steps {
+            @Step {
+                Add ``RSlider`` to your view by passing a `@State` binding. Without any
+                additional arguments it defaults to `range: 0...1` and a single wind.
+
+                @Code(name: "ContentView.swift", file: RSlider_Basics_Step_1.swift) {
+                    @Image(source: RSlider_Basics_Step_1.png, alt: "A minimal default RSlider")
+                }
+            }
+
+            @Step {
+                Specify a custom `range` and `originAngle` to control where the minimum
+                value sits on the circle.
+
+                @Code(name: "ContentView.swift", file: RSlider_Basics_Step_2.swift) {
+                    @Image(source: RSlider_Basics_Step_2.png, alt: "RSlider with range 0–100 and top origin")
+                }
+            }
+
+            @Step {
+                Use `maxWinds` to span the value range across multiple full rotations.
+
+                @Code(name: "ContentView.swift", file: RSlider_Basics_Step_3.swift) {
+                    @Image(source: RSlider_Basics_Step_3.png, alt: "RSlider with 3 winds")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Tick Marks") {
+        @ContentAndMedia {
+            ``RSlider`` supports the same ``TickMarkSpacing`` strategies as ``LSlider``.
+
+            @Image(source: RSlider_Basics_Step_4.png, alt: "RSlider with tick marks")
+        }
+
+        @Steps {
+            @Step {
+                Use `.count(N)` to distribute exactly `N` tick marks evenly around the
+                circle.
+
+                @Code(name: "ContentView.swift", file: RSlider_Basics_Step_4.swift) {
+                    @Image(source: RSlider_Basics_Step_4.png, alt: "RSlider with 11 evenly spaced tick marks")
+                }
+            }
+
+            @Step {
+                Use `.spacing(step)` to place a tick mark every `step` units in the value
+                domain.
+
+                @Code(name: "ContentView.swift", file: RSlider_Basics_Step_5.swift) {
+                    @Image(source: RSlider_Basics_Step_5.png, alt: "RSlider with step-spaced tick marks")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Affinity Snapping") {
+        @ContentAndMedia {
+            When `affinityEnabled` is `true`, the thumb magnetically snaps to nearby tick
+            marks.
+
+            @Image(source: RSlider_Basics_Step_6.png, alt: "RSlider with magnetic snapping")
+        }
+
+        @Steps {
+            @Step {
+                Enable `affinityEnabled` and tune `affinityRadius` and
+                `affinityResistance` to control snap behaviour.
+
+                @Code(name: "ContentView.swift", file: RSlider_Basics_Step_6.swift) {
+                    @Image(source: RSlider_Basics_Step_6.png, alt: "RSlider snapping to ticks")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Labels & Disabled State") {
+        @ContentAndMedia {
+            Provide a fully custom floating label and gracefully handle the disabled state.
+
+            @Image(source: RSlider_Basics_Step_7.png, alt: "RSlider with a custom label")
+        }
+
+        @Steps {
+            @Step {
+                Provide a custom `label` closure and show the slider in a disabled state
+                for comparison.
+
+                @Code(name: "ContentView.swift", file: RSlider_Basics_Step_7.swift) {
+                    @Image(source: RSlider_Basics_Step_7.png, alt: "Custom label and disabled RSlider")
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,25 @@
+@Tutorials(name: "DoubleLSlider") {
+    @Intro(title: "Building Range Sliders with DoubleLSlider") {
+        Learn how to add a linear range slider to your app — starting with the built-in
+        default style and its full range of configuration options, then advancing to
+        building a completely custom style from scratch.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``DoubleLSlider`` offers out of the box,
+        from basic placement to tick marks, affinity snapping, and custom labels.
+
+        @Image(source: DoubleLSlider_Basics_Step_1.png, alt: "A horizontal DoubleLSlider with default styling")
+
+        @TutorialReference(tutorial: "doc:DoubleLSlider-Basics")
+    }
+
+    @Chapter(name: "Creating a Custom Style") {
+        Implement each method of the ``DoubleLSliderStyle`` protocol to build a fully custom
+        range slider appearance.
+
+        @Image(source: DoubleLSlider_Advanced_Step_4.png, alt: "A DoubleLSlider rendered with a custom style")
+
+        @TutorialReference(tutorial: "doc:DoubleLSlider-Advanced")
+    }
+}

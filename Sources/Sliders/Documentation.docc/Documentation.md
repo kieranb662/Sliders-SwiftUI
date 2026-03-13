@@ -55,6 +55,18 @@ Add the package via Swift Package Manager: **File → Add Package Dependencies**
 
 ## Topics
 
+### Guides
+
+- <doc:LSliderGuide>
+- <doc:DoubleLSliderGuide>
+- <doc:RSliderGuide>
+- <doc:DoubleRSliderGuide>
+- <doc:TrackPadGuide>
+- <doc:RadialPadGuide>
+- <doc:JoystickGuide>
+- <doc:PSliderGuide>
+- <doc:OverflowSliderGuide>
+
 ### Linear Sliders
 
 - ``LSlider``
@@ -120,3 +132,11 @@ Add the package via Swift Package Manager: **File → Add Package Dependencies**
 ## Tutorials
 
 - <doc:LSlider-Tutorials>
+- <doc:DoubleLSlider-Tutorials>
+- <doc:RSlider-Tutorials>
+- <doc:DoubleRSlider-Tutorials>
+- <doc:TrackPad-Tutorials>
+- <doc:RadialPad-Tutorials>
+- <doc:Joystick-Tutorials>
+- <doc:PSlider-Tutorials>
+- <doc:OverflowSlider-Tutorials>

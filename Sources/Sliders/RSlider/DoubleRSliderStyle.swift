@@ -246,9 +246,9 @@ public extension DoubleRSliderStyle where Self == DefaultDoubleRSliderStyle {
     static func `default`(
         trackColor: Color = Color(red: 0.55, green: 0.55, blue: 0.59),
         trackFilledColor: Color = Color(red: 0.084, green: 0.247, blue: 0.602),
-        lowerThumbColor: Color = Color.white,
-        upperThumbColor: Color = Color.white,
-        activeThumbColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        lowerThumbColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        upperThumbColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        activeThumbColor: Color = Color.white,
         thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackThickness: Double = 24.0
@@ -285,9 +285,9 @@ public struct DefaultDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
     public init(
         trackColor: Color = Color(red: 0.55, green: 0.55, blue: 0.59),
         trackFilledColor: Color = Color(red: 0.084, green: 0.247, blue: 0.602),
-        lowerThumbColor: Color = Color.white,
-        upperThumbColor: Color = Color.white,
-        activeThumbColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        lowerThumbColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        upperThumbColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        activeThumbColor: Color = Color.white,
         thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackThickness: Double = 24.0

@@ -1,0 +1,15 @@
+@Tutorials(name: "RadialPad") {
+    @Intro(title: "Building Radial Controls with RadialPad") {
+        Learn how to add a joystick-style radial control to your app using the built-in
+        default style and its full range of configuration options.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``RadialPad`` offers out of the box, from
+        basic placement to previous-value indicators, polar tick marks, and custom labels.
+
+        @Image(source: RadialPad_Basics_Step_1.png, alt: "A RadialPad with default styling")
+
+        @TutorialReference(tutorial: "doc:RadialPad-Basics")
+    }
+}

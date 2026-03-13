@@ -1,0 +1,116 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Using DoubleRSlider with the Default Style") {
+        ``DoubleRSlider`` is a circular range slider with two independent thumbs and a
+        draggable active-track arc. In this tutorial you'll explore every configuration
+        option the default style offers.
+
+        @Image(source: DoubleRSlider_Basics_Step_1.png, alt: "A circular DoubleRSlider with default styling")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``DoubleRSlider``, then customise its range
+            and origin angle.
+
+            @Image(source: DoubleRSlider_Basics_Step_1.png, alt: "A minimal DoubleRSlider")
+        }
+
+        @Steps {
+            @Step {
+                Add ``DoubleRSlider`` to your view by passing two `@State` bindings for
+                the lower and upper values.
+
+                @Code(name: "ContentView.swift", file: DoubleRSlider_Basics_Step_1.swift) {
+                    @Image(source: DoubleRSlider_Basics_Step_1.png, alt: "A minimal default DoubleRSlider")
+                }
+            }
+
+            @Step {
+                Specify a custom `range` and `originAngle`.
+
+                @Code(name: "ContentView.swift", file: DoubleRSlider_Basics_Step_2.swift) {
+                    @Image(source: DoubleRSlider_Basics_Step_2.png, alt: "DoubleRSlider with custom range and origin")
+                }
+            }
+
+            @Step {
+                Set `minimumDistance` to prevent the two thumbs from overlapping.
+
+                @Code(name: "ContentView.swift", file: DoubleRSlider_Basics_Step_3.swift) {
+                    @Image(source: DoubleRSlider_Basics_Step_3.png, alt: "DoubleRSlider with minimum distance")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Tick Marks") {
+        @ContentAndMedia {
+            ``DoubleRSlider`` supports the same ``TickMarkSpacing`` strategies as the other
+            sliders.
+
+            @Image(source: DoubleRSlider_Basics_Step_4.png, alt: "DoubleRSlider with tick marks")
+        }
+
+        @Steps {
+            @Step {
+                Use `.count(N)` to distribute tick marks evenly around the circle.
+
+                @Code(name: "ContentView.swift", file: DoubleRSlider_Basics_Step_4.swift) {
+                    @Image(source: DoubleRSlider_Basics_Step_4.png, alt: "DoubleRSlider with 9 tick marks")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Affinity Snapping") {
+        @ContentAndMedia {
+            When `affinityEnabled` is `true`, each thumb magnetically snaps to nearby tick
+            marks.
+
+            @Image(source: DoubleRSlider_Basics_Step_5.png, alt: "DoubleRSlider with snapping")
+        }
+
+        @Steps {
+            @Step {
+                Enable `affinityEnabled` and tune the radius and resistance parameters.
+
+                @Code(name: "ContentView.swift", file: DoubleRSlider_Basics_Step_5.swift) {
+                    @Image(source: DoubleRSlider_Basics_Step_5.png, alt: "DoubleRSlider snapping to ticks")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Active Track & Labels") {
+        @ContentAndMedia {
+            The filled arc between the two thumbs is draggable. Combine it with custom
+            labels and the disabled state.
+
+            @Image(source: DoubleRSlider_Basics_Step_6.png, alt: "DoubleRSlider active track demo")
+        }
+
+        @Steps {
+            @Step {
+                Demonstrate dragging the active track arc — range width stays constant
+                while both values shift together.
+
+                @Code(name: "ContentView.swift", file: DoubleRSlider_Basics_Step_6.swift) {
+                    @Image(source: DoubleRSlider_Basics_Step_6.png, alt: "Active track dragging")
+                }
+            }
+
+            @Step {
+                Provide custom `lowerLabel` and `upperLabel` closures and show the slider
+                in a disabled state.
+
+                @Code(name: "ContentView.swift", file: DoubleRSlider_Basics_Step_7.swift) {
+                    @Image(source: DoubleRSlider_Basics_Step_7.png, alt: "Custom labels and disabled DoubleRSlider")
+                }
+            }
+        }
+    }
+}

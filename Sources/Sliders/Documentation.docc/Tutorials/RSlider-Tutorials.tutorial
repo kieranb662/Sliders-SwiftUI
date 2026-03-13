@@ -1,0 +1,24 @@
+@Tutorials(name: "RSlider") {
+    @Intro(title: "Building Circular Sliders with RSlider") {
+        Learn how to add a circular slider to your app — starting with the built-in default
+        style and its configuration options, then advancing to building a custom style.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``RSlider`` offers out of the box, from basic
+        placement to winds, tick marks, affinity snapping, and custom labels.
+
+        @Image(source: RSlider_Basics_Step_1.png, alt: "A circular RSlider with default styling")
+
+        @TutorialReference(tutorial: "doc:RSlider-Basics")
+    }
+
+    @Chapter(name: "Creating a Custom Style") {
+        Implement each method of the ``RSliderStyle`` protocol to build a fully custom
+        circular slider appearance.
+
+        @Image(source: RSlider_Advanced_Step_5.png, alt: "An RSlider rendered with a custom style")
+
+        @TutorialReference(tutorial: "doc:RSlider-Advanced")
+    }
+}

@@ -1,0 +1,112 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Building a Custom RSlider Style") {
+        ``RSliderStyle`` lets you take full control of every visual element of the circular
+        slider. In this tutorial you'll build a custom style from scratch.
+
+        @Image(source: RSlider_Advanced_Step_5.png, alt: "A finished custom RSlider style")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Declaring the Style") {
+        @ContentAndMedia {
+            Start by creating a struct that conforms to ``RSliderStyle`` with stub
+            implementations.
+
+            @Image(source: RSlider_Advanced_Step_1.png, alt: "RSlider with gray stub implementations")
+        }
+
+        @Steps {
+            @Step {
+                Declare `MyRSliderStyle` with placeholder bodies for `makeThumb`,
+                `makeTrack`, and `makeTickMark`. Apply it with
+                `.radialSliderStyle(MyRSliderStyle())`.
+
+                @Code(name: "MyRSliderStyle.swift", file: RSlider_Advanced_Step_1.swift) {
+                    @Image(source: RSlider_Advanced_Step_1.png, alt: "Gray stub circular slider")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeTrack") {
+        @ContentAndMedia {
+            The track consists of a background circle and a ``CircularArc`` that fills
+            according to the current value.
+
+            @Image(source: RSlider_Advanced_Step_2.png, alt: "RSlider with custom track")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeTrack` body. Layer a `Circle` stroke for the
+                background and a ``CircularArc`` for the fill.
+
+                @Code(name: "MyRSliderStyle.swift", file: RSlider_Advanced_Step_2.swift) {
+                    @Image(source: RSlider_Advanced_Step_2.png, alt: "Cyan arc track filling from the origin")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeThumb") {
+        @ContentAndMedia {
+            The thumb should change appearance based on `isActive` and `isDisabled`.
+
+            @Image(source: RSlider_Advanced_Step_3.png, alt: "RSlider with custom thumb")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeThumb` body. Use `configuration.isActive` and
+                `configuration.isDisabled` to drive color and shadow.
+
+                @Code(name: "MyRSliderStyle.swift", file: RSlider_Advanced_Step_3.swift) {
+                    @Image(source: RSlider_Advanced_Step_3.png, alt: "Custom thumb changing state")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeTickMark") {
+        @ContentAndMedia {
+            Tick marks react to the thumb's proximity — growing and brightening as the
+            thumb approaches.
+
+            @Image(source: RSlider_Advanced_Step_4.png, alt: "Tick marks glowing near the thumb")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeTickMark` body. Compute a normalised `proximity`
+                between the thumb and each tick mark, then interpolate size and opacity.
+
+                @Code(name: "MyRSliderStyle.swift", file: RSlider_Advanced_Step_4.swift) {
+                    @Image(source: RSlider_Advanced_Step_4.png, alt: "Proximity-based tick marks")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Applying the Finished Style") {
+        @ContentAndMedia {
+            Apply the finished style to sliders with different configurations.
+
+            @Image(source: RSlider_Advanced_Step_5.png, alt: "Multiple sliders using the custom style")
+        }
+
+        @Steps {
+            @Step {
+                Apply `.radialSliderStyle(MyRSliderStyle())` to sliders with tick marks
+                and affinity to confirm everything works together.
+
+                @Code(name: "ContentView.swift", file: RSlider_Advanced_Step_5.swift) {
+                    @Image(source: RSlider_Advanced_Step_5.png, alt: "Multiple RSliders using the custom style")
+                }
+            }
+        }
+    }
+}

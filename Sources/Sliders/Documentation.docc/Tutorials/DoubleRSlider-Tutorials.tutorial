@@ -1,0 +1,24 @@
+@Tutorials(name: "DoubleRSlider") {
+    @Intro(title: "Building Circular Range Sliders with DoubleRSlider") {
+        Learn how to add a circular range slider to your app — starting with the built-in
+        default style and its configuration options, then advancing to building a custom style.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``DoubleRSlider`` offers out of the box,
+        from basic placement to tick marks, affinity snapping, and custom labels.
+
+        @Image(source: DoubleRSlider_Basics_Step_1.png, alt: "A circular DoubleRSlider with default styling")
+
+        @TutorialReference(tutorial: "doc:DoubleRSlider-Basics")
+    }
+
+    @Chapter(name: "Creating a Custom Style") {
+        Implement each method of the ``DoubleRSliderStyle`` protocol to build a fully custom
+        circular range slider appearance.
+
+        @Image(source: DoubleRSlider_Advanced_Step_4.png, alt: "A DoubleRSlider rendered with a custom style")
+
+        @TutorialReference(tutorial: "doc:DoubleRSlider-Advanced")
+    }
+}

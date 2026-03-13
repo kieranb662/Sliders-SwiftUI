@@ -7,7 +7,7 @@ swift package --allow-writing-to-directory ./docs \
     generate-documentation --target Sliders \
     --disable-indexing \
     --transform-for-static-hosting \
-    --hosting-base-path https://kieranb662.github.io/Sliders-SwiftUI/ \
+    --hosting-base-path Sliders-SwiftUI \
     --output-path ./docs
 ```
 

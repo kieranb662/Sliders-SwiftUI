@@ -1,0 +1,79 @@
+@Tutorial(time: 10) {
+    @Intro(title: "Using OverflowSlider with the Default Style") {
+        ``OverflowSlider`` is a meter-style slider with a fixed frame but a movable track.
+        In this tutorial you'll explore its configuration options — from basic usage to
+        tick spacing, velocity gestures, and custom styling.
+
+        @Image(source: OverflowSlider_Basics_Step_1.png, alt: "An OverflowSlider with default styling")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``OverflowSlider``, then customise its range
+            and tick spacing.
+
+            @Image(source: OverflowSlider_Basics_Step_1.png, alt: "A minimal OverflowSlider")
+        }
+
+        @Steps {
+            @Step {
+                Add ``OverflowSlider`` to your view by passing a `@State` binding, a
+                range, and a tick spacing value.
+
+                @Code(name: "ContentView.swift", file: OverflowSlider_Basics_Step_1.swift) {
+                    @Image(source: OverflowSlider_Basics_Step_1.png, alt: "A minimal default OverflowSlider")
+                }
+            }
+
+            @Step {
+                Adjust `range` and `spacing` to control the total length and resolution
+                of the meter.
+
+                @Code(name: "ContentView.swift", file: OverflowSlider_Basics_Step_2.swift) {
+                    @Image(source: OverflowSlider_Basics_Step_2.png, alt: "OverflowSlider with wider range and finer spacing")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Velocity Gestures") {
+        @ContentAndMedia {
+            The track responds to velocity-based gestures — throw the track and it
+            decelerates naturally.
+
+            @Image(source: OverflowSlider_Basics_Step_3.png, alt: "OverflowSlider velocity demo")
+        }
+
+        @Steps {
+            @Step {
+                Observe how both the thumb and track respond to gestures with momentum.
+                When the thumb hits a boundary, the track scrolls in the opposite direction.
+
+                @Code(name: "ContentView.swift", file: OverflowSlider_Basics_Step_3.swift) {
+                    @Image(source: OverflowSlider_Basics_Step_3.png, alt: "Track velocity behaviour")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Custom Style") {
+        @ContentAndMedia {
+            Conform to ``OverflowSliderStyle`` to customise the thumb and track appearance.
+
+            @Image(source: OverflowSlider_Basics_Step_4.png, alt: "OverflowSlider with a custom style")
+        }
+
+        @Steps {
+            @Step {
+                Create a custom style and apply it with `.overflowSliderStyle(_:)`.
+
+                @Code(name: "ContentView.swift", file: OverflowSlider_Basics_Step_4.swift) {
+                    @Image(source: OverflowSlider_Basics_Step_4.png, alt: "Custom styled OverflowSlider")
+                }
+            }
+        }
+    }
+}

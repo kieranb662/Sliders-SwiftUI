@@ -1,0 +1,24 @@
+@Tutorials(name: "TrackPad") {
+    @Intro(title: "Building 2-D Controls with TrackPad") {
+        Learn how to add a 2-D slider to your app — starting with the built-in default
+        style and its configuration options, then advancing to building a custom style.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``TrackPad`` offers out of the box, from
+        basic placement to previous-value indicators, tick grids, and custom labels.
+
+        @Image(source: TrackPad_Basics_Step_1.png, alt: "A TrackPad with default styling")
+
+        @TutorialReference(tutorial: "doc:TrackPad-Basics")
+    }
+
+    @Chapter(name: "Creating a Custom Style") {
+        Implement each method of the ``TrackPadStyle`` protocol to build a fully custom
+        2-D slider appearance.
+
+        @Image(source: TrackPad_Advanced_Step_5.png, alt: "A TrackPad rendered with a custom style")
+
+        @TutorialReference(tutorial: "doc:TrackPad-Advanced")
+    }
+}

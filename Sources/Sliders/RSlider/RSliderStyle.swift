@@ -322,12 +322,26 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
             Circle()
                 .strokeBorder(trackColor, lineWidth: trackThickness)
             
-            CircularArc(
-                percent: configuration.percent == 1 && configuration.maxWinds >= 1
-                ? 1.0
-                : configuration.withinWind
-            )
-            .strokeBorder(filledColor, lineWidth: trackThickness)
+            if configuration.maxWinds > 1 {
+                ForEach(0..<Int(configuration.maxWinds), id: \.self) { wind in
+                    CircularArc(
+                        percent: configuration.percent == 1 && configuration.maxWinds >= 1 || configuration.currentWind > Double(wind)
+                        ? 1.0
+                        : configuration.withinWind
+                    )
+                    .strokeBorder(filledColor.mix(with: Color.black.opacity(0.2), by: Double(wind)/configuration.maxWinds), lineWidth: trackThickness)
+                    .rotationEffect(configuration.originAngle)
+                }
+            } else {
+                CircularArc(
+                    percent: configuration.percent == 1 && configuration.maxWinds >= 1
+                    ? 1.0
+                    : configuration.withinWind
+                )
+                .strokeBorder(filledColor, lineWidth: trackThickness)
+                .rotationEffect(configuration.originAngle)
+            }
+
         }
         .padding(trackThickness / 2)
         .opacity(configuration.isDisabled ? 0.5 : 1.0)

@@ -1,0 +1,15 @@
+@Tutorials(name: "Joystick") {
+    @Intro(title: "Building On-Screen Joysticks") {
+        Learn how to add an on-screen joystick to your app using the built-in default
+        style and its configuration options.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``Joystick`` offers out of the box, from
+        basic placement to lock behaviour, reading state, and custom styling.
+
+        @Image(source: Joystick_Basics_Step_1.png, alt: "A Joystick with default styling")
+
+        @TutorialReference(tutorial: "doc:Joystick-Basics")
+    }
+}

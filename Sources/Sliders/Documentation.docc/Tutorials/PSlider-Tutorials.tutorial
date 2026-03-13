@@ -1,0 +1,15 @@
+@Tutorials(name: "PSlider") {
+    @Intro(title: "Building Path Sliders with PSlider") {
+        Learn how to turn any SwiftUI `Shape` into a slider using the built-in default
+        style and its configuration options.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``PSlider`` offers out of the box, from
+        basic shapes to custom ranges and styling.
+
+        @Image(source: PSlider_Basics_Step_1.png, alt: "A PSlider with default styling on a circle shape")
+
+        @TutorialReference(tutorial: "doc:PSlider-Basics")
+    }
+}

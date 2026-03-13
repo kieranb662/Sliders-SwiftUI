@@ -1,0 +1,108 @@
+@Tutorial(time: 15) {
+    @Intro(title: "Using RadialPad with the Default Style") {
+        ``RadialPad`` is a joystick-style 2-D control that retains its position after the
+        drag ends. In this tutorial you'll explore its configuration options — from basic
+        usage to polar tick marks and custom labels.
+
+        @Image(source: RadialPad_Basics_Step_1.png, alt: "A RadialPad with default styling")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``RadialPad``, binding offset and angle.
+
+            @Image(source: RadialPad_Basics_Step_1.png, alt: "A minimal RadialPad")
+        }
+
+        @Steps {
+            @Step {
+                Add ``RadialPad`` to your view by passing bindings for `offset` and
+                `angle`.
+
+                @Code(name: "ContentView.swift", file: RadialPad_Basics_Step_1.swift) {
+                    @Image(source: RadialPad_Basics_Step_1.png, alt: "A minimal default RadialPad")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Previous Value Indicator") {
+        @ContentAndMedia {
+            Enable a ghost marker at the last committed position that the thumb snaps
+            back to when dragged slowly.
+
+            @Image(source: RadialPad_Basics_Step_2.png, alt: "RadialPad with previous value indicator")
+        }
+
+        @Steps {
+            @Step {
+                Enable `showPreviousValue` to leave a ghost marker at the last lift-off
+                position.
+
+                @Code(name: "ContentView.swift", file: RadialPad_Basics_Step_2.swift) {
+                    @Image(source: RadialPad_Basics_Step_2.png, alt: "Ghost marker on RadialPad")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Polar Tick Marks") {
+        @ContentAndMedia {
+            Add concentric rings and angular spokes to create a polar grid with snap
+            behaviour.
+
+            @Image(source: RadialPad_Basics_Step_3.png, alt: "RadialPad with polar tick marks")
+        }
+
+        @Steps {
+            @Step {
+                Set `tickCountR` and `tickCountTheta` to add rings and spokes. Their
+                intersections become snap targets.
+
+                @Code(name: "ContentView.swift", file: RadialPad_Basics_Step_3.swift) {
+                    @Image(source: RadialPad_Basics_Step_3.png, alt: "4 rings and 8 spokes on RadialPad")
+                }
+            }
+
+            @Step {
+                Tune the tick affinity parameters to control snap strength.
+
+                @Code(name: "ContentView.swift", file: RadialPad_Basics_Step_4.swift) {
+                    @Image(source: RadialPad_Basics_Step_4.png, alt: "Tuned tick affinity on RadialPad")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Single-Tap Select & Labels") {
+        @ContentAndMedia {
+            Allow a single tap to place the thumb and provide a custom floating label.
+
+            @Image(source: RadialPad_Basics_Step_5.png, alt: "RadialPad with single-tap select")
+        }
+
+        @Steps {
+            @Step {
+                Enable `allowsSingleTapSelect` so the user can tap anywhere on the track
+                to place the thumb.
+
+                @Code(name: "ContentView.swift", file: RadialPad_Basics_Step_5.swift) {
+                    @Image(source: RadialPad_Basics_Step_5.png, alt: "Tap-to-place on RadialPad")
+                }
+            }
+
+            @Step {
+                Provide a custom `label` closure to display formatted offset and angle
+                values.
+
+                @Code(name: "ContentView.swift", file: RadialPad_Basics_Step_6.swift) {
+                    @Image(source: RadialPad_Basics_Step_6.png, alt: "Custom label on RadialPad")
+                }
+            }
+        }
+    }
+}

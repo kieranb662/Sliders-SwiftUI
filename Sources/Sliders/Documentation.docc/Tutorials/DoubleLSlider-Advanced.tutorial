@@ -1,0 +1,95 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Building a Custom DoubleLSlider Style") {
+        ``DoubleLSliderStyle`` lets you take full control of every visual element of the
+        range slider. In this tutorial you'll build a custom style from scratch — implementing
+        each protocol method one at a time.
+
+        @Image(source: DoubleLSlider_Advanced_Step_4.png, alt: "A finished custom DoubleLSlider style")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Declaring the Style") {
+        @ContentAndMedia {
+            Start by creating a struct that conforms to ``DoubleLSliderStyle``. Provide
+            stub implementations for all required methods so the project compiles.
+
+            @Image(source: DoubleLSlider_Advanced_Step_1.png, alt: "DoubleLSlider with gray stub implementations")
+        }
+
+        @Steps {
+            @Step {
+                Declare `MyDoubleLSliderStyle` with placeholder bodies for
+                `makeLowerThumb`, `makeUpperThumb`, and `makeTrack`. Apply it with
+                `.doubleLSliderStyle(MyDoubleLSliderStyle())`.
+
+                @Code(name: "MyDoubleLSliderStyle.swift", file: DoubleLSlider_Advanced_Step_1.swift) {
+                    @Image(source: DoubleLSlider_Advanced_Step_1.png, alt: "Gray stub range slider")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeTrack") {
+        @ContentAndMedia {
+            The track shows an unfilled background and a filled segment between the two
+            thumb positions.
+
+            @Image(source: DoubleLSlider_Advanced_Step_2.png, alt: "DoubleLSlider with custom track")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeTrack` body. Layer two ``AdaptiveLine`` shapes —
+                one as the full background and one trimmed to the range between
+                `lowerPercent` and `upperPercent`.
+
+                @Code(name: "MyDoubleLSliderStyle.swift", file: DoubleLSlider_Advanced_Step_2.swift) {
+                    @Image(source: DoubleLSlider_Advanced_Step_2.png, alt: "Track with teal filled range segment")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing the Thumbs") {
+        @ContentAndMedia {
+            Each thumb should communicate whether it is active or whether the range-drag
+            is happening.
+
+            @Image(source: DoubleLSlider_Advanced_Step_3.png, alt: "DoubleLSlider with custom thumbs")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeLowerThumb` and `makeUpperThumb` bodies. Use
+                `configuration.isLowerActive`, `configuration.isUpperActive`, and
+                `configuration.isRangeActive` to drive visual feedback.
+
+                @Code(name: "MyDoubleLSliderStyle.swift", file: DoubleLSlider_Advanced_Step_3.swift) {
+                    @Image(source: DoubleLSlider_Advanced_Step_3.png, alt: "Thumbs highlighting when active")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Applying the Finished Style") {
+        @ContentAndMedia {
+            Apply the finished style to both horizontal and diagonal range sliders.
+
+            @Image(source: DoubleLSlider_Advanced_Step_4.png, alt: "Multiple sliders using the custom style")
+        }
+
+        @Steps {
+            @Step {
+                Apply `.doubleLSliderStyle(MyDoubleLSliderStyle())` to sliders with
+                tick marks and affinity to confirm everything works together.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Advanced_Step_4.swift) {
+                    @Image(source: DoubleLSlider_Advanced_Step_4.png, alt: "Horizontal and diagonal range sliders using the custom style")
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,109 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Building a Custom TrackPad Style") {
+        ``TrackPadStyle`` lets you take full control of every visual element of the 2-D
+        slider. In this tutorial you'll build a custom style from scratch.
+
+        @Image(source: TrackPad_Advanced_Step_5.png, alt: "A finished custom TrackPad style")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Declaring the Style") {
+        @ContentAndMedia {
+            Start by creating a struct that conforms to ``TrackPadStyle`` with stub
+            implementations.
+
+            @Image(source: TrackPad_Advanced_Step_1.png, alt: "TrackPad with gray stubs")
+        }
+
+        @Steps {
+            @Step {
+                Declare `MyTrackPadStyle` with placeholder bodies for `makeThumb` and
+                `makeTrack`. Apply it with `.trackPadStyle(MyTrackPadStyle())`.
+
+                @Code(name: "MyTrackPadStyle.swift", file: TrackPad_Advanced_Step_1.swift) {
+                    @Image(source: TrackPad_Advanced_Step_1.png, alt: "Gray stub TrackPad")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeTrack") {
+        @ContentAndMedia {
+            The track is the rectangular background area with any decorations you want.
+
+            @Image(source: TrackPad_Advanced_Step_2.png, alt: "TrackPad with custom track")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeTrack` body. Add a rounded rectangle with a
+                subtle border and a dot grid for visual reference.
+
+                @Code(name: "MyTrackPadStyle.swift", file: TrackPad_Advanced_Step_2.swift) {
+                    @Image(source: TrackPad_Advanced_Step_2.png, alt: "Custom track with dot grid")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeThumb") {
+        @ContentAndMedia {
+            The thumb should communicate whether it is active and respond to state changes.
+
+            @Image(source: TrackPad_Advanced_Step_3.png, alt: "TrackPad with custom thumb")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeThumb` body. Use `configuration.isActive` to drive
+                color and shadow changes with animation.
+
+                @Code(name: "MyTrackPadStyle.swift", file: TrackPad_Advanced_Step_3.swift) {
+                    @Image(source: TrackPad_Advanced_Step_3.png, alt: "Custom thumb changing on drag")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makePreviousValueIndicator") {
+        @ContentAndMedia {
+            Override the default previous-value indicator with a custom diamond marker.
+
+            @Image(source: TrackPad_Advanced_Step_4.png, alt: "TrackPad with custom previous-value indicator")
+        }
+
+        @Steps {
+            @Step {
+                Implement `makePreviousValueIndicator(configuration:)` with a rotated
+                `Rectangle` that changes size and opacity when snapped.
+
+                @Code(name: "MyTrackPadStyle.swift", file: TrackPad_Advanced_Step_4.swift) {
+                    @Image(source: TrackPad_Advanced_Step_4.png, alt: "Diamond previous-value indicator")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Applying the Finished Style") {
+        @ContentAndMedia {
+            Apply the finished style with previous-value and tick marks enabled.
+
+            @Image(source: TrackPad_Advanced_Step_5.png, alt: "Finished custom TrackPad style")
+        }
+
+        @Steps {
+            @Step {
+                Apply `.trackPadStyle(MyTrackPadStyle())` to TrackPads with various
+                configurations.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Advanced_Step_5.swift) {
+                    @Image(source: TrackPad_Advanced_Step_5.png, alt: "TrackPads using the custom style")
+                }
+            }
+        }
+    }
+}

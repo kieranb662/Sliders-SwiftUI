@@ -1,0 +1,126 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Using TrackPad with the Default Style") {
+        ``TrackPad`` is the 2-D equivalent of a slider — a draggable thumb moves freely
+        inside a rectangular area, controlling independent x and y values. In this tutorial
+        you'll explore every configuration option the default style offers.
+
+        @Image(source: TrackPad_Basics_Step_1.png, alt: "A TrackPad with default styling")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``TrackPad``, then customise ranges and
+            binding modes.
+
+            @Image(source: TrackPad_Basics_Step_1.png, alt: "A minimal TrackPad")
+        }
+
+        @Steps {
+            @Step {
+                Add ``TrackPad`` to your view by passing a `CGPoint` binding. Without extra
+                arguments both axes default to `0...1`.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Basics_Step_1.swift) {
+                    @Image(source: TrackPad_Basics_Step_1.png, alt: "A minimal default TrackPad")
+                }
+            }
+
+            @Step {
+                Specify independent `rangeX` and `rangeY` when the axes cover different
+                domains.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Basics_Step_2.swift) {
+                    @Image(source: TrackPad_Basics_Step_2.png, alt: "TrackPad with custom ranges")
+                }
+            }
+
+            @Step {
+                Use the double-binding initialiser when your model stores x and y as
+                separate `Double` properties.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Basics_Step_3.swift) {
+                    @Image(source: TrackPad_Basics_Step_3.png, alt: "TrackPad with separate x and y bindings")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Previous Value Indicator") {
+        @ContentAndMedia {
+            Enable a ghost marker at the last committed position. The thumb magnetically
+            snaps back when dragged slowly toward it.
+
+            @Image(source: TrackPad_Basics_Step_4.png, alt: "TrackPad with previous value indicator")
+        }
+
+        @Steps {
+            @Step {
+                Enable `showPreviousValue` to leave a ghost marker at the last lift-off
+                position.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Basics_Step_4.swift) {
+                    @Image(source: TrackPad_Basics_Step_4.png, alt: "Ghost marker on the TrackPad")
+                }
+            }
+
+            @Step {
+                Tune the affinity parameters to control how eagerly the thumb snaps back
+                to the previous position.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Basics_Step_5.swift) {
+                    @Image(source: TrackPad_Basics_Step_5.png, alt: "Tuned previous-value affinity")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Tick Marks") {
+        @ContentAndMedia {
+            Divide the track into a regular grid using tick counts on each axis. The thumb
+            snaps magnetically to intersections.
+
+            @Image(source: TrackPad_Basics_Step_6.png, alt: "TrackPad with tick grid")
+        }
+
+        @Steps {
+            @Step {
+                Use `.tickCount(_:)` to set the same interval count on both axes at once.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Basics_Step_6.swift) {
+                    @Image(source: TrackPad_Basics_Step_6.png, alt: "4×4 tick grid on the TrackPad")
+                }
+            }
+
+            @Step {
+                Set independent tick counts on each axis for non-square grids.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Basics_Step_7.swift) {
+                    @Image(source: TrackPad_Basics_Step_7.png, alt: "3×5 tick grid on the TrackPad")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Labels & Disabled State") {
+        @ContentAndMedia {
+            Provide a custom floating label and handle the disabled state.
+
+            @Image(source: TrackPad_Basics_Step_8.png, alt: "TrackPad with custom label")
+        }
+
+        @Steps {
+            @Step {
+                Provide a custom `label` closure and show the TrackPad in an enabled and
+                disabled state.
+
+                @Code(name: "ContentView.swift", file: TrackPad_Basics_Step_8.swift) {
+                    @Image(source: TrackPad_Basics_Step_8.png, alt: "Custom label and disabled TrackPad")
+                }
+            }
+        }
+    }
+}

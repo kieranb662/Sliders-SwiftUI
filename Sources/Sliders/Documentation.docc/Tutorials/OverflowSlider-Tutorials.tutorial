@@ -1,0 +1,15 @@
+@Tutorials(name: "OverflowSlider") {
+    @Intro(title: "Building Meter Sliders with OverflowSlider") {
+        Learn how to add a meter-style overflow slider to your app using the built-in
+        default style and its configuration options.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``OverflowSlider`` offers out of the box,
+        from basic usage to tick spacing, velocity gestures, and custom styling.
+
+        @Image(source: OverflowSlider_Basics_Step_1.png, alt: "An OverflowSlider with default styling")
+
+        @TutorialReference(tutorial: "doc:OverflowSlider-Basics")
+    }
+}

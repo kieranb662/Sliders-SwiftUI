@@ -1,0 +1,92 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Building a Custom DoubleRSlider Style") {
+        ``DoubleRSliderStyle`` lets you take full control of every visual element of the
+        circular range slider. In this tutorial you'll build a custom style from scratch.
+
+        @Image(source: DoubleRSlider_Advanced_Step_4.png, alt: "A finished custom DoubleRSlider style")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Declaring the Style") {
+        @ContentAndMedia {
+            Start by creating a struct that conforms to ``DoubleRSliderStyle`` with stub
+            implementations.
+
+            @Image(source: DoubleRSlider_Advanced_Step_1.png, alt: "DoubleRSlider with gray stubs")
+        }
+
+        @Steps {
+            @Step {
+                Declare `MyDoubleRSliderStyle` with placeholder bodies for
+                `makeLowerThumb`, `makeUpperThumb`, and `makeTrack`. Apply it with
+                `.doubleRadialSliderStyle(MyDoubleRSliderStyle())`.
+
+                @Code(name: "MyDoubleRSliderStyle.swift", file: DoubleRSlider_Advanced_Step_1.swift) {
+                    @Image(source: DoubleRSlider_Advanced_Step_1.png, alt: "Gray stub circular range slider")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeTrack") {
+        @ContentAndMedia {
+            The track shows a full circle background and a filled arc segment between the
+            two thumb positions.
+
+            @Image(source: DoubleRSlider_Advanced_Step_2.png, alt: "DoubleRSlider with custom track")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeTrack` body. Layer a `Circle` stroke for the
+                background and a ``CircularArc`` for the filled range segment.
+
+                @Code(name: "MyDoubleRSliderStyle.swift", file: DoubleRSlider_Advanced_Step_2.swift) {
+                    @Image(source: DoubleRSlider_Advanced_Step_2.png, alt: "Teal arc showing the selected range")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing the Thumbs") {
+        @ContentAndMedia {
+            Each thumb should respond to its own active state and the range-drag state.
+
+            @Image(source: DoubleRSlider_Advanced_Step_3.png, alt: "DoubleRSlider with custom thumbs")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub thumb bodies. Use `isLowerActive`, `isUpperActive`, and
+                `isRangeActive` to drive highlight effects.
+
+                @Code(name: "MyDoubleRSliderStyle.swift", file: DoubleRSlider_Advanced_Step_3.swift) {
+                    @Image(source: DoubleRSlider_Advanced_Step_3.png, alt: "Custom thumbs highlighting on drag")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Applying the Finished Style") {
+        @ContentAndMedia {
+            Apply the finished style with tick marks and affinity to confirm everything
+            works together.
+
+            @Image(source: DoubleRSlider_Advanced_Step_4.png, alt: "Finished custom DoubleRSlider style")
+        }
+
+        @Steps {
+            @Step {
+                Apply `.doubleRadialSliderStyle(MyDoubleRSliderStyle())` to sliders
+                with tick marks and affinity.
+
+                @Code(name: "ContentView.swift", file: DoubleRSlider_Advanced_Step_4.swift) {
+                    @Image(source: DoubleRSlider_Advanced_Step_4.png, alt: "DoubleRSliders using the custom style")
+                }
+            }
+        }
+    }
+}

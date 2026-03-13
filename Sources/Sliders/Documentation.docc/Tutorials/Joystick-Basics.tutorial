@@ -1,0 +1,100 @@
+@Tutorial(time: 10) {
+    @Intro(title: "Using Joystick with the Default Style") {
+        ``Joystick`` is an on-screen joystick that appears wherever the user drags within
+        a defined hit-box. In this tutorial you'll explore its configuration options — from
+        basic placement to lock behaviour, reading state, and custom styling.
+
+        @Image(source: Joystick_Basics_Step_1.png, alt: "A Joystick with default styling")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``Joystick``, binding a `JoyState` value
+            and setting a radius.
+
+            @Image(source: Joystick_Basics_Step_1.png, alt: "A minimal Joystick")
+        }
+
+        @Steps {
+            @Step {
+                Add ``Joystick`` to your view by passing a `@State` binding to a
+                `JoyState` value and a `radius`.
+
+                @Code(name: "ContentView.swift", file: Joystick_Basics_Step_1.swift) {
+                    @Image(source: Joystick_Basics_Step_1.png, alt: "A minimal default Joystick")
+                }
+            }
+
+            @Step {
+                Disable the lock-box behaviour by passing `canLock: false` so the joystick
+                always disappears on release.
+
+                @Code(name: "ContentView.swift", file: Joystick_Basics_Step_2.swift) {
+                    @Image(source: Joystick_Basics_Step_2.png, alt: "Joystick with locking disabled")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Reading State") {
+        @ContentAndMedia {
+            Use the bound ``JoyState`` to read angle, radial offset, velocity, and lock
+            status in real time.
+
+            @Image(source: Joystick_Basics_Step_3.png, alt: "Joystick state readout")
+        }
+
+        @Steps {
+            @Step {
+                Display the joystick's angle, radial offset, and lock status alongside
+                the control.
+
+                @Code(name: "ContentView.swift", file: Joystick_Basics_Step_3.swift) {
+                    @Image(source: Joystick_Basics_Step_3.png, alt: "State readout alongside the Joystick")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Custom Style") {
+        @ContentAndMedia {
+            Conform to ``JoystickStyle`` to customise the hit-box, lock-box, track, and
+            thumb.
+
+            @Image(source: Joystick_Basics_Step_4.png, alt: "Joystick with a custom style")
+        }
+
+        @Steps {
+            @Step {
+                Create a custom style implementing all four protocol methods and apply it
+                with `.joystickStyle(_:)`.
+
+                @Code(name: "ContentView.swift", file: Joystick_Basics_Step_4.swift) {
+                    @Image(source: Joystick_Basics_Step_4.png, alt: "Custom styled Joystick")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Disabled State") {
+        @ContentAndMedia {
+            Disable the joystick to prevent user interaction.
+
+            @Image(source: Joystick_Basics_Step_5.png, alt: "Disabled Joystick")
+        }
+
+        @Steps {
+            @Step {
+                Pass `isDisabled: true` to put the joystick into a non-interactive state.
+
+                @Code(name: "ContentView.swift", file: Joystick_Basics_Step_5.swift) {
+                    @Image(source: Joystick_Basics_Step_5.png, alt: "Joystick in disabled state")
+                }
+            }
+        }
+    }
+}

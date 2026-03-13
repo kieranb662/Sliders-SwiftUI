@@ -1,0 +1,131 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Using DoubleLSlider with the Default Style") {
+        ``DoubleLSlider`` is a linear range slider with two independent thumbs and a
+        draggable active-track segment. In this tutorial you'll explore every configuration
+        option the default style offers — from a minimal setup to tick marks, affinity
+        snapping, and custom labels.
+
+        @Image(source: DoubleLSlider_Basics_Step_1.png, alt: "A horizontal DoubleLSlider with default styling")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``DoubleLSlider``, then gradually add commonly
+            used parameters: a custom range, a larger track, and constrained thumb travel.
+
+            @Image(source: DoubleLSlider_Basics_Step_1.png, alt: "A minimal DoubleLSlider")
+        }
+
+        @Steps {
+            @Step {
+                Add ``DoubleLSlider`` to your view by passing two `@State` bindings —
+                one for the lower bound and one for the upper bound.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Basics_Step_1.swift) {
+                    @Image(source: DoubleLSlider_Basics_Step_1.png, alt: "A minimal default DoubleLSlider")
+                }
+            }
+
+            @Step {
+                Specify a custom `range` and `trackThickness` to scale the slider to your
+                use case.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Basics_Step_2.swift) {
+                    @Image(source: DoubleLSlider_Basics_Step_2.png, alt: "DoubleLSlider with range 0–100 and larger track")
+                }
+            }
+
+            @Step {
+                Pass an `angle` to rotate the track. Here `.degrees(90)` creates a vertical
+                range slider.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Basics_Step_3.swift) {
+                    @Image(source: DoubleLSlider_Basics_Step_3.png, alt: "A vertical DoubleLSlider at 90 degrees")
+                }
+            }
+
+            @Step {
+                Enable `keepThumbInTrack` so each thumb's centre stays within the visual
+                extent of the track.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Basics_Step_4.swift) {
+                    @Image(source: DoubleLSlider_Basics_Step_4.png, alt: "DoubleLSlider with keepThumbInTrack enabled")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Minimum Distance & Tick Marks") {
+        @ContentAndMedia {
+            Prevent the thumbs from overlapping with `minimumDistance`, then add tick marks
+            using ``TickMarkSpacing``.
+
+            @Image(source: DoubleLSlider_Basics_Step_5.png, alt: "DoubleLSlider with minimum distance")
+        }
+
+        @Steps {
+            @Step {
+                Set `minimumDistance` to ensure the two thumbs never collapse on top of
+                each other. Specify it in value-domain units.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Basics_Step_5.swift) {
+                    @Image(source: DoubleLSlider_Basics_Step_5.png, alt: "Thumbs kept apart by minimumDistance")
+                }
+            }
+
+            @Step {
+                Use `.count(N)` to distribute exactly `N` tick marks evenly across the
+                range, including both endpoints.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Basics_Step_6.swift) {
+                    @Image(source: DoubleLSlider_Basics_Step_6.png, alt: "DoubleLSlider with 11 tick marks")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Affinity Snapping") {
+        @ContentAndMedia {
+            When `affinityEnabled` is `true`, the thumbs magnetically snap to nearby tick
+            marks.
+
+            @Image(source: DoubleLSlider_Basics_Step_7.png, alt: "DoubleLSlider with magnetic snapping")
+        }
+
+        @Steps {
+            @Step {
+                Enable `affinityEnabled` and pair it with `affinityRadius` and
+                `affinityResistance` to control how the thumbs snap to tick marks.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Basics_Step_7.swift) {
+                    @Image(source: DoubleLSlider_Basics_Step_7.png, alt: "DoubleLSlider snapping to ticks")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Custom Labels & Disabled State") {
+        @ContentAndMedia {
+            Provide custom floating labels for each thumb and gracefully handle the
+            disabled state.
+
+            @Image(source: DoubleLSlider_Basics_Step_8.png, alt: "DoubleLSlider with custom labels")
+        }
+
+        @Steps {
+            @Step {
+                Provide custom `lowerLabel` and `upperLabel` closures to replace the
+                default numeric readout. Also show the slider in a disabled state for
+                comparison.
+
+                @Code(name: "ContentView.swift", file: DoubleLSlider_Basics_Step_8.swift) {
+                    @Image(source: DoubleLSlider_Basics_Step_8.png, alt: "Custom labels and disabled DoubleLSlider")
+                }
+            }
+        }
+    }
+}
