@@ -32,6 +32,7 @@ import SwiftUI
 public struct DoubleRSlider: View {
     @Environment(\.doubleRadialSliderStyle) private var style: AnyDoubleRSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
+    @Environment(\.labelsVisibility) private var labelsVisibility
 
     // Haptic managers – one per thumb so limit/tick events are scoped correctly.
     @State private var lowerHapticManager = RSliderHapticManager()

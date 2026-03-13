@@ -62,6 +62,7 @@ public struct TrackPad: View {
     // MARK: State and Setup
     @Environment(\.trackPadStyle) private var style: AnyTrackPadStyle
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.labelsVisibility) private var labelsVisibility
     private let space: String = "Track Pad"
     @State private var isActive: Bool = false
     @State private var atXLimit: Bool = false

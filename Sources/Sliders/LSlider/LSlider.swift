@@ -49,6 +49,7 @@ public struct LSlider: View {
     // MARK: State and Setup
     @Environment(\.linearSliderStyle) private var style: AnyLSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
+    @Environment(\.labelsVisibility) private var labelsVisibility
     @StateObject private var hapticManager = LSliderHapticManager()
     @State private var isActive: Bool = false
     @State private var atLimit: Bool = false

@@ -57,6 +57,7 @@ public struct RadialPad: View {
 
     @Environment(\.radialPadStyle) private var style: AnyRadialPadStyle
     @Environment(\.isEnabled)      private var isEnabled
+    @Environment(\.labelsVisibility) private var labelsVisibility
     private let space: String = "Radial Pad"
 
     @State private var isActive: Bool = false

@@ -27,6 +27,7 @@ import SwiftUI
 public struct DoubleLSlider: View {
     @Environment(\.doubleLSliderStyle) private var style: AnyDoubleLSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
+    @Environment(\.labelsVisibility) private var labelsVisibility
 
     // Haptic managers – one per thumb
     @State private var lowerHapticManager = LSliderHapticManager()

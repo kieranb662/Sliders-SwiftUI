@@ -32,6 +32,7 @@ import SwiftUI
 public struct RSlider: View {
     @Environment(\.radialSliderStyle) private var style: AnyRSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
+    @Environment(\.labelsVisibility) private var labelsVisibility
     @State private var hapticManager = RSliderHapticManager()
     @State private var isActive = false
     @State private var atLimit: Bool = false
