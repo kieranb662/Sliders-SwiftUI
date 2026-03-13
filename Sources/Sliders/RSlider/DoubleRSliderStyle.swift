@@ -273,7 +273,7 @@ public struct DefaultDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
             // Filled arc between lower and upper
             CircularArc(percent: arcLength)
                 .strokeBorder(trackFilledColor, lineWidth: trackThickness)
-                .rotationEffect(configuration.lowerAngle + configuration.originAngle)
+                .rotationEffect(configuration.lowerAngle)
         }
         .padding(trackThickness / 2)
     }

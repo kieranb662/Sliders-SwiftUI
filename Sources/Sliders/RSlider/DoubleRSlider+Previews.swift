@@ -44,7 +44,7 @@ struct DiagnosticDoubleRSliderStyle: DoubleRSliderStyle {
                     configuration.isRangeActive ? Color.yellow : Color.blue,
                     style: StrokeStyle(lineWidth: thickness, lineCap: .round)
                 )
-                .rotationEffect(configuration.lowerAngle + configuration.originAngle)
+                .rotationEffect(configuration.lowerAngle)
 
             VStack(spacing: 2) {
                 Text("low: \(configuration.lowerValue, format: .number.precision(.fractionLength(2)))")

@@ -547,7 +547,7 @@ public struct DoubleRSlider: View {
 
         return CircularArc(percent: arcLength)
             .strokeBorder(Color.black.opacity(0.001), lineWidth: hitThickness)
-            .rotationEffect(angleForValue(lowerValue) + originAngle)
+            .rotationEffect(angleForValue(lowerValue))
             .padding((hitThickness - 24) / 2)
             .gesture(gesture)
             .allowsHitTesting(isEnabled && !isLowerActive && !isUpperActive)
