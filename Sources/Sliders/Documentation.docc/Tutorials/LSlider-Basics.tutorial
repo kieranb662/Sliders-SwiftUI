@@ -1,0 +1,171 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Using LSlider with the Default Style") {
+        ``LSlider`` is a fully stylable linear slider that can be placed at any angle.
+        In this tutorial you'll explore every configuration option the default style offers —
+        from a minimal one-liner to diagonal, tick-marked, affinity-snapping sliders with
+        custom labels.
+
+        @Image(source: LSlider_Basics_Step_1.png, alt: "A horizontal LSlider with default styling")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Basic Usage") {
+        @ContentAndMedia {
+            Start with the simplest possible ``LSlider``, then gradually add the most
+            commonly used parameters: a custom range, a larger track, and constrained
+            thumb travel.
+
+            @Image(source: LSlider_Basics_Step_1.png, alt: "A minimal LSlider with default settings")
+        }
+
+        @Steps {
+            @Step {
+                Add ``LSlider`` to your view by passing a `@State` binding.  Without any
+                additional arguments it defaults to `range: 0...1`, a horizontal angle, and
+                `trackThickness: 20`.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_1.swift) {
+                    @Image(source: LSlider_Basics_Step_1.png, alt: "A minimal default LSlider")
+                }
+            }
+
+            @Step {
+                Specify a custom `range` and `trackThickness` to scale the slider to your
+                use case.  Here the slider controls a value from `0` to `10` and uses a
+                thicker `28`-point track.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_2.swift) {
+                    @Image(source: LSlider_Basics_Step_2.png, alt: "LSlider with range 0–10 and larger track")
+                }
+            }
+
+            @Step {
+                Pass an `angle` to rotate the track.  Any `Angle` is valid — here `315°`
+                produces a diagonal slider.  Give the view enough space so the angled track
+                can expand to fill it.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_3.swift) {
+                    @Image(source: LSlider_Basics_Step_3.png, alt: "A diagonal LSlider at 315 degrees")
+                }
+            }
+
+            @Step {
+                Enable `keepThumbInTrack` so the thumb's centre stays within the visual
+                extent of the capsule.  Compare the two sliders — note that the filled
+                portion of the track always reaches the centre of the thumb.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_4.swift) {
+                    @Image(source: LSlider_Basics_Step_4.png, alt: "Side-by-side comparison of keepThumbInTrack off and on")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Tick Marks") {
+        @ContentAndMedia {
+            ``LSlider`` supports three strategies for placing tick marks along the track,
+            controlled by the `tickMarkSpacing` parameter.  Each strategy maps to a case of
+            ``TickMarkSpacing``.
+
+            @Image(source: LSlider_Basics_Step_5.png, alt: "An LSlider with evenly distributed tick marks")
+        }
+
+        @Steps {
+            @Step {
+                Use `.count(N)` to distribute exactly `N` tick marks evenly across the
+                range, always including the endpoints.  Set `hapticFeedbackEnabled: true` to
+                feel a light tap as the thumb crosses each mark.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_5.swift) {
+                    @Image(source: LSlider_Basics_Step_5.png, alt: "LSlider with 11 evenly spaced tick marks")
+                }
+            }
+
+            @Step {
+                Use `.spacing(step)` to place a tick mark every `step` units in the value
+                domain.  A `range: 0...10` slider with `.spacing(1)` produces 11 ticks at
+                0, 1, 2, …, 10.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_6.swift) {
+                    @Image(source: LSlider_Basics_Step_6.png, alt: "LSlider with step-spaced tick marks")
+                }
+            }
+
+            @Step {
+                Use `.values([...])` to place tick marks at specific, arbitrary positions in
+                the value domain.  Values outside the slider's `range` are silently ignored.
+                Pass `hapticFeedbackEnabled: false` to opt out of haptic feedback.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_7.swift) {
+                    @Image(source: LSlider_Basics_Step_7.png, alt: "LSlider with four explicit tick mark positions")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Affinity Snapping") {
+        @ContentAndMedia {
+            When `affinityEnabled` is `true`, the thumb magnetically snaps to nearby tick
+            marks.  Two parameters let you tune how easy it is to snap in and break free.
+
+            @Image(source: LSlider_Basics_Step_8.png, alt: "An LSlider with magnetic snapping enabled")
+        }
+
+        @Steps {
+            @Step {
+                Enable `affinityEnabled` and pair it with `affinityRadius` and
+                `affinityResistance`.  `affinityRadius` (as a fraction of the total range)
+                defines how close the thumb must be before it snaps in; once snapped, the
+                thumb won't escape until the drag moves `affinityRadius + affinityResistance`
+                away.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_8.swift) {
+                    @Image(source: LSlider_Basics_Step_8.png, alt: "LSlider with affinity snapping showing snap-in behaviour")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Interaction, Labels & Accessibility") {
+        @ContentAndMedia {
+            Fine-tune how users interact with the slider: allow tap-to-jump placement,
+            supply a fully custom floating label, and gracefully handle the disabled state.
+
+            @Image(source: LSlider_Basics_Step_9.png, alt: "An LSlider with tap-to-jump enabled")
+        }
+
+        @Steps {
+            @Step {
+                Call `.allowsSingleTapSelect(true)` on the slider to let users tap anywhere
+                on the track to instantly move the thumb to that position — no drag required.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_9.swift) {
+                    @Image(source: LSlider_Basics_Step_9.png, alt: "LSlider where a tap on the track moves the thumb")
+                }
+            }
+
+            @Step {
+                Provide a custom `label` closure to replace the default numeric readout with
+                any view.  The closure receives the current `Double` value and is called
+                continuously as the thumb moves.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_10.swift) {
+                    @Image(source: LSlider_Basics_Step_10.png, alt: "LSlider showing a custom Label with SF Symbol")
+                }
+            }
+
+            @Step {
+                Apply `.disabled(true)` to put the slider into a non-interactive state.
+                The default style dims the thumb and track automatically.  Compare the
+                enabled and disabled sliders side-by-side.
+
+                @Code(name: "ContentView.swift", file: LSlider_Basics_Step_11.swift) {
+                    @Image(source: LSlider_Basics_Step_11.png, alt: "Enabled and disabled LSlider shown side-by-side")
+                }
+            }
+        }
+    }
+}

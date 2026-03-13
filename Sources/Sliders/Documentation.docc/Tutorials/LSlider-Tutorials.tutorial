@@ -1,0 +1,25 @@
+@Tutorials(name: "LSlider") {
+    @Intro(title: "Building Sliders with LSlider") {
+        Learn how to add a spatially adaptive linear slider to your app — starting with the
+        built-in default style and its full range of configuration options, then advancing to
+        building a completely custom style from scratch.
+    }
+
+    @Chapter(name: "Using the Default Style") {
+        Explore every configuration option that ``LSlider`` offers out of the box, from basic
+        placement to tick marks, affinity snapping, and custom labels.
+
+        @Image(source: LSlider_Basics_Step_1.png, alt: "A horizontal LSlider with default styling")
+
+        @TutorialReference(tutorial: "doc:LSlider-Basics")
+    }
+
+    @Chapter(name: "Creating a Custom Style") {
+        Implement each method of the ``LSliderStyle`` protocol to build a fully custom slider
+        appearance, then expose it as a convenient static preset.
+
+        @Image(source: LSlider_Advanced_Step_6.png, alt: "An LSlider rendered with a custom indigo style")
+
+        @TutorialReference(tutorial: "doc:LSlider-Advanced")
+    }
+}

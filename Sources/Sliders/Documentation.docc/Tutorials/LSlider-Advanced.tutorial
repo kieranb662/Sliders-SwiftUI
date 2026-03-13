@@ -1,0 +1,166 @@
+@Tutorial(time: 20) {
+    @Intro(title: "Building a Custom LSlider Style") {
+        ``LSliderStyle`` lets you take full control of every visual element of the slider.
+        In this tutorial you'll build `MyLSliderStyle` from scratch — implementing each
+        protocol method one at a time — and applying the finished style to both horizontal
+        and diagonal sliders.
+
+        @Image(source: LSlider_Advanced_Step_6.png, alt: "A finished custom indigo LSlider style")
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Declaring the Style") {
+        @ContentAndMedia {
+            Start by creating a struct that conforms to ``LSliderStyle``.  The protocol
+            requires four methods; you'll add stub implementations first to make the code
+            compile, then flesh each one out in the following sections.
+
+            @Image(source: LSlider_Advanced_Step_1.png, alt: "LSlider rendered with gray stub implementations")
+        }
+
+        @Steps {
+            @Step {
+                Create a new Swift file and declare `MyLSliderStyle` as a `struct` that
+                conforms to ``LSliderStyle``.  Provide placeholder bodies for all four
+                required methods — `makeThumb`, `makeTrack`, `makeTickMark`, and
+                `makeLabel` — so the project compiles while you iterate.
+
+                Apply the style with `.linearSliderStyle(MyLSliderStyle())` to see it
+                immediately in the preview.
+
+                @Code(name: "MyLSliderStyle.swift", file: LSlider_Advanced_Step_1.swift) {
+                    @Image(source: LSlider_Advanced_Step_1.png, alt: "Gray stub slider confirming the style is wired up")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeTrack") {
+        @ContentAndMedia {
+            The track is the backbone of the slider.  It consists of two layered
+            ``AdaptiveLine`` shapes: a dim background and a filled foreground that
+            grows with `pctFill`.
+
+            @Image(source: LSlider_Advanced_Step_2.png, alt: "LSlider with the custom indigo track rendered")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeTrack` body.  Layer two ``AdaptiveLine`` shapes in a
+                `ZStack`: one as the empty background and one as the filled foreground.
+                Mask the filled portion so it stays within the capsule.
+
+                Use `configuration.pctFill` for the fill percentage and
+                `configuration.keepThumbInTrack` to compute the correct `adjustmentForThumb`
+                so the fill always ends under the thumb's centre.
+
+                @Code(name: "MyLSliderStyle.swift", file: LSlider_Advanced_Step_2.swift) {
+                    @Image(source: LSlider_Advanced_Step_2.png, alt: "Track with indigo fill growing from the left")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeThumb") {
+        @ContentAndMedia {
+            The thumb needs to communicate three states visually: normal, active (while
+            dragging), and disabled.  Use `configuration.isActive` and
+            `configuration.isDisabled` to drive color and shadow changes.
+
+            @Image(source: LSlider_Advanced_Step_3.png, alt: "Enabled and disabled sliders with the custom thumb")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeThumb` body.  Size the `Circle` from
+                `configuration.trackThickness` (double it for a standard thumb diameter).
+
+                Pick the fill color based on `isDisabled` → `isActive`, and add a shadow
+                whose radius expands when the thumb is active to give a lifted feel.  Wrap
+                the color and shadow in an `.animation` so the transition is smooth.
+
+                @Code(name: "MyLSliderStyle.swift", file: LSlider_Advanced_Step_3.swift) {
+                    @Image(source: LSlider_Advanced_Step_3.png, alt: "Thumb changing color between active and disabled states")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeTickMark") {
+        @ContentAndMedia {
+            Tick marks should react to the thumb's proximity — growing and brightening as
+            the thumb approaches.  ``LSliderConfiguration`` provides `value`, `min`, and
+            `max` so you can compute a normalised distance.
+
+            @Image(source: LSlider_Advanced_Step_4.png, alt: "Tick marks brightening as the thumb moves close")
+        }
+
+        @Steps {
+            @Step {
+                Replace the stub `makeTickMark` body.  Compute the normalised positions of
+                the thumb (`thumbPct`) and the tick mark (`tickPct`) in the `0…1` space,
+                then derive a `proximity` value between `0` (far) and `1` (on top).
+
+                Use `proximity` to interpolate both the circle's `size` and its `opacity`,
+                and wrap the result in `.animation(.easeOut)` so it feels responsive.
+
+                @Code(name: "MyLSliderStyle.swift", file: LSlider_Advanced_Step_4.swift) {
+                    @Image(source: LSlider_Advanced_Step_4.png, alt: "Indigo circles growing as the thumb passes over them")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Implementing makeLabel") {
+        @ContentAndMedia {
+            The floating label container wraps the caller-provided content view.  Override
+            `makeLabel` to brand it with the same indigo palette and give it a spring
+            entrance/exit animation tied to `isActive`.
+
+            @Image(source: LSlider_Advanced_Step_5.png, alt: "A custom indigo floating label above the thumb")
+        }
+
+        @Steps {
+            @Step {
+                Implement `makeLabel(configuration:content:)`.  Wrap the `content` view in
+                horizontal and vertical padding, then apply a `RoundedRectangle` background
+                filled with indigo and a drop shadow.
+
+                Drive `scaleEffect` and `opacity` from `configuration.isActive` — the label
+                springs in when the user starts dragging and fades away when they lift their
+                finger.
+
+                @Code(name: "MyLSliderStyle.swift", file: LSlider_Advanced_Step_5.swift) {
+                    @Image(source: LSlider_Advanced_Step_5.png, alt: "Indigo rounded-rectangle label appearing above the thumb")
+                }
+            }
+        }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    @Section(title: "Applying the Finished Style") {
+        @ContentAndMedia {
+            With all four methods complete, apply `MyLSliderStyle` to a range of sliders —
+            horizontal, diagonal, with tick marks and affinity — to confirm everything works
+            together.
+
+            @Image(source: LSlider_Advanced_Step_6.png, alt: "Multiple sliders all using the finished custom style")
+        }
+
+        @Steps {
+            @Step {
+                Apply `.linearSliderStyle(MyLSliderStyle())` to both a horizontal slider
+                (with tick marks and affinity) and a diagonal slider.  The style adapts
+                automatically to any angle and thickness thanks to ``AdaptiveLine``.
+
+                @Code(name: "ContentView.swift", file: LSlider_Advanced_Step_6.swift) {
+                    @Image(source: LSlider_Advanced_Step_6.png, alt: "Horizontal and diagonal sliders using MyLSliderStyle")
+                }
+            }
+        }
+    }
+}
