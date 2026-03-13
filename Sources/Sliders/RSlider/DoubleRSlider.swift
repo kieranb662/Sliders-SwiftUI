@@ -215,7 +215,11 @@ public struct DoubleRSlider: View {
     private func rawAngleForValue(_ v: Double) -> Double {
         let span = range.upperBound - range.lowerBound
         guard span > 0 else { return 0 }
-        return (v - range.lowerBound) / span
+        // Clamp result to [0, 1) to match the output range of rawAngle(from:_:).
+        // In particular, the maximum value maps to 1.0 which must be folded back to 0.0
+        // so that seam-crossing delta maths stays consistent.
+        let raw = (v - range.lowerBound) / span
+        return raw >= 1.0 ? 0.0 : raw
     }
 
     /// Converts a raw [0, 1) circle fraction to the value domain.
@@ -238,23 +242,18 @@ public struct DoubleRSlider: View {
     // MARK: - Value updaters
 
     private func updateLowerValue(from center: CGPoint, location: CGPoint) {
-        var newRaw = rawAngle(from: center, location)
+        let newRaw = rawAngle(from: center, location)
 
-        // Seam-crossing detection (no windings – clamp hard at 0 and 1)
-        let delta = newRaw - lastLowerRawAngle
-        // Detect wrap-around: if delta is large it crossed the seam
-        if delta < -0.5 { /* crossed seam going forward  */ }
-        if delta > 0.5  { /* crossed seam going backward */ }
+        // Compute signed delta, wrapping through the seam into (–0.5, 0.5]
+        var delta = newRaw - lastLowerRawAngle
+        if delta > 0.5  { delta -= 1.0 }
+        if delta < -0.5 { delta += 1.0 }
 
-        // Map to value
-        var rawValue = valueForRaw(newRaw)
+        let span = range.upperBound - range.lowerBound
+        var rawValue = lowerValue + delta * span
 
         // Clamp to [range.lowerBound ... upperValue - minimumDistance]
-        let maxAllowed = upperValue - minimumDistance
-        rawValue = Swift.max(range.lowerBound, Swift.min(maxAllowed, rawValue))
-
-        // Re-derive newRaw after clamping so lastLowerRawAngle stays consistent
-        newRaw = rawAngleForValue(rawValue)
+        rawValue = Swift.max(range.lowerBound, Swift.min(upperValue - minimumDistance, rawValue))
 
         let (snapped, _) = applyAffinityToLower(rawValue: rawValue)
         lowerValue = snapped
@@ -262,15 +261,18 @@ public struct DoubleRSlider: View {
     }
 
     private func updateUpperValue(from center: CGPoint, location: CGPoint) {
-        var newRaw = rawAngle(from: center, location)
+        let newRaw = rawAngle(from: center, location)
 
-        var rawValue = valueForRaw(newRaw)
+        // Compute signed delta, wrapping through the seam into (–0.5, 0.5]
+        var delta = newRaw - lastUpperRawAngle
+        if delta > 0.5  { delta -= 1.0 }
+        if delta < -0.5 { delta += 1.0 }
+
+        let span = range.upperBound - range.lowerBound
+        var rawValue = upperValue + delta * span
 
         // Clamp to [lowerValue + minimumDistance ... range.upperBound]
-        let minAllowed = lowerValue + minimumDistance
-        rawValue = Swift.max(minAllowed, Swift.min(range.upperBound, rawValue))
-
-        newRaw = rawAngleForValue(rawValue)
+        rawValue = Swift.max(lowerValue + minimumDistance, Swift.min(range.upperBound, rawValue))
 
         let (snapped, _) = applyAffinityToUpper(rawValue: rawValue)
         upperValue = snapped
@@ -424,7 +426,9 @@ public struct DoubleRSlider: View {
         let gesture = DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { drag in
                 if !isLowerActive {
-                    lastLowerRawAngle = rawAngleForValue(lowerValue)
+                    // Seed from the actual touch-down position so the first delta is ~zero,
+                    // regardless of where on the circle the value sits (including the seam).
+                    lastLowerRawAngle = rawAngle(from: middle, drag.startLocation)
                     lowerHapticManager.prepare()
                     isLowerActive = true
                 }
@@ -459,7 +463,8 @@ public struct DoubleRSlider: View {
         let gesture = DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { drag in
                 if !isUpperActive {
-                    lastUpperRawAngle = rawAngleForValue(upperValue)
+                    // Seed from the actual touch-down position so the first delta is ~zero.
+                    lastUpperRawAngle = rawAngle(from: middle, drag.startLocation)
                     upperHapticManager.prepare()
                     isUpperActive = true
                 }
