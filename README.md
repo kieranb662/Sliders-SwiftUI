@@ -258,6 +258,365 @@ VStack {
 .linearSliderStyle(BarLSliderStyle())
 ```
 
+## Double Linear Slider
+
+`DoubleLSlider` is a linear **range** slider with two independent thumbs — a lower (start) thumb and an upper (end) thumb — connected by a draggable active-track segment. All three elements respond to drag gestures, making it easy to select and pan a range of values on a linear track at any angle.
+
+### What it does
+
+- Lets the user define a range by dragging a **lower thumb** and an **upper thumb** independently along the track.
+- The **active-track segment** between the two thumbs can be dragged to shift the entire range while keeping its width constant.
+- Enforces a **`minimumDistance`** between the two thumbs so they can never overlap.
+- Supports any track angle, tick marks, magnetic affinity (snap to tick), and haptic feedback.
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `lowerValue` | `Binding<Double>` | required | The start (lower) value of the selected range |
+| `upperValue` | `Binding<Double>` | required | The end (upper) value of the selected range |
+| `range` | `ClosedRange<Double>` | `0...1` | The allowed value domain |
+| `angle` | `Angle` | `.zero` (horizontal) | The angle at which the track is drawn |
+| `keepThumbInTrack` | `Bool` | `false` | Constrains thumb centres to stay within the track's extent |
+| `trackThickness` | `Double` | `20` | The thickness of the track in points |
+| `minimumDistance` | `Double?` | 5 % of span | Smallest gap in value units between the two thumbs |
+| `tickMarkSpacing` | `TickMarkSpacing?` | `nil` | Tick mark placement. Use `nil` to hide tick marks |
+| `hapticFeedbackEnabled` | `Bool` | `true` | Whether crossing a tick mark triggers haptic feedback (iOS only) |
+| `affinityEnabled` | `Bool` | `false` | Enables magnetic snap toward tick marks |
+| `affinityRadius` | `Double` | `0.04` | Snap pull radius as a fraction of the full value range |
+| `affinityResistance` | `Double` | `0.02` | Extra escape distance beyond `affinityRadius` |
+
+### Basic Usage
+
+A horizontal range slider over a `0...1` domain:
+
+```swift
+@State private var lower = 0.25
+@State private var upper = 0.75
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    keepThumbInTrack: true,
+    trackThickness: 20
+)
+.frame(height: 60)
+```
+
+### Vertical Slider
+
+Pass `angle: .degrees(90)` and give the view a tall frame:
+
+```swift
+@State private var lower = 20.0
+@State private var upper = 80.0
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...100,
+    angle: .degrees(90),
+    keepThumbInTrack: true
+)
+.frame(width: 60, height: 200)
+```
+
+### Angled Slider
+
+The track adapts to any angle, fitting itself to the available container space:
+
+```swift
+@State private var lower = 0.2
+@State private var upper = 0.8
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    angle: .degrees(30),
+    keepThumbInTrack: true,
+    trackThickness: 20
+)
+.frame(width: 300, height: 120)
+```
+
+### Minimum Distance
+
+`minimumDistance` ensures the two thumbs never collapse on top of each other. Specify it in value-domain units. If omitted it defaults to 5 % of the range span.
+
+```swift
+@State private var lower = 0.1
+@State private var upper = 0.9
+
+// Thumbs must stay at least 0.15 apart
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    keepThumbInTrack: true,
+    minimumDistance: 0.15
+)
+.frame(height: 60)
+```
+
+### Tick Marks
+
+Tick marks use the same `TickMarkSpacing` enum as `LSlider`.
+
+**`.count(n)`** — evenly distribute `n` tick marks across the range:
+
+```swift
+@State private var lower = 0.0
+@State private var upper = 0.5
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    keepThumbInTrack: true,
+    trackThickness: 20,
+    tickMarkSpacing: .count(11)   // ticks at 0.0, 0.1, 0.2 … 1.0
+)
+.frame(height: 60)
+```
+
+**`.spacing(step)`** — place a tick mark every `step` units:
+
+```swift
+@State private var lower = 0.0
+@State private var upper = 6.0
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...12,
+    keepThumbInTrack: true,
+    trackThickness: 20,
+    tickMarkSpacing: .spacing(1)   // ticks at 0, 1, 2 … 12
+)
+.frame(height: 60)
+```
+
+**`.values([...])`** — place tick marks at specific values:
+
+```swift
+@State private var lower = 0.25
+@State private var upper = 0.75
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    keepThumbInTrack: true,
+    trackThickness: 20,
+    tickMarkSpacing: .values([0.0, 0.25, 0.5, 0.75, 1.0])
+)
+.frame(height: 60)
+```
+
+### Tick Affinity (Snapping)
+
+When `affinityEnabled` is `true` and `tickMarkSpacing` is set, each thumb is pulled magnetically onto the nearest tick mark when it comes within `affinityRadius` of one. The thumb stays locked to the tick until dragged beyond `affinityRadius + affinityResistance`.
+
+```swift
+@State private var lower = 0.0
+@State private var upper = 0.5
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    keepThumbInTrack: true,
+    trackThickness: 20,
+    tickMarkSpacing: .count(11),
+    affinityEnabled: true,
+    affinityRadius: 0.03,
+    affinityResistance: 0.015
+)
+.frame(height: 60)
+```
+
+### Dragging the Active Track
+
+The filled segment between the two thumbs acts as a drag handle that shifts the entire range. The range width is held constant while both `lowerValue` and `upperValue` update together. This requires no special configuration — the gesture is always active on the filled segment.
+
+### Haptic Feedback
+
+Haptic feedback fires automatically (on supported platforms) when:
+
+- A thumb reaches the minimum or maximum of the range (limit hit).
+- A thumb crosses a tick mark (tick pulse, when `tickMarkSpacing` is set).
+- A thumb snaps in or out of affinity with a tick mark (when `affinityEnabled` is `true`).
+
+Each thumb has its own independent haptic engine so their events never interfere with each other. To disable all haptics, pass `hapticFeedbackEnabled: false`.
+
+```swift
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    keepThumbInTrack: true,
+    trackThickness: 20,
+    tickMarkSpacing: .count(11),
+    hapticFeedbackEnabled: false
+)
+.frame(height: 60)
+```
+
+### Styling the Slider
+
+Conform to `DoubleLSliderStyle` and implement four methods:
+
+- `makeLowerThumb(configuration:)` — the draggable lower-bound thumb
+- `makeUpperThumb(configuration:)` — the draggable upper-bound thumb
+- `makeTrack(configuration:)` — the full track with the filled range segment
+- `makeTickMark(configuration:tickValue:)` — the view rendered at each tick position (has a default implementation)
+
+Apply a style using `.doubleLSliderStyle(_:)` on the slider or any ancestor view.
+
+All four methods receive a `DoubleLSliderConfiguration` that exposes the current state:
+
+```swift
+struct DoubleLSliderConfiguration {
+    let isDisabled: Bool          // Whether the slider is disabled
+    let isLowerActive: Bool       // Whether the lower thumb is being dragged
+    let isUpperActive: Bool       // Whether the upper thumb is being dragged
+    let isRangeActive: Bool       // Whether the active-track segment is being dragged
+    let lowerValue: Double        // The current lower value
+    let upperValue: Double        // The current upper value
+    let angle: Angle              // The angle of the track
+    let min: Double               // Lower bound of the range
+    let max: Double               // Upper bound of the range
+    let keepThumbInTrack: Bool    // Whether thumbs are constrained to the track extent
+    let trackThickness: Double    // Track thickness in points
+    let tickMarkSpacing: TickMarkSpacing?  // Tick spacing config, or nil
+    let tickValues: [Double]      // Resolved list of tick-mark values
+    let affinityEnabled: Bool     // Whether affinity snapping is on
+    let snappedLowerTickValue: Double?  // Tick the lower thumb is snapped to, or nil
+    let snappedUpperTickValue: Double?  // Tick the upper thumb is snapped to, or nil
+
+    var lowerPercent: Double  // lowerValue normalised to 0...1
+    var upperPercent: Double  // upperValue normalised to 0...1
+}
+```
+
+### Custom Style Example
+
+The following style draws an indigo range segment, diamond-shaped tick marks that grow as either thumb approaches, and pill-shaped thumbs that highlight when active:
+
+```swift
+struct IndigoRangeStyle: DoubleLSliderStyle {
+
+    func makeLowerThumb(configuration: DoubleLSliderConfiguration) -> some View {
+        let active = configuration.isLowerActive || configuration.isRangeActive
+        return Capsule()
+            .fill(active ? Color.white : Color.indigo)
+            .frame(width: configuration.trackThickness, height: configuration.trackThickness * 1.6)
+            .rotationEffect(configuration.angle)
+            .shadow(color: .black.opacity(0.25), radius: active ? 6 : 2)
+    }
+
+    func makeUpperThumb(configuration: DoubleLSliderConfiguration) -> some View {
+        let active = configuration.isUpperActive || configuration.isRangeActive
+        return Capsule()
+            .fill(active ? Color.white : Color.indigo)
+            .frame(width: configuration.trackThickness, height: configuration.trackThickness * 1.6)
+            .rotationEffect(configuration.angle)
+            .shadow(color: .black.opacity(0.25), radius: active ? 6 : 2)
+    }
+
+    func makeTrack(configuration: DoubleLSliderConfiguration) -> some View {
+        let lo = configuration.lowerPercent
+        let hi = configuration.upperPercent
+        let T  = configuration.trackThickness
+
+        return ZStack {
+            // Full unfilled track
+            AdaptiveLine(thickness: T, angle: configuration.angle)
+                .fill(Color(white: 0.2))
+
+            // Filled segment from lowerPercent to upperPercent
+            AdaptiveLine(thickness: T, angle: configuration.angle, percentFilled: hi,
+                         adjustmentForThumb: T / 2)
+                .fill(Color.indigo)
+                .mask(
+                    AdaptiveLine(thickness: T, angle: configuration.angle,
+                                 percentFilled: 1 - lo, adjustmentForThumb: T / 2)
+                        .fill(Color.white)
+                        .rotationEffect(.degrees(180))
+                )
+                .mask(AdaptiveLine(thickness: T, angle: configuration.angle))
+        }
+    }
+
+    func makeTickMark(configuration: DoubleLSliderConfiguration, tickValue: Double) -> some View {
+        let range = configuration.max - configuration.min
+        guard range > 0 else { return AnyView(EmptyView()) }
+        let loPct = (configuration.lowerValue - configuration.min) / range
+        let hiPct = (configuration.upperValue - configuration.min) / range
+        let tickPct = (tickValue - configuration.min) / range
+        let proximity = max(
+            max(0, 1 - abs(loPct - tickPct) / 0.15),
+            max(0, 1 - abs(hiPct - tickPct) / 0.15)
+        )
+        let size = 5.0 + 6.0 * proximity
+        return AnyView(
+            Rectangle()
+                .fill(Color.indigo.opacity(0.4 + 0.6 * proximity))
+                .frame(width: size, height: size)
+                .rotationEffect(.degrees(45))
+                .animation(.easeOut(duration: 0.08), value: proximity)
+        )
+    }
+}
+```
+
+Apply it to a slider:
+
+```swift
+@State private var lower = 0.2
+@State private var upper = 0.8
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    keepThumbInTrack: true,
+    trackThickness: 24,
+    tickMarkSpacing: .count(9)
+)
+.doubleLSliderStyle(IndigoRangeStyle())
+.frame(height: 60)
+```
+
+The modifier cascades through the view hierarchy, so you can style multiple sliders at once:
+
+```swift
+VStack {
+    DoubleLSlider(lowerValue: $lowerA, upperValue: $upperA)
+    DoubleLSlider(lowerValue: $lowerB, upperValue: $upperB)
+}
+.doubleLSliderStyle(IndigoRangeStyle())
+```
+
+You can also use the built-in default style with custom colours:
+
+```swift
+DoubleLSlider(lowerValue: $lower, upperValue: $upper)
+    .doubleLSliderStyle(
+        .default(
+            trackColor: Color(white: 0.2),
+            trackFilledColor: .indigo,
+            lowerThumbColor: .indigo,
+            upperThumbColor: .indigo,
+            activeThumbColor: .white,
+            trackThickness: 20
+        )
+    )
+    .frame(height: 60)
+```
+
 ## Radial Slider
 
 `RSlider` is a circular slider for SwiftUI. The thumb moves around a circular track and updates a bound `Double` value.
@@ -445,26 +804,20 @@ DoubleRSlider(lowerValue: $lower, upperValue: $upper)
     .frame(width: 220, height: 220)
 ```
 
-### Custom Range and Origin Angle
+### Set a range and origin angle
 
-Set `range` to control the value domain and `originAngle` to place the minimum value at a specific position on the circle. An `originAngle` of `-.degrees(90)` puts the minimum at the top (12 o'clock).
+`originAngle` sets where the minimum value is located on the circle.
 
 ```swift
-@State private var startTemp = 15.0
-@State private var endTemp   = 25.0
+@State private var temperature = 20.0
 
-DoubleRSlider(
-    lowerValue: $startTemp,
-    upperValue: $endTemp,
-    range: 0...40,
-    originAngle: .degrees(-90)
-)
-.frame(width: 240, height: 240)
+DoubleRSlider(lowerValue: $temperature, upperValue: $upperTemperature, range: 0...100, originAngle: .degrees(-90))
+    .frame(width: 240, height: 240)
 ```
 
 ### Minimum Distance
 
-`minimumDistance` ensures the two thumbs never collapse on top of each other. Specify it in value-domain units. If omitted, it defaults to 5 % of the range span.
+`minimumDistance` ensures the two thumbs never collapse on top of each other. Specify it in value-domain units. If omitted it defaults to 5 % of the range span.
 
 ```swift
 @State private var lower = 0.1
@@ -576,16 +929,16 @@ DoubleRSlider(
 
 ### Styling the Slider
 
-Conform to `DoubleRSliderStyle` and implement four methods:
-
-- `makeLowerThumb(configuration:)` — the draggable lower-bound thumb
-- `makeUpperThumb(configuration:)` — the draggable upper-bound thumb
-- `makeTrack(configuration:)` — the full circular track with the filled arc
-- `makeTickMark(configuration:tickValue:)` — the view rendered at each tick position
+To create a custom style, conform to `DoubleRSliderStyle` and implement:
+- `makeLowerThumb(configuration:)`
+- `makeUpperThumb(configuration:)`
+- `makeTrack(configuration:)`
+- `makeTickMark(configuration:tickValue:)`
 
 Apply a style using `.doubleRadialSliderStyle(_:)` on the slider or any ancestor view.
 
-All four methods receive a `DoubleRSliderConfiguration` that exposes the current state:
+`DoubleRSliderConfiguration` provides the style with the current state, including the current `lowerValue`,
+`upperValue`, `angle`, tick mark values, and wind information.
 
 ```swift
 struct DoubleRSliderConfiguration {
@@ -624,8 +977,6 @@ struct TealRangeStyle: DoubleRSliderStyle {
             .fill(active ? Color.teal : Color.white)
             .frame(width: 28, height: 28)
             .shadow(color: .black.opacity(0.25), radius: active ? 6 : 2)
-            // Counter-rotate the inset offset that DefaultDoubleRSliderStyle applies;
-            // for a fully custom style you position the thumb via makeTrack's rotationEffect.
     }
 
     func makeUpperThumb(configuration: DoubleRSliderConfiguration) -> some View {
@@ -640,12 +991,12 @@ struct TealRangeStyle: DoubleRSliderStyle {
         let arcLength = configuration.upperPercent - configuration.lowerPercent
         return ZStack {
             Circle()
-                .strokeBorder(Color(white: 0.2), lineWidth: 20)
+                .stroke(Color.gray.opacity(0.3), lineWidth: 18)
+
             CircularArc(percent: arcLength)
-                .strokeBorder(Color.teal, lineWidth: 20)
-                .rotationEffect(configuration.lowerAngle)
+                .stroke(Color.teal, style: StrokeStyle(lineWidth: 18, lineCap: .round))
         }
-        .padding(10)
+        .padding(9)
     }
 
     func makeTickMark(configuration: DoubleRSliderConfiguration, tickValue: Double) -> some View {
@@ -654,11 +1005,7 @@ struct TealRangeStyle: DoubleRSliderStyle {
             .frame(width: 5, height: 5)
     }
 }
-```
 
-Apply it to a slider:
-
-```swift
 @State private var lower = 0.2
 @State private var upper = 0.8
 
@@ -670,16 +1017,6 @@ DoubleRSlider(
 )
 .doubleRadialSliderStyle(TealRangeStyle())
 .frame(width: 240, height: 240)
-```
-
-The modifier cascades through the view hierarchy, so you can style multiple sliders at once:
-
-```swift
-VStack {
-    DoubleRSlider(lowerValue: $lowerA, upperValue: $upperA)
-    DoubleRSlider(lowerValue: $lowerB, upperValue: $upperB)
-}
-.doubleRadialSliderStyle(TealRangeStyle())
 ```
 
 You can also use the built-in default style with custom colours:
@@ -821,9 +1158,9 @@ Essentially the 2D equaivalent of a normal `Slider`, This creates a draggable th
  To create a custom style for the `TrackPad` you need to create a `TrackPadStyle` conforming struct. Conformance requires implementation of 2 methods
  
  1.  `makeThumb`: which creates the draggable portion of the trackpad
- 2.  `makeTrack`: which creates view containing the thumb
+ 2.  `makeTrack`: which creates the background that the thumb will be contained in.
 
- Both methods provide access to state values of the track pad thru the `TrackPadConfiguration` struct
+ Both methods provide read access to the state values of the track pad thru the `TrackPadConfiguration` struct
  
 ````Swift
 struct TrackPadConfiguration {
