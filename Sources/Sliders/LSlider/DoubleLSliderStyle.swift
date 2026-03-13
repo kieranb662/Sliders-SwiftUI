@@ -328,21 +328,14 @@ public extension DoubleLSliderStyle where Self == DefaultDoubleLSliderStyle {
     static var `default`: DefaultDoubleLSliderStyle { DefaultDoubleLSliderStyle() }
 
     /// Returns the built-in default style with customisable colours and thickness.
-    ///
-    /// - Parameters:
-    ///   - trackColor: The colour of the unfilled track portion.
-    ///   - trackFilledColor: The colour of the filled portion between the two thumbs.
-    ///   - lowerThumbColor: The resting colour of the lower thumb.
-    ///   - upperThumbColor: The resting colour of the upper thumb.
-    ///   - activeThumbColor: The colour of a thumb (or both) while being dragged.
-    ///   - trackThickness: The thickness used when sizing the thumbs and track.
-    /// - Returns: A configured ``DefaultDoubleLSliderStyle``.
     static func `default`(
         trackColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
         trackFilledColor: Color = Color(.sRGB, red: 0.084, green: 0.247, blue: 0.602),
         lowerThumbColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
         upperThumbColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
         activeThumbColor: Color = Color.white,
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackThickness: Double = 20.0
     ) -> DefaultDoubleLSliderStyle {
         DefaultDoubleLSliderStyle(
@@ -351,6 +344,8 @@ public extension DoubleLSliderStyle where Self == DefaultDoubleLSliderStyle {
             lowerThumbColor: lowerThumbColor,
             upperThumbColor: upperThumbColor,
             activeThumbColor: activeThumbColor,
+            thumbDisabledColor: thumbDisabledColor,
+            trackDisabledColor: trackDisabledColor,
             trackThickness: trackThickness
         )
     }
@@ -369,6 +364,8 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
     let lowerThumbColor: Color
     let upperThumbColor: Color
     let activeThumbColor: Color
+    let thumbDisabledColor: Color
+    let trackDisabledColor: Color
     let trackThickness: Double
 
     /// Creates the default style with customisable colours and track thickness.
@@ -379,6 +376,8 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
     ///   - lowerThumbColor: The resting colour of the lower thumb.
     ///   - upperThumbColor: The resting colour of the upper thumb.
     ///   - activeThumbColor: The colour of a thumb (or both) while being dragged.
+    ///   - thumbDisabledColor: The colour of a thumb when the slider is disabled.
+    ///   - trackDisabledColor: The colour of the track when the slider is disabled.
     ///   - trackThickness: The thickness used when sizing the thumbs and track.
     public init(
         trackColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
@@ -386,6 +385,8 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
         lowerThumbColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
         upperThumbColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
         activeThumbColor: Color = Color.white,
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackThickness: Double = 20.0
     ) {
         self.trackColor = trackColor
@@ -393,59 +394,55 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
         self.lowerThumbColor = lowerThumbColor
         self.upperThumbColor = upperThumbColor
         self.activeThumbColor = activeThumbColor
+        self.thumbDisabledColor = thumbDisabledColor
+        self.trackDisabledColor = trackDisabledColor
         self.trackThickness = trackThickness
     }
 
-    /// Creates the lower thumb: a circle that turns white while the user is dragging it (or the range).
+    /// Creates the lower thumb: a circle that turns white while the user is dragging it (or the range),
+    /// or grey when the slider is disabled.
     public func makeLowerThumb(configuration: DoubleLSliderConfiguration) -> some View {
         let isActive = configuration.isLowerActive || configuration.isRangeActive
+        let color: Color = configuration.isDisabled
+            ? lowerThumbColor.mix(with: thumbDisabledColor, by: 0.5)
+            : (isActive ? activeThumbColor : lowerThumbColor)
         return Circle()
-            .fill(isActive ? activeThumbColor : lowerThumbColor)
+            .fill(color)
             .frame(width: trackThickness * 2, height: trackThickness * 2)
-            .shadow(color: Color.black.opacity(0.2), radius: isActive ? 5 : 2)
+            .shadow(color: Color.black.opacity(configuration.isDisabled ? 0.0 : 0.2), radius: isActive ? 5 : 2)
     }
 
-    /// Creates the upper thumb: a circle that turns white while the user is dragging it (or the range).
+    /// Creates the upper thumb: a circle that turns white while the user is dragging it (or the range),
+    /// or grey when the slider is disabled.
     public func makeUpperThumb(configuration: DoubleLSliderConfiguration) -> some View {
         let isActive = configuration.isUpperActive || configuration.isRangeActive
+        let color: Color = configuration.isDisabled
+            ? upperThumbColor.mix(with: thumbDisabledColor, by: 0.5)
+            : (isActive ? activeThumbColor : upperThumbColor)
         return Circle()
-            .fill(isActive ? activeThumbColor : upperThumbColor)
+            .fill(color)
             .frame(width: trackThickness * 2, height: trackThickness * 2)
-            .shadow(color: Color.black.opacity(0.2), radius: isActive ? 5 : 2)
+            .shadow(color: Color.black.opacity(configuration.isDisabled ? 0.0 : 0.2), radius: isActive ? 5 : 2)
     }
 
     /// Creates the track: a rounded capsule with a filled portion spanning the lower to upper value.
+    /// When disabled, the filled portion uses `trackDisabledColor`.
     public func makeTrack(configuration: DoubleLSliderConfiguration) -> some View {
         let lo = configuration.lowerPercent
         let hi = configuration.upperPercent
-
-        // The active-range fill is inset by half a thumb width on each side so it
-        // visually sits between the thumb centres (matching LSlider's behaviour).
-        let thumbAdjustment: Double = configuration.keepThumbInTrack
-            ? trackThickness * (1 - hi)  // same idea as DefaultLSliderStyle for the end cap
-            : trackThickness / 2
-
-        let _ = thumbAdjustment // used below in AdaptiveLine
+        let filledColor = configuration.isDisabled ? trackDisabledColor : trackFilledColor
 
         return ZStack {
-            // Full unfilled track
             AdaptiveLine(thickness: trackThickness, angle: configuration.angle)
                 .fill(trackColor)
 
-            // Filled portion: draw from lowerPercent to upperPercent.
-            // We achieve this by drawing a filled segment of length (hi - lo) starting at lo.
-            // AdaptiveLine draws from one end; we rotate 180° and use (1 - hi) as the start
-            // offset. Simpler: use two masks.
-            //
-            // Approach: use a clip mask that keeps only the [lo, hi] window.
             AdaptiveLine(
                 thickness: trackThickness,
                 angle: configuration.angle,
                 percentFilled: hi,
                 adjustmentForThumb: configuration.keepThumbInTrack ? trackThickness * (1 - hi) : trackThickness / 2
             )
-            .fill(trackFilledColor)
-            // Clip off the [0, lo] portion by overlaying the background colour.
+            .fill(filledColor)
             .mask(
                 AdaptiveLine(
                     thickness: trackThickness,
@@ -458,6 +455,7 @@ public struct DefaultDoubleLSliderStyle: DoubleLSliderStyle, Sendable {
             )
             .mask(AdaptiveLine(thickness: trackThickness, angle: configuration.angle))
         }
+        .opacity(configuration.isDisabled ? 0.5 : 1.0)
     }
 
     /// Creates a tick-mark indicator: a small circle that grows and brightens as either thumb approaches.

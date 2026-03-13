@@ -92,6 +92,21 @@ fileprivate struct DoubleLSliderExamples: View {
                     Text("[\(lower1, specifier: "%.2f"), \(upper1, specifier: "%.2f")]")
                         .font(.caption)
                 }
+                
+                // ── Basic (no tick marks) ─────────────────────────────────────
+                GroupBox("Disabeld – No Tick Marks") {
+                    DoubleLSlider(
+                        lowerValue: $lower1,
+                        upperValue: $upper1,
+                        range: 0...1,
+                        keepThumbInTrack: true,
+                        trackThickness: 20
+                    )
+                    .disabled(true)
+                    .frame(height: 60)
+                    Text("[\(lower1, specifier: "%.2f"), \(upper1, specifier: "%.2f")]")
+                        .font(.caption)
+                }
 
                 // ── count(11) tick marks with haptics ─────────────────────────
                 GroupBox("count(11) — 11 evenly spaced ticks, haptics on") {

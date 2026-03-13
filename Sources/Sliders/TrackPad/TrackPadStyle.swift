@@ -312,17 +312,13 @@ public extension TrackPadStyle where Self == DefaultTrackPadStyle {
     static var `default`: DefaultTrackPadStyle { DefaultTrackPadStyle() }
     
     /// The built-in default track-pad style with customisable colours.
-    ///
-    /// Usage:
-    /// ```swift
-    /// TrackPad($point)
-    ///     .trackPadStyle(.default(trackColor: .purple))
-    /// ```
     static func `default`(
         trackColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59).opacity(0.25),
         trackStrokeColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
         thumbInactiveColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
         thumbActiveColor: Color = Color.white,
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         thumbSize: Double = 36
     ) -> DefaultTrackPadStyle {
         DefaultTrackPadStyle(
@@ -330,6 +326,8 @@ public extension TrackPadStyle where Self == DefaultTrackPadStyle {
             trackStrokeColor: trackStrokeColor,
             thumbInactiveColor: thumbInactiveColor,
             thumbActiveColor: thumbActiveColor,
+            thumbDisabledColor: thumbDisabledColor,
+            trackDisabledColor: trackDisabledColor,
             thumbSize: thumbSize
         )
     }
@@ -350,6 +348,8 @@ public struct DefaultTrackPadStyle: TrackPadStyle, Sendable {
     let trackStrokeColor: Color
     let thumbInactiveColor: Color
     let thumbActiveColor: Color
+    let thumbDisabledColor: Color
+    let trackDisabledColor: Color
     let thumbSize: Double
     
     /// Creates the default track-pad style with customisable parameters.
@@ -358,32 +358,43 @@ public struct DefaultTrackPadStyle: TrackPadStyle, Sendable {
         trackStrokeColor: Color = Color(.sRGB, red: 0.55, green: 0.55, blue: 0.59),
         thumbInactiveColor: Color = Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855),
         thumbActiveColor: Color = Color.white,
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         thumbSize: Double = 36
     ) {
         self.trackColor = trackColor
         self.trackStrokeColor = trackStrokeColor
         self.thumbInactiveColor = thumbInactiveColor
         self.thumbActiveColor = thumbActiveColor
+        self.thumbDisabledColor = thumbDisabledColor
+        self.trackDisabledColor = trackDisabledColor
         self.thumbSize = thumbSize
     }
     
-    /// Creates the thumb — a circle that fills with `thumbActiveColor` while dragging
-    /// and `thumbInactiveColor` at rest, with a drop shadow when active.
+    /// Creates the thumb — a circle that fills with `thumbActiveColor` while dragging,
+    /// `thumbInactiveColor` at rest, or `thumbDisabledColor` when disabled, with a drop
+    /// shadow when active.
     public func makeThumb(configuration: TrackPadConfiguration) -> some View {
-        Circle()
-            .fill(configuration.isActive ? thumbActiveColor : thumbInactiveColor)
+        let color: Color = configuration.isDisabled
+            ? thumbInactiveColor.mix(with: thumbDisabledColor, by: 0.5)
+            : (configuration.isActive ? thumbActiveColor : thumbInactiveColor)
+        return Circle()
+            .fill(color)
             .frame(width: thumbSize, height: thumbSize)
-            .shadow(radius: configuration.isActive ? 3 : 0)
+            .shadow(radius: configuration.isDisabled ? 0 : (configuration.isActive ? 3 : 0))
     }
 
     /// Creates the track — a rounded rectangle with a subtle fill and stroke border.
+    /// When disabled, the stroke colour shifts to `trackDisabledColor`.
     public func makeTrack(configuration: TrackPadConfiguration) -> some View {
-        RoundedRectangle(cornerRadius: 12)
+        let strokeColor = configuration.isDisabled ? trackDisabledColor : trackStrokeColor
+        return RoundedRectangle(cornerRadius: 12)
             .fill(trackColor)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(trackStrokeColor.opacity(0.6), lineWidth: 1)
+                    .strokeBorder(strokeColor.opacity(0.6), lineWidth: 1)
             )
+            .opacity(configuration.isDisabled ? 0.5 : 1.0)
     }
     // makePreviousValueIndicator uses the protocol default implementation
 }

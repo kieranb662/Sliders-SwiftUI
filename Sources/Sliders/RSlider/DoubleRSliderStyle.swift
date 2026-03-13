@@ -249,6 +249,8 @@ public extension DoubleRSliderStyle where Self == DefaultDoubleRSliderStyle {
         lowerThumbColor: Color = Color.white,
         upperThumbColor: Color = Color.white,
         activeThumbColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackThickness: Double = 24.0
     ) -> DefaultDoubleRSliderStyle {
         DefaultDoubleRSliderStyle(
@@ -257,6 +259,8 @@ public extension DoubleRSliderStyle where Self == DefaultDoubleRSliderStyle {
             lowerThumbColor: lowerThumbColor,
             upperThumbColor: upperThumbColor,
             activeThumbColor: activeThumbColor,
+            thumbDisabledColor: thumbDisabledColor,
+            trackDisabledColor: trackDisabledColor,
             trackThickness: trackThickness
         )
     }
@@ -274,6 +278,8 @@ public struct DefaultDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
     let lowerThumbColor: Color
     let upperThumbColor: Color
     let activeThumbColor: Color
+    let thumbDisabledColor: Color
+    let trackDisabledColor: Color
     let trackThickness: Double
 
     public init(
@@ -282,6 +288,8 @@ public struct DefaultDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
         lowerThumbColor: Color = Color.white,
         upperThumbColor: Color = Color.white,
         activeThumbColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackThickness: Double = 24.0
     ) {
         self.trackColor = trackColor
@@ -289,25 +297,33 @@ public struct DefaultDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
         self.lowerThumbColor = lowerThumbColor
         self.upperThumbColor = upperThumbColor
         self.activeThumbColor = activeThumbColor
+        self.thumbDisabledColor = thumbDisabledColor
+        self.trackDisabledColor = trackDisabledColor
         self.trackThickness = trackThickness
     }
 
     public func makeLowerThumb(configuration: DoubleRSliderConfiguration) -> some View {
         let isActive = configuration.isLowerActive || configuration.isRangeActive
+        let color: Color = configuration.isDisabled
+            ? lowerThumbColor.mix(with: thumbDisabledColor, by: 0.5)
+            : (isActive ? activeThumbColor : lowerThumbColor)
         return Circle()
-            .fill(isActive ? activeThumbColor : lowerThumbColor)
+            .fill(color)
             .frame(width: trackThickness * 2, height: trackThickness * 2)
-            .shadow(color: Color.black.opacity(0.2), radius: isActive ? 5 : 2)
+            .shadow(color: Color.black.opacity(configuration.isDisabled ? 0.0 : 0.2), radius: isActive ? 5 : 2)
             .offset(x: -trackThickness * cos(configuration.lowerAngle.radians),
                     y: -trackThickness * sin(configuration.lowerAngle.radians))
     }
 
     public func makeUpperThumb(configuration: DoubleRSliderConfiguration) -> some View {
         let isActive = configuration.isUpperActive || configuration.isRangeActive
+        let color: Color = configuration.isDisabled
+            ? upperThumbColor.mix(with: thumbDisabledColor, by: 0.5)
+            : (isActive ? activeThumbColor : upperThumbColor)
         return Circle()
-            .fill(isActive ? activeThumbColor : upperThumbColor)
+            .fill(color)
             .frame(width: trackThickness * 2, height: trackThickness * 2)
-            .shadow(color: Color.black.opacity(0.2), radius: isActive ? 5 : 2)
+            .shadow(color: Color.black.opacity(configuration.isDisabled ? 0.0 : 0.2), radius: isActive ? 5 : 2)
             .offset(x: -trackThickness * cos(configuration.upperAngle.radians),
                     y: -trackThickness * sin(configuration.upperAngle.radians))
     }
@@ -315,24 +331,19 @@ public struct DefaultDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
     public func makeTrack(configuration: DoubleRSliderConfiguration) -> some View {
         let loPct = configuration.lowerPercent
         let hiPct = configuration.upperPercent
-
-        // We draw the filled arc from lowerAngle to upperAngle.
-        // CircularArc draws from 0 → percent. To draw from loPct → hiPct we:
-        //   • rotate the whole shape by loPct * 360°
-        //   • trim to (hiPct - loPct)
         let arcLength = hiPct - loPct
+        let filledColor = configuration.isDisabled ? trackDisabledColor : trackFilledColor
 
         return ZStack {
-            // Full unfilled track
             Circle()
                 .strokeBorder(trackColor, lineWidth: trackThickness)
 
-            // Filled arc between lower and upper
             CircularArc(percent: arcLength)
-                .strokeBorder(trackFilledColor, lineWidth: trackThickness)
+                .strokeBorder(filledColor, lineWidth: trackThickness)
                 .rotationEffect(configuration.lowerAngle)
         }
         .padding(trackThickness / 2)
+        .opacity(configuration.isDisabled ? 0.5 : 1.0)
     }
 
     public func makeTickMark(configuration: DoubleRSliderConfiguration, tickValue: Double) -> some View {

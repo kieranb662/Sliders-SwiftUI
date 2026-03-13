@@ -117,6 +117,8 @@ public extension RSliderStyle where Self == DefaultRSliderStyle {
         trackFilledColor: Color = Color(red: 0.084, green: 0.247, blue: 0.602),
         thumbInactiveColor: Color = Color.white,
         thumbActiveColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackThickness: Double = 24.0
     ) -> DefaultRSliderStyle {
         DefaultRSliderStyle(
@@ -124,6 +126,8 @@ public extension RSliderStyle where Self == DefaultRSliderStyle {
             trackFilledColor: trackFilledColor,
             thumbInactiveColor: thumbInactiveColor,
             thumbActiveColor: thumbActiveColor,
+            thumbDisabledColor: thumbDisabledColor,
+            trackDisabledColor: trackDisabledColor,
             trackThickness: trackThickness
         )
     }
@@ -273,6 +277,8 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
     let trackFilledColor: Color
     let thumbInactiveColor: Color
     let thumbActiveColor: Color
+    let thumbDisabledColor: Color
+    let trackDisabledColor: Color
     let trackThickness: Double
     
     /// Creates the default style with customizable colors and track thickness.
@@ -282,21 +288,28 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
         trackFilledColor: Color = Color(red: 0.084, green: 0.247, blue: 0.602),
         thumbInactiveColor: Color = Color.white,
         thumbActiveColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        thumbDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
+        trackDisabledColor: Color = Color(.sRGB, red: 0.75, green: 0.75, blue: 0.75),
         trackThickness: Double = 24.0
     ) {
         self.trackColor = trackColor
         self.trackFilledColor = trackFilledColor
         self.thumbInactiveColor = thumbInactiveColor
         self.thumbActiveColor = thumbActiveColor
+        self.thumbDisabledColor = thumbDisabledColor
+        self.trackDisabledColor = trackDisabledColor
         self.trackThickness = trackThickness
     }
     
     public func makeThumb(configuration: RSliderConfiguration) -> some View {
-        Circle()
-            .fill(configuration.isActive ? thumbInactiveColor : thumbActiveColor)
+        let color: Color = configuration.isDisabled
+            ? thumbInactiveColor.mix(with: thumbDisabledColor, by: 0.5)
+            : (configuration.isActive ? thumbInactiveColor : thumbActiveColor)
+        return Circle()
+            .fill(color)
             .frame(width: trackThickness * 2, height: trackThickness * 2)
             .shadow(
-                color: Color.black.opacity(0.2),
+                color: Color.black.opacity(configuration.isDisabled ? 0.0 : 0.2),
                 radius: configuration.isActive ? 5 : 2
             )
             .offset(x: -trackThickness * cos(configuration.angle.radians),
@@ -304,6 +317,7 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
     }
     
     public func makeTrack(configuration: RSliderConfiguration) -> some View {
+        let filledColor = configuration.isDisabled ? trackDisabledColor : trackFilledColor
         return ZStack {
             Circle()
                 .strokeBorder(trackColor, lineWidth: trackThickness)
@@ -313,9 +327,10 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
                 ? 1.0
                 : configuration.withinWind
             )
-            .strokeBorder(trackFilledColor, lineWidth: trackThickness)
+            .strokeBorder(filledColor, lineWidth: trackThickness)
         }
         .padding(trackThickness / 2)
+        .opacity(configuration.isDisabled ? 0.5 : 1.0)
     }
     
     /// A small circle that grows and brightens as the thumb approaches this tick mark.
