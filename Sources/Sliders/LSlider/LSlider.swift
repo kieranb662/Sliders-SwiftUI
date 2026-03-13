@@ -74,6 +74,27 @@ public struct LSlider: View {
 
     // MARK: - Initialisers
 
+    /// Creates a linear slider that controls `value` within `range` and is rendered at `angle`.
+    ///
+    /// The slider can optionally show tick marks (see `tickMarkSpacing`) and can provide
+    /// haptic feedback as the thumb crosses those tick marks.
+    ///
+    /// If `affinityEnabled` is `true` and tick marks are configured, the thumb will
+    /// magnetically snap to nearby tick marks.
+    ///
+    /// - Important: `affinityEnabled` has no effect when `tickMarkSpacing` is `nil`.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the value being edited.
+    ///   - range: The minimum and maximum bounds for `value`.
+    ///   - angle: The angle of the slider’s track.
+    ///   - keepThumbInTrack: If `true`, the thumb’s center is constrained to stay within the track’s end caps.
+    ///   - trackThickness: The thickness of the track, used by layout and the default style.
+    ///   - tickMarkSpacing: How tick marks are spaced, or `nil` to hide them.
+    ///   - hapticFeedbackEnabled: If `true`, crossing a tick mark may trigger haptics (best-effort, device-dependent).
+    ///   - affinityEnabled: Enables magnetic snapping to tick marks.
+    ///   - affinityRadius: Pull radius as a fraction of the total value range.
+    ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
@@ -98,6 +119,20 @@ public struct LSlider: View {
         self.affinityResistance = affinityResistance
     }
 
+    /// Creates a linear slider that controls `value` within `range`.
+    ///
+    /// This overload uses a default `angle` of `.zero` (horizontal).
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the value being edited.
+    ///   - range: The minimum and maximum bounds for `value`.
+    ///   - keepThumbInTrack: If `true`, the thumb’s center is constrained to stay within the track’s end caps.
+    ///   - trackThickness: The thickness of the track, used by layout and the default style.
+    ///   - tickMarkSpacing: How tick marks are spaced, or `nil` to hide them.
+    ///   - hapticFeedbackEnabled: If `true`, crossing a tick mark may trigger haptics (best-effort, device-dependent).
+    ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
+    ///   - affinityRadius: Pull radius as a fraction of the total value range.
+    ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
@@ -120,6 +155,20 @@ public struct LSlider: View {
         self.affinityResistance = affinityResistance
     }
 
+    /// Creates a linear slider that controls `value` and is rendered at `angle`.
+    ///
+    /// This overload uses a default `range` of `0...1`.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the value being edited.
+    ///   - angle: The angle of the slider’s track.
+    ///   - keepThumbInTrack: If `true`, the thumb’s center is constrained to stay within the track’s end caps.
+    ///   - trackThickness: The thickness of the track, used by layout and the default style.
+    ///   - tickMarkSpacing: How tick marks are spaced, or `nil` to hide them.
+    ///   - hapticFeedbackEnabled: If `true`, crossing a tick mark may trigger haptics (best-effort, device-dependent).
+    ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
+    ///   - affinityRadius: Pull radius as a fraction of the total value range.
+    ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
     public init(
         _ value: Binding<Double>,
         angle: Angle,
@@ -142,6 +191,18 @@ public struct LSlider: View {
         self.affinityResistance = affinityResistance
     }
 
+    /// Creates a linear slider with default configuration.
+    ///
+    /// Defaults:
+    /// - `range`: `0...1`
+    /// - `angle`: `.zero`
+    /// - `keepThumbInTrack`: `false`
+    /// - `trackThickness`: `20`
+    /// - `tickMarkSpacing`: `nil` (no tick marks)
+    /// - `hapticFeedbackEnabled`: `true`
+    /// - `affinityEnabled`: `false`
+    ///
+    /// - Parameter value: A binding to the value being edited.
     public init(_ value: Binding<Double>) {
         self._value = value
     }
@@ -403,4 +464,3 @@ public struct LSlider: View {
         }
     }
 }
-
