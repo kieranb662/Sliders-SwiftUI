@@ -105,7 +105,13 @@ public struct TrackPad: View {
     public var tickAffinityVelocityThreshold: Double = 150.0
 
     // MARK: - Initialisers
-    
+
+    /// Creates a `TrackPad` with independent x and y ranges.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the `CGPoint` whose `x` and `y` components the trackpad controls.
+    ///   - rangeX: The closed range of valid values along the x-axis. Defaults to `0...1`.
+    ///   - rangeY: The closed range of valid values along the y-axis. Defaults to `0...1`.
     public init(
         _ value: Binding<CGPoint>,
         rangeX: ClosedRange<CGFloat> = 0...1,
@@ -115,14 +121,26 @@ public struct TrackPad: View {
         self.rangeX = rangeX
         self.rangeY = rangeY
     }
-    
-    /// Use this initializer when the x and y ranges are the same.
+
+    /// Creates a `TrackPad` with a single range applied to both axes.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the `CGPoint` the trackpad controls.
+    ///   - range: The closed range used for both the x-axis and y-axis. Defaults to `0...1`.
     public init(_ value: Binding<CGPoint>, range: ClosedRange<CGFloat> = 0...1) {
         self._value = value
         self.rangeX = range
         self.rangeY = range
     }
-    
+
+    /// Creates a `TrackPad` backed by separate `Double` bindings for each axis, with
+    /// independent ranges.
+    ///
+    /// - Parameters:
+    ///   - x: A binding to the horizontal value.
+    ///   - y: A binding to the vertical value.
+    ///   - rangeX: The closed range of valid values along the x-axis. Defaults to `0...1`.
+    ///   - rangeY: The closed range of valid values along the y-axis. Defaults to `0...1`.
     public init(
         x: Binding<Double>,
         y: Binding<Double>,
@@ -139,8 +157,14 @@ public struct TrackPad: View {
         self.rangeX = rangeX
         self.rangeY = rangeY
     }
-    
-    /// Use this initializer when the x and y ranges are the same.
+
+    /// Creates a `TrackPad` backed by separate `Double` bindings for each axis, with the
+    /// same range applied to both axes.
+    ///
+    /// - Parameters:
+    ///   - x: A binding to the horizontal value.
+    ///   - y: A binding to the vertical value.
+    ///   - range: The closed range used for both axes. Defaults to `0...1`.
     public init(x: Binding<Double>, y: Binding<Double>, range: ClosedRange<CGFloat> = 0...1) {
         self._value = Binding(
             get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
@@ -257,6 +281,10 @@ public struct TrackPad: View {
     }
 
     /// Convenience: sets the same tick-mark interval count on both axes.
+    ///
+    /// Equivalent to calling `.tickCountX(_:)` and `.tickCountY(_:)` with the same value.
+    ///
+    /// - Parameter count: Number of equal intervals on each axis.  Pass `0` to hide tick marks.
     public func tickCount(_ count: Int) -> TrackPad {
         var copy = self
         let c = max(0, count)

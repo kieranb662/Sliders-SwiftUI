@@ -241,6 +241,9 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
         _makeTickMarks(configuration)
     }
 
+    /// Creates a type-erased wrapper around the given style.
+    ///
+    /// - Parameter style: Any concrete ``TrackPadStyle`` conformance to wrap.
     public init<S: TrackPadStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -253,6 +256,7 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
 
 /// The environment key used to store the current ``TrackPadStyle``.
 public struct TrackPadStyleKey: EnvironmentKey {
+    /// The default value — ``DefaultTrackPadStyle`` — used when no explicit style has been set.
     public static let defaultValue: AnyTrackPadStyle = AnyTrackPadStyle(DefaultTrackPadStyle())
 }
 
@@ -335,13 +339,16 @@ public struct DefaultTrackPadStyle: TrackPadStyle, Sendable {
         self.thumbSize = thumbSize
     }
     
+    /// Creates the thumb — a circle that fills with `thumbActiveColor` while dragging
+    /// and `thumbInactiveColor` at rest, with a drop shadow when active.
     public func makeThumb(configuration: TrackPadConfiguration) -> some View {
         Circle()
             .fill(configuration.isActive ? thumbActiveColor : thumbInactiveColor)
             .frame(width: thumbSize, height: thumbSize)
             .shadow(radius: configuration.isActive ? 3 : 0)
     }
-    
+
+    /// Creates the track — a rounded rectangle with a subtle fill and stroke border.
     public func makeTrack(configuration: TrackPadConfiguration) -> some View {
         RoundedRectangle(cornerRadius: 12)
             .fill(trackColor)
