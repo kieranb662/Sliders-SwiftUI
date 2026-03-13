@@ -12,11 +12,26 @@ import SwiftUI
 /// A control that constrains the drag gesture of the thumb to be contained within the radius
 /// of a circular track.  Similar to a joystick, except the thumb stays where the drag ended.
 ///
+/// ## Label
+///
+/// A floating label is displayed above the thumb and updates continuously as the thumb moves.
+/// The default `LabelView` is `Text` showing the offset and angle. Provide a custom label via
+/// the `label` parameter:
+///
+/// ```swift
+/// RadialPad(offset: $dist, angle: $dir) { offset, angle in
+///     Text(String(format: "%.0f°", angle.degrees))
+/// }
+/// ```
+///
+/// Label visibility is controlled by the `.labelsVisibility(_:)` environment modifier.
+///
 /// - parameters:
 ///     - offset: `Binding<Double>` The normalised distance (`0…1`) from the track centre to
 ///       the thumb.
 ///     - angle: `Binding<Angle>` The angle of the line from the pad's centre to the thumb,
 ///       measured clockwise from the trailing direction.
+///     - label: A view builder closure that receives the current `offset` and `angle` and returns the label view displayed near the thumb.
 ///     - showPreviousValue: When `true`, a visual indicator marks the last committed position
 ///       (set when the user lifts their finger).  The indicator has a magnetic affinity — when
 ///       the thumb is dragged slowly near it, it snaps back.
@@ -49,6 +64,7 @@ import SwiftUI
 ///  - `makePreviousValueIndicator` — *(optional, default provided)* the marker shown at the
 ///    previous position.
 ///  - `makeTickMarks` — *(optional, default provided)* polar grid rendered inside the track.
+///  - `makeLabel(configuration:content:)` — *(optional, default provided)* the container for the floating label.
 ///
 /// Apply your style with `.radialPadStyle(MyStyle())`.
 ///
@@ -112,6 +128,12 @@ public struct RadialPad<LabelView: View>: View {
 
     // MARK: - Initialisers
 
+    /// Creates a `RadialPad` with a custom label view.
+    ///
+    /// - Parameters:
+    ///   - offset: A binding to the normalised radial distance (`0…1`) from the track centre.
+    ///   - angle: A binding to the angular direction of the thumb.
+    ///   - label: A view builder closure that receives the current `offset` (`Double`) and `angle` (`Angle`) and returns the label view displayed near the thumb.
     public init(
         offset: Binding<Double>,
         angle: Binding<Angle>,
@@ -437,6 +459,12 @@ extension RadialPad where LabelView == Text {
     
     // MARK: - Initialisers
 
+    /// Creates a `RadialPad` with a default text label showing offset and angle.
+    ///
+    /// - Parameters:
+    ///   - offset: A binding to the normalised radial distance (`0…1`) from the track centre.
+    ///   - angle: A binding to the angular direction of the thumb.
+    ///   - label: A view builder closure that receives the current `offset` and `angle` and returns the label view. Defaults to a `Text` showing offset to 2 dp and angle to the nearest degree.
     public init(
         offset: Binding<Double>,
         angle: Binding<Angle>,

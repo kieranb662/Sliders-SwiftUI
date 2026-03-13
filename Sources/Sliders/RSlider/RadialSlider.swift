@@ -10,24 +10,63 @@ import SwiftUI
 // MARK:  Radial Slider
 
 /// # Radial Slider
-///  A Circular slider whose thumb is dragged causing it to follow the path of the circle
 ///
-///  - parameters:
-///     - value: a  `Binding<Double>` value to be controlled.
+/// A circular slider whose thumb is dragged around the track of a circle, controlling a
+/// single value. The slider can span multiple full revolutions using the `maxWinds` parameter.
+///
+/// ## Label
+///
+/// A floating label is displayed outside the thumb and updates continuously as the thumb moves.
+/// The default `LabelView` is `Text` showing the current value formatted to two decimal places.
+/// Provide a custom label via the `label` parameter:
+///
+/// ```swift
+/// RSlider($speed, range: 0...200) { value in
+///     Text("\(Int(value)) km/h")
+/// }
+/// ```
+///
+/// Label visibility is controlled by the `.labelsVisibility(_:)` environment modifier.
+///
+/// ## Value Mapping
+///
+/// - The slider's domain is `range`.
+/// - The *minimum* value is located at `originAngle` (by default `.zero`, i.e. 3 o'clock).
+/// - The slider can span more than one full revolution using `maxWinds`.
+///
+/// ## Winds (Multiple Rotations)
+///
+/// `maxWinds` is the number of full rotations represented by the entire `range`. For example:
+/// - `maxWinds = 1` maps the entire range to 0–360°.
+/// - `maxWinds = 2` maps the entire range to 0–720°.
+/// - `maxWinds = 0.25` maps the entire range to 0–90°.
+///
+/// ## Tick Marks and Affinity
+///
+/// Provide `tickSpacing` to show tick marks around the track. When `affinityEnabled` is `true`,
+/// the thumb is magnetically attracted to nearby tick values.
+///
+/// - parameters:
+///     - value: a `Binding<Double>` value to be controlled.
 ///     - range: a `ClosedRange<Double>` denoting the minimum and maximum values of the slider (default is `0...1`)
-///     - isDisabled: a `Bool` value describing if the sliders state is disabled (default is `false`)
+///     - originAngle: the angle on the circle that corresponds to the minimum value (default `.zero` = 3 o'clock)
+///     - maxWinds: the number of full revolutions spanned by the slider's full value range (default `1`)
 ///     - tickSpacing: an optional `TickMarkSpacing` that controls tick mark placement around the arc (default `nil`)
 ///     - affinityEnabled: when `true` the thumb magnetically snaps to nearby tick marks (default `false`)
+///     - affinityRadius: pull radius as a fraction of the total value range (default `0.04`)
+///     - affinityResistance: extra escape distance (fraction of range) beyond `affinityRadius` (default `0.02`)
 ///     - disableHaptics: when `true` all haptic feedback is suppressed (default `false`)
+///     - label: a view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
 ///
-///  ## Styling The Slider
+/// ## Styling The Slider
 ///
-///  To create a custom style for the slider you need to create a `RSliderStyle` conforming struct. Conformance requires implementation of 2 methods
-///  1.  `makeThumb`: which creates the draggable portion of the slider
-///  2.  `makeTrack`: which creates the track which fills or emptys as the thumb is dragging within it
-///  3.  `makeTickMark`: (optional) which creates the view shown at each tick position around the arc
+/// To create a custom style for the slider you need to create a `RSliderStyle` conforming struct. Conformance requires implementation of:
+///  1. `makeThumb` – the draggable portion of the slider
+///  2. `makeTrack` – the track which fills or empties as the thumb drags
+///  3. `makeTickMark` – (optional) the view shown at each tick position around the arc
+///  4. `makeLabel(configuration:content:)` – (optional, default provided) the container for the floating label
 ///
-/// Both methods provide access to state values of the radial slider thru the  `RSliderConfiguration` struct
+/// Both methods provide access to state values of the radial slider through the `RSliderConfiguration` struct
 ///
 public struct RSlider<LabelView: View>: View {
     @Environment(\.radialSliderStyle) private var style: AnyRSliderStyle
@@ -72,8 +111,8 @@ public struct RSlider<LabelView: View>: View {
     /// Dragging the thumb changes `value` as it moves around the track.
     ///
     /// ## Value mapping
-    /// - The slider’s domain is `range`.
-    /// - The *minimum* value is located at `originAngle` (by default `.zero`, i.e. the 3 o’clock position).
+    /// - The slider's domain is `range`.
+    /// - The *minimum* value is located at `originAngle` (by default `.zero`, i.e. the 3 o'clock position).
     /// - The slider can span more than one full revolution using `maxWinds`.
     ///
     /// ## Winds (multiple rotations)
@@ -94,7 +133,7 @@ public struct RSlider<LabelView: View>: View {
     ///   - value: A binding to the value controlled by the slider.
     ///   - range: The allowed value range. Defaults to `0...1`.
     ///   - originAngle: The angle on the circle that corresponds to the minimum value. Defaults to `.zero`.
-    ///   - maxWinds: The number of full revolutions spanned by the slider’s full value range.
+    ///   - maxWinds: The number of full revolutions spanned by the slider's full value range.
     ///     Fractional winds are supported.
     ///   - tickSpacing: Optional tick mark placement configuration. When `nil`, no tick marks are drawn.
     ///   - affinityEnabled: When `true`, the thumb will snap to nearby tick values.
@@ -103,6 +142,7 @@ public struct RSlider<LabelView: View>: View {
     ///   - affinityResistance: Extra distance (as a fraction of full value range) the user must drag *past*
     ///     `affinityRadius` to break out of a snap.
     ///   - disableHaptics: When `true`, all haptic feedback is suppressed.
+    ///   - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb.
     public init(_ value: Binding<Double>,
                 range: ClosedRange<Double> = 0...1,
                 originAngle: Angle = .zero,
@@ -519,8 +559,8 @@ extension RSlider where LabelView == Text {
     /// Dragging the thumb changes `value` as it moves around the track.
     ///
     /// ## Value mapping
-    /// - The slider’s domain is `range`.
-    /// - The *minimum* value is located at `originAngle` (by default `.zero`, i.e. the 3 o’clock position).
+    /// - The slider's domain is `range`.
+    /// - The *minimum* value is located at `originAngle` (by default `.zero`, i.e. the 3 o'clock position).
     /// - The slider can span more than one full revolution using `maxWinds`.
     ///
     /// ## Winds (multiple rotations)
@@ -541,7 +581,7 @@ extension RSlider where LabelView == Text {
     ///   - value: A binding to the value controlled by the slider.
     ///   - range: The allowed value range. Defaults to `0...1`.
     ///   - originAngle: The angle on the circle that corresponds to the minimum value. Defaults to `.zero`.
-    ///   - maxWinds: The number of full revolutions spanned by the slider’s full value range.
+    ///   - maxWinds: The number of full revolutions spanned by the slider's full value range.
     ///     Fractional winds are supported.
     ///   - tickSpacing: Optional tick mark placement configuration. When `nil`, no tick marks are drawn.
     ///   - affinityEnabled: When `true`, the thumb will snap to nearby tick values.
@@ -550,6 +590,7 @@ extension RSlider where LabelView == Text {
     ///   - affinityResistance: Extra distance (as a fraction of full value range) the user must drag *past*
     ///     `affinityRadius` to break out of a snap.
     ///   - disableHaptics: When `true`, all haptic feedback is suppressed.
+    ///   - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb. Defaults to a `Text` formatted to two decimal places.
     public init(_ value: Binding<Double>,
                 range: ClosedRange<Double> = 0...1,
                 originAngle: Angle = .zero,

@@ -62,6 +62,31 @@ The various components are:
 | `trackThickness` | `Double` | `20` | The thickness of the track in points |
 | `tickMarkSpacing` | `TickMarkSpacing?` | `nil` | How tick marks are spaced, or `nil` to hide them |
 | `hapticFeedbackEnabled` | `Bool` | `true` | Whether crossing a tick mark triggers haptic feedback (iOS only) |
+| `label` | `(Double) -> some View` | `Text` (value, 2 dp) | A view builder that receives the current value and returns the floating label displayed near the thumb |
+
+### Labels
+
+A floating label is displayed just above the thumb and updates live as the thumb moves. By default it shows the current value formatted to two decimal places. Pass a custom `label` closure to render anything:
+
+```swift
+@State var volume = 0.5
+
+LSlider($volume, range: 0...100) { value in
+    Label("\(Int(value)) dB", systemImage: "speaker.wave.2")
+}
+.frame(height: 60)
+```
+
+Use the `.labelsVisibility(_:)` modifier to hide the label across all sliders in a container:
+
+```swift
+VStack {
+    LSlider($red,   range: 0...1)
+    LSlider($green, range: 0...1)
+    LSlider($blue,  range: 0...1)
+}
+.labelsVisibility(.hidden)
+```
 
 ### Basic Usage
 
@@ -152,15 +177,16 @@ Haptic feedback fires each time the thumb passes over a tick mark. It is powered
 
 ### Styling the Slider
 
-Conform to `LSliderStyle` and implement three methods:
+Conform to `LSliderStyle` and implement these methods:
 
 - `makeThumb(configuration:)` -- the draggable thumb view
 - `makeTrack(configuration:)` -- the track and fill view
 - `makeTickMark(configuration:tickValue:)` -- the view rendered at each tick mark position
+- `makeLabel(configuration:content:)` -- *(optional, default provided)* wraps the label view floating above the thumb
 
 Apply your style using the `linearSliderStyle(_:)` modifier on the slider or any ancestor view.
 
-All three methods receive an `LSliderConfiguration` that exposes the current state of the slider:
+All four methods receive an `LSliderConfiguration` that exposes the current state of the slider:
 
 ```swift
 struct LSliderConfiguration {
@@ -285,6 +311,38 @@ VStack {
 | `affinityEnabled` | `Bool` | `false` | Enables magnetic snap toward tick marks |
 | `affinityRadius` | `Double` | `0.04` | Snap pull radius as a fraction of the full value range |
 | `affinityResistance` | `Double` | `0.02` | Extra escape distance beyond `affinityRadius` |
+| `lowerLabel` | `(Double) -> some View` | `Text` (value, 2 dp) | A view builder that receives the lower value and returns the floating label near the lower thumb |
+| `upperLabel` | `(Double) -> some View` | `Text` (value, 2 dp) | A view builder that receives the upper value and returns the floating label near the upper thumb |
+
+### Labels
+
+Floating labels are displayed above each thumb and update live as the thumbs move. By default each label shows the current value formatted to two decimal places. Pass `lowerLabel` and `upperLabel` closures to render custom content:
+
+```swift
+@State private var lower = 0.25
+@State private var upper = 0.75
+
+DoubleLSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...100
+) { v in
+    Text("from \(Int(v))")
+} upperLabel: { v in
+    Text("to \(Int(v))")
+}
+.frame(height: 60)
+```
+
+Use the `.labelsVisibility(_:)` modifier to hide labels across all sliders in a container:
+
+```swift
+VStack {
+    DoubleLSlider(lowerValue: $lowerA, upperValue: $upperA)
+    DoubleLSlider(lowerValue: $lowerB, upperValue: $upperB)
+}
+.labelsVisibility(.hidden)
+```
 
 ### Basic Usage
 
@@ -304,9 +362,7 @@ DoubleLSlider(
 .frame(height: 60)
 ```
 
-### Vertical Slider
-
-Pass `angle: .degrees(90)` and give the view a tall frame:
+A vertical slider (90 degrees):
 
 ```swift
 @State private var lower = 20.0
@@ -322,9 +378,7 @@ DoubleLSlider(
 .frame(width: 60, height: 200)
 ```
 
-### Angled Slider
-
-The track adapts to any angle, fitting itself to the available container space:
+A diagonal slider:
 
 ```swift
 @State private var lower = 0.2
@@ -466,12 +520,14 @@ DoubleLSlider(
 
 ### Styling the Slider
 
-Conform to `DoubleLSliderStyle` and implement four methods:
+Conform to `DoubleLSliderStyle` and implement these methods:
 
 - `makeLowerThumb(configuration:)` — the draggable lower-bound thumb
 - `makeUpperThumb(configuration:)` — the draggable upper-bound thumb
 - `makeTrack(configuration:)` — the full track with the filled range segment
 - `makeTickMark(configuration:tickValue:)` — the view rendered at each tick position (has a default implementation)
+- `makeLowerLabel(configuration:content:)` — *(optional, default provided)* wraps the label near the lower thumb
+- `makeUpperLabel(configuration:content:)` — *(optional, default provided)* wraps the label near the upper thumb
 
 Apply a style using `.doubleLSliderStyle(_:)` on the slider or any ancestor view.
 
@@ -488,8 +544,6 @@ struct DoubleLSliderConfiguration {
     let angle: Angle              // The angle of the track
     let min: Double               // Lower bound of the range
     let max: Double               // Upper bound of the range
-    let keepThumbInTrack: Bool    // Whether thumbs are constrained to the track extent
-    let trackThickness: Double    // Track thickness in points
     let tickMarkSpacing: TickMarkSpacing?  // Tick spacing config, or nil
     let tickValues: [Double]      // Resolved list of tick-mark values
     let affinityEnabled: Bool     // Whether affinity snapping is on
@@ -503,26 +557,24 @@ struct DoubleLSliderConfiguration {
 
 ### Custom Style Example
 
-The following style draws an indigo range segment, diamond-shaped tick marks that grow as either thumb approaches, and pill-shaped thumbs that highlight when active:
+The following style draws a dark circular track with a teal filled arc and square thumbs that highlight when active:
 
 ```swift
-struct IndigoRangeStyle: DoubleLSliderStyle {
+struct TealRangeStyle: DoubleLSliderStyle {
 
     func makeLowerThumb(configuration: DoubleLSliderConfiguration) -> some View {
         let active = configuration.isLowerActive || configuration.isRangeActive
-        return Capsule()
-            .fill(active ? Color.white : Color.indigo)
-            .frame(width: configuration.trackThickness, height: configuration.trackThickness * 1.6)
-            .rotationEffect(configuration.angle)
+        return RoundedRectangle(cornerRadius: 6)
+            .fill(active ? Color.teal : Color.white)
+            .frame(width: 28, height: 28)
             .shadow(color: .black.opacity(0.25), radius: active ? 6 : 2)
     }
 
     func makeUpperThumb(configuration: DoubleLSliderConfiguration) -> some View {
         let active = configuration.isUpperActive || configuration.isRangeActive
-        return Capsule()
-            .fill(active ? Color.white : Color.indigo)
-            .frame(width: configuration.trackThickness, height: configuration.trackThickness * 1.6)
-            .rotationEffect(configuration.angle)
+        return RoundedRectangle(cornerRadius: 6)
+            .fill(active ? Color.teal : Color.white)
+            .frame(width: 28, height: 28)
             .shadow(color: .black.opacity(0.25), radius: active ? 6 : 2)
     }
 
@@ -533,48 +585,28 @@ struct IndigoRangeStyle: DoubleLSliderStyle {
 
         return ZStack {
             // Full unfilled track
-            AdaptiveLine(thickness: T, angle: configuration.angle)
-                .fill(Color(white: 0.2))
+            Circle()
+                .stroke(Color.gray.opacity(0.3), lineWidth: 18)
 
             // Filled segment from lowerPercent to upperPercent
-            AdaptiveLine(thickness: T, angle: configuration.angle, percentFilled: hi,
-                         adjustmentForThumb: T / 2)
-                .fill(Color.indigo)
+            CircularArc(percent: hi)
+                .stroke(Color.teal, style: StrokeStyle(lineWidth: 18, lineCap: .round))
+                .padding(9)
                 .mask(
-                    AdaptiveLine(thickness: T, angle: configuration.angle,
-                                 percentFilled: 1 - lo, adjustmentForThumb: T / 2)
+                    CircularArc(percent: lo, adjustmentForThumb: T / 2)
                         .fill(Color.white)
                         .rotationEffect(.degrees(180))
                 )
-                .mask(AdaptiveLine(thickness: T, angle: configuration.angle))
         }
     }
 
     func makeTickMark(configuration: DoubleLSliderConfiguration, tickValue: Double) -> some View {
-        let range = configuration.max - configuration.min
-        guard range > 0 else { return AnyView(EmptyView()) }
-        let loPct = (configuration.lowerValue - configuration.min) / range
-        let hiPct = (configuration.upperValue - configuration.min) / range
-        let tickPct = (tickValue - configuration.min) / range
-        let proximity = max(
-            max(0, 1 - abs(loPct - tickPct) / 0.15),
-            max(0, 1 - abs(hiPct - tickPct) / 0.15)
-        )
-        let size = 5.0 + 6.0 * proximity
-        return AnyView(
-            Rectangle()
-                .fill(Color.indigo.opacity(0.4 + 0.6 * proximity))
-                .frame(width: size, height: size)
-                .rotationEffect(.degrees(45))
-                .animation(.easeOut(duration: 0.08), value: proximity)
-        )
+        Circle()
+            .fill(Color.white.opacity(0.5))
+            .frame(width: 5, height: 5)
     }
 }
-```
 
-Apply it to a slider:
-
-```swift
 @State private var lower = 0.2
 @State private var upper = 0.8
 
@@ -582,22 +614,10 @@ DoubleLSlider(
     lowerValue: $lower,
     upperValue: $upper,
     range: 0...1,
-    keepThumbInTrack: true,
-    trackThickness: 24,
     tickMarkSpacing: .count(9)
 )
-.doubleLSliderStyle(IndigoRangeStyle())
-.frame(height: 60)
-```
-
-The modifier cascades through the view hierarchy, so you can style multiple sliders at once:
-
-```swift
-VStack {
-    DoubleLSlider(lowerValue: $lowerA, upperValue: $upperA)
-    DoubleLSlider(lowerValue: $lowerB, upperValue: $upperB)
-}
-.doubleLSliderStyle(IndigoRangeStyle())
+.doubleLSliderStyle(TealRangeStyle())
+.frame(width: 240, height: 240)
 ```
 
 You can also use the built-in default style with custom colours:
@@ -606,15 +626,15 @@ You can also use the built-in default style with custom colours:
 DoubleLSlider(lowerValue: $lower, upperValue: $upper)
     .doubleLSliderStyle(
         .default(
-            trackColor: Color(white: 0.2),
+            trackColor: Color(white: 0.25),
             trackFilledColor: .indigo,
-            lowerThumbColor: .indigo,
-            upperThumbColor: .indigo,
-            activeThumbColor: .white,
+            lowerThumbColor: .white,
+            upperThumbColor: .white,
+            activeThumbColor: .cyan,
             trackThickness: 20
         )
     )
-    .frame(height: 60)
+    .frame(width: 220, height: 220)
 ```
 
 ## Radial Slider
@@ -642,6 +662,28 @@ DoubleLSlider(lowerValue: $lower, upperValue: $upper)
 | `affinityRadius` | `Double` | `0.04` | Snap radius as a fraction of the full value range |
 | `affinityResistance` | `Double` | `0.02` | Extra escape distance beyond `affinityRadius`, also as a fraction of the full value range |
 | `disableHaptics` | `Bool` | `false` | Disables all haptic feedback |
+| `label` | `(Double) -> some View` | `Text` (value, 2 dp) | A view builder that receives the current value and returns the floating label displayed near the thumb |
+
+### Labels
+
+A floating label is displayed just outside the thumb on the circular track and updates live as the thumb moves. By default it shows the current value formatted to two decimal places. Pass a custom `label` closure to render anything:
+
+```swift
+@State private var speed = 0.5
+
+RSlider($speed, range: 0...200) { value in
+    Text("\(Int(value)) km/h")
+}
+.frame(width: 220, height: 220)
+```
+
+Use the `.labelsVisibility(_:)` modifier to hide the label:
+
+```swift
+RSlider($value)
+    .labelsVisibility(.hidden)
+    .frame(width: 220, height: 220)
+```
 
 ### Basic usage
 
@@ -709,6 +751,7 @@ To create a custom style, conform to `RSliderStyle` and implement:
 - `makeThumb(configuration:)`
 - `makeTrack(configuration:)`
 - `makeTickMark(configuration:tickValue:)`
+- `makeLabel(configuration:content:)` — *(optional, default provided)* wraps the label view near the thumb
 
 Apply a style using `radialSliderStyle(_:)` on the slider or a parent view.
 
@@ -793,26 +836,88 @@ RSlider($value)
 | `affinityRadius` | `Double` | `0.04` | Snap pull radius as a fraction of the full value range |
 | `affinityResistance` | `Double` | `0.02` | Extra escape distance beyond `affinityRadius` |
 | `disableHaptics` | `Bool` | `false` | Suppresses all haptic feedback |
+| `lowerLabel` | `(Double) -> some View` | `Text` (value, 2 dp) | A view builder that receives the lower value and returns the floating label near the lower thumb |
+| `upperLabel` | `(Double) -> some View` | `Text` (value, 2 dp) | A view builder that receives the upper value and returns the floating label near the upper thumb |
 
-### Basic Usage
+### Labels
+
+Floating labels are displayed above each thumb and update live as the thumbs move. By default each label shows the current value formatted to two decimal places. Pass `lowerLabel` and `upperLabel` closures to render custom content:
 
 ```swift
 @State private var lower = 0.25
 @State private var upper = 0.75
 
-DoubleRSlider(lowerValue: $lower, upperValue: $upper)
-    .frame(width: 220, height: 220)
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...100
+) { v in
+    Text("from \(Int(v))")
+} upperLabel: { v in
+    Text("to \(Int(v))")
+}
+.frame(width: 220, height: 220)
 ```
 
-### Set a range and origin angle
-
-`originAngle` sets where the minimum value is located on the circle.
+Use the `.labelsVisibility(_:)` modifier to hide labels across all sliders in a container:
 
 ```swift
-@State private var temperature = 20.0
+VStack {
+    DoubleRSlider(lowerValue: $lowerA, upperValue: $upperA)
+    DoubleRSlider(lowerValue: $lowerB, upperValue: $upperB)
+}
+.labelsVisibility(.hidden)
+```
 
-DoubleRSlider(lowerValue: $temperature, upperValue: $upperTemperature, range: 0...100, originAngle: .degrees(-90))
-    .frame(width: 240, height: 240)
+### Basic Usage
+
+A horizontal range slider over a `0...1` domain:
+
+```swift
+@State private var lower = 0.25
+@State private var upper = 0.75
+
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    keepThumbInTrack: true,
+    trackThickness: 20
+)
+.frame(width: 220, height: 220)
+```
+
+A vertical slider (90 degrees):
+
+```swift
+@State private var lower = 20.0
+@State private var upper = 80.0
+
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...100,
+    angle: .degrees(90),
+    keepThumbInTrack: true
+)
+.frame(width: 60, height: 200)
+```
+
+A diagonal slider:
+
+```swift
+@State private var lower = 0.2
+@State private var upper = 0.8
+
+DoubleRSlider(
+    lowerValue: $lower,
+    upperValue: $upper,
+    range: 0...1,
+    angle: .degrees(30),
+    keepThumbInTrack: true,
+    trackThickness: 20
+)
+.frame(width: 300, height: 120)
 ```
 
 ### Minimum Distance
@@ -847,7 +952,9 @@ DoubleRSlider(
     lowerValue: $lower,
     upperValue: $upper,
     range: 0...1,
-    tickSpacing: .count(9)   // ticks at 0, 0.125, 0.25 … 1.0
+    keepThumbInTrack: true,
+    trackThickness: 20,
+    tickMarkSpacing: .count(9)   // ticks at 0, 0.125, 0.25 … 1.0
 )
 .frame(width: 220, height: 220)
 ```
@@ -862,7 +969,9 @@ DoubleRSlider(
     lowerValue: $lower,
     upperValue: $upper,
     range: 0...12,
-    tickSpacing: .spacing(1)   // ticks at 0, 1, 2 … 12
+    keepThumbInTrack: true,
+    trackThickness: 20,
+    tickMarkSpacing: .spacing(1)   // ticks at 0, 1, 2 … 12
 )
 .frame(width: 220, height: 220)
 ```
@@ -877,7 +986,9 @@ DoubleRSlider(
     lowerValue: $lower,
     upperValue: $upper,
     range: 0...1,
-    tickSpacing: .values([0.0, 0.25, 0.5, 0.75, 1.0])
+    keepThumbInTrack: true,
+    trackThickness: 20,
+    tickMarkSpacing: .values([0.0, 0.25, 0.5, 0.75, 1.0])
 )
 .frame(width: 220, height: 220)
 ```
@@ -934,6 +1045,8 @@ To create a custom style, conform to `DoubleRSliderStyle` and implement:
 - `makeUpperThumb(configuration:)`
 - `makeTrack(configuration:)`
 - `makeTickMark(configuration:tickValue:)` — the view rendered at each tick position (has a default implementation)
+- `makeLowerLabel(configuration:content:)` — *(optional, default provided)* wraps the label near the lower thumb
+- `makeUpperLabel(configuration:content:)` — *(optional, default provided)* wraps the label near the upper thumb
 
 Apply a style using `.doubleRadialSliderStyle(_:)` on the slider or any ancestor view.
 
@@ -966,7 +1079,7 @@ struct DoubleRSliderConfiguration {
 
 ### Custom Style Example
 
-The following style draws a dark circular track with a teal filled arc and square thumbs that highlight when active:
+The following style draws a dark circular track with a teal filled arc and square thumbs that highlight as active:
 
 ```swift
 struct TealRangeStyle: DoubleRSliderStyle {
@@ -995,8 +1108,8 @@ struct TealRangeStyle: DoubleRSliderStyle {
 
             CircularArc(percent: arcLength)
                 .stroke(Color.teal, style: StrokeStyle(lineWidth: 18, lineCap: .round))
+                .padding(9)
         }
-        .padding(9)
     }
 
     func makeTickMark(configuration: DoubleRSliderConfiguration, tickValue: Double) -> some View {
@@ -1013,7 +1126,7 @@ DoubleRSlider(
     lowerValue: $lower,
     upperValue: $upper,
     range: 0...1,
-    tickSpacing: .count(9)
+    tickMarkSpacing: .count(9)
 )
 .doubleRadialSliderStyle(TealRangeStyle())
 .frame(width: 240, height: 240)
@@ -1072,7 +1185,7 @@ struct <#My PSlider Style#>: PSliderStyle {
      func makeThumb(configuration:  PSliderConfiguration) -> some View {
          Circle()
              .frame(width: 30, height:30)
-             .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
+             .foregroundColor(configuration.isActive ?  Color.yellow : Color.white)
      }
 
     func makeTrack(configuration:  PSliderConfiguration) -> some View {
@@ -1157,8 +1270,8 @@ steps with magnetic snap-to-grid behaviour.
 - Each axis has its own independent `ClosedRange`, so x and y can cover completely
   different domains.
 - **Previous-value indicator** — a ghost marker is left at the last committed position
-  (when the user lifts their finger). Drag slowly near it to snap back; fast swipes pass
-  through freely.
+  (when the user lifts their finger). Dragging slowly back towards the marker will magnetically snap the
+  thumb to it.
 - **Tick marks** — divide one or both axes into a regular grid. The thumb snaps magnetically
   to the nearest intersection when moving slowly.
 - **Haptic feedback** — fires when the thumb hits a track edge (iOS), and softly when it
@@ -1181,6 +1294,28 @@ steps with magnetic snap-to-grid behaviour.
 | `tickAffinityRadius` | `Double` | `0.05` | Fraction of the track diagonal within which the thumb snaps to the nearest tick |
 | `tickAffinityResistance` | `Double` | `0.02` | Extra fraction beyond the pull radius the drag must travel to escape a tick snap |
 | `tickAffinityVelocityThreshold` | `Double` | `150` | Max drag speed (pts/s) at which tick snapping can engage |
+| `label` | `(Double, Double) -> some View` | `Text` (x, y, 2 dp) | A view builder that receives the current x and y values and returns the floating label displayed above the thumb |
+
+### Labels
+
+A floating label is displayed just above the thumb and updates live as it moves. By default it shows the current x and y values each formatted to two decimal places. Pass a custom `label` closure to render anything:
+
+```swift
+@State var point = CGPoint(x: 0.5, y: 0.5)
+
+TrackPad($point, rangeX: -1...1, rangeY: -1...1) { x, y in
+    Text(String(format: "x: %.2f  y: %.2f", x, y))
+}
+.frame(height: 260)
+```
+
+Use the `.labelsVisibility(_:)` modifier to hide the label:
+
+```swift
+TrackPad($point)
+    .labelsVisibility(.hidden)
+    .frame(height: 260)
+```
 
 ### Basic Usage
 
@@ -1245,7 +1380,7 @@ TrackPad($point)
     .frame(height: 260)
 ```
 
-#### Tuning the Affinity
+### Tuning the Affinity
 
 The snap behaviour is controlled by three modifiers. All distances are expressed as a
 fraction of the track diagonal so they scale correctly with any frame size.
@@ -1421,6 +1556,7 @@ protocol TrackPadStyle {
     // Optional — default implementations provided
     func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> some View
     func makeTickMarks(configuration: TrackPadConfiguration) -> some View
+    func makeLabel(configuration: TrackPadConfiguration, content: AnyView) -> some View
 }
 ```
 
@@ -1527,4 +1663,103 @@ TrackPad($point)
         )
     )
     .frame(height: 260)
+```
+
+## Radial Pad
+
+`RadialPad` is a joystick-like 2-D control where the thumb moves freely within a circular track. Unlike a joystick, the thumb stays at its last dragged position when the gesture ends.
+
+### What it does
+
+- Tracks a normalised radial distance (`offset`, `0…1`) and an `Angle` direction.
+- **Previous-value indicator** — a ghost marker is left at the last committed position. Drag slowly back towards it to snap.
+- **Polar tick marks** — divide the track into concentric rings (r-ticks) and/or angular spokes (θ-ticks). Intersections act as snap points.
+- **Single-tap select** — optionally allows a tap on the track to place the thumb immediately.
+- **Haptic feedback** — fires on edge, previous-value snap, and tick snap.
+- Fully stylable via the `RadialPadStyle` protocol.
+
+### Parameters
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `offset` | `Binding<Double>` | required | The normalised radial distance (`0…1`) from the centre to the thumb |
+| `angle` | `Binding<Angle>` | required | The angular direction of the thumb, measured clockwise from the trailing edge |
+| `label` | `(Double, Angle) -> some View` | `Text` (offset, angle) | A view builder that receives the current offset and angle and returns the floating label displayed near the thumb |
+| `showPreviousValue` | `Bool` | `false` | Show a ghost marker at the last committed position and enable affinity snap |
+| `previousValueAffinityRadius` | `Double` | `0.06` | Fraction of the track radius within which the previous-value snap activates |
+| `previousValueAffinityResistance` | `Double` | `0.03` | Extra fraction beyond the pull radius the drag must travel to escape the snap |
+| `previousValueVelocityThreshold` | `Double` | `180` | Max drag speed (pts/s) at which the snap can engage |
+| `tickCountR` | `Int` | `0` | Number of equal radial intervals (concentric rings) — `0` = off |
+| `tickCountTheta` | `Int` | `0` | Number of equal angular sectors (spoke lines) — `0` = off |
+| `tickAffinityRadius` | `Double` | `0.05` | Fraction of the track radius within which the thumb snaps to the nearest polar tick |
+| `tickAffinityResistance` | `Double` | `0.02` | Extra fraction beyond the pull radius the drag must travel to escape a tick snap |
+| `tickAffinityVelocityThreshold` | `Double` | `150` | Max drag speed (pts/s) at which tick snapping can engage |
+| `allowsSingleTapSelect` | `Bool` | `false` | Allow a single tap on the track to place the thumb at the tapped position |
+
+### Basic Usage
+
+```swift
+@State var dist = 0.0
+@State var dir  = Angle.zero
+
+RadialPad(offset: $dist, angle: $dir)
+    .frame(width: 260, height: 260)
+```
+
+### Labels
+
+A floating label is displayed just above the thumb and updates live as it moves. By default it shows the offset to 2 dp and the angle to the nearest degree. Pass a custom `label` closure to render anything:
+
+```swift
+@State var dist = 0.0
+@State var dir  = Angle.zero
+
+RadialPad(offset: $dist, angle: $dir) { offset, angle in
+    Text(String(format: "%.0f°  r=%.2f", angle.degrees, offset))
+}
+.frame(width: 260, height: 260)
+```
+
+Use the `.labelsVisibility(_:)` modifier to hide the label:
+
+```swift
+RadialPad(offset: $dist, angle: $dir)
+    .labelsVisibility(.hidden)
+    .frame(width: 260, height: 260)
+```
+
+### Previous Value Indicator
+
+```swift
+@State var dist = 0.0
+@State var dir  = Angle.zero
+
+RadialPad(offset: $dist, angle: $dir)
+    .showPreviousValue(true)
+    .frame(width: 260, height: 260)
+```
+
+### Polar Tick Marks
+
+Set `tickCountR` and/or `tickCountTheta` to add rings and spokes. When both are > 0 their intersections become snap targets.
+
+```swift
+// 4 rings + 8 spokes → 32 snap intersections
+RadialPad(offset: $dist, angle: $dir)
+    .tickCountR(4)
+    .tickCountTheta(8)
+    .frame(width: 260, height: 260)
+```
+
+### Styling
+
+Conform to `RadialPadStyle` and implement:
+- `makeThumb(configuration:)` — the draggable thumb
+- `makeTrack(configuration:)` — the circular track background
+- `makePreviousValueIndicator(configuration:)` — *(optional, default provided)* ghost marker
+- `makeTickMarks(configuration:)` — *(optional, default provided)* polar grid
+- `makeLabel(configuration:content:)` — *(optional, default provided)* container for the floating label
+
+Apply a style with `.radialPadStyle(_:)`.
+
 ```

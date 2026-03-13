@@ -14,6 +14,20 @@ import SwiftUI
 /// added via the `tickMarkSpacing` parameter and will optionally play haptic feedback
 /// when the thumb passes over them.
 ///
+/// ## Label
+///
+/// A floating label is displayed near the thumb and updates continuously as the thumb moves.
+/// The default `LabelView` is `Text` showing the current value formatted to two decimal places.
+/// Provide a custom label via the `label` parameter:
+///
+/// ```swift
+/// LSlider($volume, range: 0...100) { value in
+///     Label("\(Int(value)) dB", systemImage: "speaker.wave.2")
+/// }
+/// ```
+///
+/// Label visibility is controlled by the `.labelsVisibility(_:)` environment modifier.
+///
 /// ## Tick Mark Affinity (Magnetic Snap)
 ///
 /// When `affinityEnabled` is `true` and tick marks are configured, the thumb is
@@ -36,6 +50,7 @@ import SwiftUI
 ///     - affinityEnabled: `Bool` Whether the thumb snaps magnetically to tick marks (requires `tickMarkSpacing != nil`)
 ///     - affinityRadius: `Double` Fraction of the total range within which a tick attracts the thumb (default 0.04)
 ///     - affinityResistance: `Double` Extra fraction beyond `affinityRadius` the drag must travel to escape a snap (default 0.02)
+///     - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
 ///
 /// ## Styling The Slider
 ///
@@ -43,6 +58,7 @@ import SwiftUI
 ///   - `makeThumb` – the draggable thumb view
 ///   - `makeTrack` – the track/fill view
 ///   - `makeTickMark(configuration:tickValue:)` – the view shown at each tick position
+///   - `makeLabel(configuration:content:)` – (optional, default provided) the container for the floating label
 ///
 /// Apply your style with `.linearSliderStyle(MyStyle())`.
 public struct LSlider<LabelView: View>: View {
@@ -101,7 +117,7 @@ public struct LSlider<LabelView: View>: View {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks.
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
-    ///   - label: A view builder closure that creates the label view.
+    ///   - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
@@ -142,7 +158,7 @@ public struct LSlider<LabelView: View>: View {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
-    ///   - label: A view builder closure that creates the label view.
+    ///   - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
@@ -181,7 +197,7 @@ public struct LSlider<LabelView: View>: View {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
-    ///   - label: A view builder closure that creates the label view.
+    ///   - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
     public init(
         _ value: Binding<Double>,
         angle: Angle,
@@ -561,7 +577,7 @@ extension LSlider where LabelView == Text {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks.
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
-    ///   - label: A view builder closure that creates the label view.
+    ///   - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
@@ -602,7 +618,7 @@ extension LSlider where LabelView == Text {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
-    ///   - label: A view builder closure that creates the label view.
+    ///   - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
@@ -641,7 +657,7 @@ extension LSlider where LabelView == Text {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
-    ///   - label: A view builder closure that creates the label view.
+    ///   - label: A view builder closure that receives the current `Double` value and returns the label view displayed near the thumb
     public init(
         _ value: Binding<Double>,
         angle: Angle,

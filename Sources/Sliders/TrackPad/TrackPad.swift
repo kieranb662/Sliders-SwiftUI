@@ -15,10 +15,25 @@ import SwiftUI
 /// The 2-D equivalent of a `Slider`. A draggable thumb moves freely inside a rectangular
 /// area, controlling independent x and y values simultaneously.
 ///
+/// ## Label
+///
+/// A floating label is displayed above the thumb and updates continuously as the thumb moves.
+/// The default `LabelView` is `Text` showing the current x and y values, each formatted to
+/// two decimal places. Provide a custom label via the `label` parameter:
+///
+/// ```swift
+/// TrackPad($point) { x, y in
+///     Text("(\(Int(x)), \(Int(y)))")
+/// }
+/// ```
+///
+/// Label visibility is controlled by the `.labelsVisibility(_:)` environment modifier.
+///
 /// - parameters:
 ///     - value: A `CGPoint` whose `x` and `y` components are controlled by the trackpad.
 ///     - rangeX: The `ClosedRange<CGFloat>` for the x component.
 ///     - rangeY: The `ClosedRange<CGFloat>` for the y component.
+///     - label: A view builder closure that receives the current x and y `Double` values and returns the label view displayed near the thumb.
 ///     - showPreviousValue: When `true`, a visual indicator marks the last committed position
 ///       (the position when the user lifted their finger). The indicator has an affinity with
 ///       that position — when the thumb is dragged slowly near it, it snaps back.
@@ -55,6 +70,7 @@ import SwiftUI
 ///  - `makePreviousValueIndicator` – (optional, default provided) the marker shown at the
 ///    previous position.
 ///  - `makeTickMarks` – (optional, default provided) the grid rendered inside the track.
+///  - `makeLabel(configuration:content:)` – (optional, default provided) the container for the floating label.
 ///
 /// Apply your style with `.trackPadStyle(MyStyle())`.
 ///

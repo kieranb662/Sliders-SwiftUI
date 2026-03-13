@@ -19,8 +19,30 @@ import SwiftUI
 /// - **Upper thumb** – moves the end of the range. Cannot cross the lower thumb.
 /// - **Active track** – drags both thumbs simultaneously, keeping the range width constant.
 ///
+/// # Labels
+///
+/// Floating labels are displayed near each thumb and update continuously as the thumbs move.
+/// By default both labels show the current value formatted to two decimal places.
+/// Provide custom labels via the `lowerLabel` and `upperLabel` parameters:
+///
+/// ```swift
+/// DoubleLSlider(lowerValue: $lo, upperValue: $hi, range: 0...100) { v in
+///     Text("from \(Int(v))")
+/// } upperLabel: { v in
+///     Text("to \(Int(v))")
+/// }
+/// ```
+///
+/// Label visibility is controlled by the `.labelsVisibility(_:)` environment modifier.
+///
 /// # Styling
-/// Provide a custom ``DoubleLSliderStyle`` via `.doubleLSliderStyle(_:)`.
+/// Provide a custom ``DoubleLSliderStyle`` via `.doubleLSliderStyle(_:)`. Implement:
+///   - `makeLowerThumb` – the draggable lower-thumb view
+///   - `makeUpperThumb` – the draggable upper-thumb view
+///   - `makeTrack` – the full track / fill view
+///   - `makeTickMark(configuration:tickValue:)` – the view shown at each tick position
+///   - `makeLowerLabel(configuration:content:)` – (optional, default provided) the container for the lower floating label
+///   - `makeUpperLabel(configuration:content:)` – (optional, default provided) the container for the upper floating label
 ///
 /// # Minimum Distance
 /// `minimumDistance` (in value-domain units) ensures the two thumbs never overlap.
@@ -70,9 +92,9 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
     private let affinityResistance: Double
 
     /// The user-provided label view for the lower (start) thumb.
-    private var startLabel: (Double) -> LowerLabel
+    private var lowerLabel: (Double) -> LowerLabel
     /// The user-provided label view for the upper (end) thumb.
-    private var endLabel: (Double) -> UpperLabel
+    private var upperLabel: (Double) -> UpperLabel
 
     // MARK: - Init
 
@@ -92,8 +114,8 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
     ///   - affinityEnabled: When `true`, thumbs snap magnetically to nearby tick values.
     ///   - affinityRadius: Pull radius as a fraction of the value range.
     ///   - affinityResistance: Extra escape distance beyond `affinityRadius`.
-    ///   - startLabel: A view builder closure that produces the label view for the lower thumb.
-    ///   - endLabel: A view builder closure that produces the label view for the upper thumb.
+    ///   - lowerLabel: A view builder closure that produces the label view for the lower thumb.
+    ///   - upperLabel: A view builder closure that produces the label view for the upper thumb.
     public init(
         lowerValue: Binding<Double>,
         upperValue: Binding<Double>,
@@ -107,8 +129,8 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
         affinityEnabled: Bool = false,
         affinityRadius: Double = 0.04,
         affinityResistance: Double = 0.02,
-        @ViewBuilder startLabel: @escaping (Double) -> LowerLabel,
-        @ViewBuilder endLabel: @escaping (Double) -> UpperLabel
+        @ViewBuilder lowerLabel: @escaping (Double) -> LowerLabel,
+        @ViewBuilder upperLabel: @escaping (Double) -> UpperLabel
     ) {
         self._lowerValue = lowerValue
         self._upperValue = upperValue
@@ -123,8 +145,8 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
         self.affinityEnabled = affinityEnabled
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
-        self.startLabel = startLabel
-        self.endLabel = endLabel
+        self.lowerLabel = lowerLabel
+        self.upperLabel = upperLabel
     }
 
     // MARK: - Tick Mark Resolution
@@ -529,12 +551,12 @@ public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
 
                 // Labels (floating above thumbs)
                 if labelsVisibility != .hidden {
-                    style.makeLowerLabel(configuration: config, content: AnyView(startLabel(lowerValue)))
+                    style.makeLowerLabel(configuration: config, content: AnyView(lowerLabel(lowerValue)))
                         .fixedSize()
                         .offset(labelOffsetForParameter(parameterForValue(lowerValue), proxy: proxy))
                         .allowsHitTesting(false)
 
-                    style.makeUpperLabel(configuration: config, content: AnyView(endLabel(upperValue)))
+                    style.makeUpperLabel(configuration: config, content: AnyView(upperLabel(upperValue)))
                         .fixedSize()
                         .offset(labelOffsetForParameter(parameterForValue(upperValue), proxy: proxy))
                         .allowsHitTesting(false)
@@ -569,8 +591,8 @@ extension DoubleLSlider where LowerLabel == Text, UpperLabel == Text {
     ///   - affinityEnabled: When `true`, thumbs snap magnetically to nearby tick values.
     ///   - affinityRadius: Pull radius as a fraction of the value range.
     ///   - affinityResistance: Extra escape distance beyond `affinityRadius`.
-    ///   - startLabel: A view builder closure that produces the label view for the lower thumb.
-    ///   - endLabel: A view builder closure that produces the label view for the upper thumb.
+    ///   - lowerLabel: A view builder closure that produces the label view for the lower thumb.
+    ///   - upperLabel: A view builder closure that produces the label view for the upper thumb.
     public init(
         lowerValue: Binding<Double>,
         upperValue: Binding<Double>,
@@ -584,8 +606,8 @@ extension DoubleLSlider where LowerLabel == Text, UpperLabel == Text {
         affinityEnabled: Bool = false,
         affinityRadius: Double = 0.04,
         affinityResistance: Double = 0.02,
-        @ViewBuilder startLabel: @escaping (Double) -> LowerLabel = { Text($0, format: .number.precision(.fractionLength(2))) },
-        @ViewBuilder endLabel: @escaping (Double) -> UpperLabel = { Text($0, format: .number.precision(.fractionLength(2))) }
+        @ViewBuilder lowerLabel: @escaping (Double) -> LowerLabel = { Text($0, format: .number.precision(.fractionLength(2))) },
+        @ViewBuilder upperLabel: @escaping (Double) -> UpperLabel = { Text($0, format: .number.precision(.fractionLength(2))) }
     ) {
         self._lowerValue = lowerValue
         self._upperValue = upperValue
@@ -600,7 +622,7 @@ extension DoubleLSlider where LowerLabel == Text, UpperLabel == Text {
         self.affinityEnabled = affinityEnabled
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
-        self.startLabel = startLabel
-        self.endLabel = endLabel
+        self.lowerLabel = lowerLabel
+        self.upperLabel = upperLabel
     }
 }

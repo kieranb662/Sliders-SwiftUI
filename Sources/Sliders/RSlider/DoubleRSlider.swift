@@ -22,8 +22,31 @@ import SwiftUI
 /// All three elements can move past the `originAngle` in both the positive and negative direction.
 /// There are no windings; the slider spans exactly one revolution.
 ///
+/// # Labels
+///
+/// Floating labels are displayed near each thumb and update continuously as the thumbs move.
+/// By default both labels show the current value formatted to two decimal places.
+/// Provide custom labels via the `lowerLabel` and `upperLabel` parameters:
+///
+/// ```swift
+/// DoubleRSlider(lowerValue: $lo, upperValue: $hi, range: 0...100) { v in
+///     Text("\(Int(v))°")
+/// } upperLabel: { v in
+///     Text("\(Int(v))°")
+/// }
+/// ```
+///
+/// Label visibility is controlled by the `.labelsVisibility(_:)` environment modifier.
+///
 /// # Styling
-/// Provide a custom ``DoubleRSliderStyle`` via `.doubleRadialSliderStyle(_:)`.
+/// Provide a custom ``DoubleRSliderStyle`` via `.doubleRadialSliderStyle(_:)`. Implement:
+///   - `makeLowerThumb` – the draggable lower-thumb view
+///   - `makeUpperThumb` – the draggable upper-thumb view
+///   - `makeTrack` – the full circular track / fill view
+///   - `makeTickMark(configuration:tickValue:)` – the view shown at each tick position
+///   - `makeLowerLabel(configuration:content:)` – (optional, default provided) the container for the lower floating label
+///   - `makeUpperLabel(configuration:content:)` – (optional, default provided) the container for the upper floating label
+///
 /// Two built-in styles are available: ``DefaultDoubleRSliderStyle``.
 ///
 /// # Minimum distance
@@ -75,9 +98,9 @@ public struct DoubleRSlider<LowerLabel: View, UpperLabel: View>: View {
     private let disableHaptics: Bool
 
     /// The user-provided label view for the lower (start) thumb.
-    private var startLabel: (Double) -> LowerLabel
+    private var lowerLabel: (Double) -> LowerLabel
     /// The user-provided label view for the upper (end) thumb.
-    private var endLabel: (Double) -> UpperLabel
+    private var upperLabel: (Double) -> UpperLabel
 
     // MARK: - Init
 
@@ -96,8 +119,8 @@ public struct DoubleRSlider<LowerLabel: View, UpperLabel: View>: View {
     ///   - affinityRadius: Pull radius as a fraction of the value range.
     ///   - affinityResistance: Extra escape distance beyond `affinityRadius`.
     ///   - disableHaptics: Suppresses all haptic feedback when `true`.
-    ///   - startLabel: A view builder that creates the label for the lower (start) thumb.
-    ///   - endLabel: A view builder that creates the label for the upper (end) thumb.
+    ///   - lowerLabel: A view builder that creates the label for the lower (start) thumb.
+    ///   - upperLabel: A view builder that creates the label for the upper (end) thumb.
     public init(
         lowerValue: Binding<Double>,
         upperValue: Binding<Double>,
@@ -109,8 +132,8 @@ public struct DoubleRSlider<LowerLabel: View, UpperLabel: View>: View {
         affinityRadius: Double = 0.04,
         affinityResistance: Double = 0.02,
         disableHaptics: Bool = false,
-        @ViewBuilder startLabel: @escaping (Double) -> LowerLabel,
-        @ViewBuilder endLabel: @escaping (Double) -> UpperLabel
+        @ViewBuilder lowerLabel: @escaping (Double) -> LowerLabel,
+        @ViewBuilder upperLabel: @escaping (Double) -> UpperLabel
     ) {
         self._lowerValue = lowerValue
         self._upperValue = upperValue
@@ -123,8 +146,8 @@ public struct DoubleRSlider<LowerLabel: View, UpperLabel: View>: View {
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
         self.disableHaptics = disableHaptics
-        self.startLabel = startLabel
-        self.endLabel = endLabel
+        self.lowerLabel = lowerLabel
+        self.upperLabel = upperLabel
     }
 
     // MARK: - Tick mark resolution
@@ -602,12 +625,12 @@ public struct DoubleRSlider<LowerLabel: View, UpperLabel: View>: View {
 
                     // Labels (floating outside the thumbs)
                     if labelsVisibility != .hidden {
-                        style.makeLowerLabel(configuration: config, content: AnyView(startLabel(lowerValue)))
+                        style.makeLowerLabel(configuration: config, content: AnyView(lowerLabel(lowerValue)))
                             .fixedSize()
                             .offset(labelOffsetForValue(lowerValue, radius: r))
                             .allowsHitTesting(false)
 
-                        style.makeUpperLabel(configuration: config, content: AnyView(endLabel(upperValue)))
+                        style.makeUpperLabel(configuration: config, content: AnyView(upperLabel(upperValue)))
                             .fixedSize()
                             .offset(labelOffsetForValue(upperValue, radius: r))
                             .allowsHitTesting(false)
@@ -640,8 +663,8 @@ extension DoubleRSlider where LowerLabel == Text, UpperLabel == Text {
     ///   - affinityRadius: Pull radius as a fraction of the value range.
     ///   - affinityResistance: Extra escape distance beyond `affinityRadius`.
     ///   - disableHaptics: Suppresses all haptic feedback when `true`.
-    ///   - startLabel: A view builder that creates the label for the lower (start) thumb.
-    ///   - endLabel: A view builder that creates the label for the upper (end) thumb.
+    ///   - lowerLabel: A view builder that creates the label for the lower (start) thumb.
+    ///   - upperLabel: A view builder that creates the label for the upper (end) thumb.
     public init(
         lowerValue: Binding<Double>,
         upperValue: Binding<Double>,
@@ -653,8 +676,8 @@ extension DoubleRSlider where LowerLabel == Text, UpperLabel == Text {
         affinityRadius: Double = 0.04,
         affinityResistance: Double = 0.02,
         disableHaptics: Bool = false,
-        @ViewBuilder startLabel: @escaping (Double) -> LowerLabel = { Text($0, format: .number.precision(.fractionLength(2))) },
-        @ViewBuilder endLabel: @escaping (Double) -> UpperLabel = { Text($0, format: .number.precision(.fractionLength(2))) }
+        @ViewBuilder lowerLabel: @escaping (Double) -> LowerLabel = { Text($0, format: .number.precision(.fractionLength(2))) },
+        @ViewBuilder upperLabel: @escaping (Double) -> UpperLabel = { Text($0, format: .number.precision(.fractionLength(2))) }
     ) {
         self._lowerValue = lowerValue
         self._upperValue = upperValue
@@ -667,7 +690,7 @@ extension DoubleRSlider where LowerLabel == Text, UpperLabel == Text {
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
         self.disableHaptics = disableHaptics
-        self.startLabel = startLabel
-        self.endLabel = endLabel
+        self.lowerLabel = lowerLabel
+        self.upperLabel = upperLabel
     }
 }
