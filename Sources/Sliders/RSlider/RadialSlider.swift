@@ -446,18 +446,15 @@ public struct RSlider: View {
                             .fill(Color.clear)
                             .contentShape(Circle())
                             .gesture(
-                                SpatialTapGesture()
+                                SpatialTapGesture(coordinateSpace: .global)
                                     .onEnded { tap in
-                                        // Convert tap location (local) to global for rawAngle.
+                                        // Use the same global centre that the drag gesture uses,
+                                        // so rawAngle sees the same coordinate space.
                                         let globalCenter = CGPoint(
                                             x: proxy.frame(in: .global).midX,
                                             y: proxy.frame(in: .global).midY
                                         )
-                                        let globalTap = CGPoint(
-                                            x: proxy.frame(in: .global).minX + tap.location.x,
-                                            y: proxy.frame(in: .global).minY + tap.location.y
-                                        )
-                                        let tappedRaw = rawAngle(from: globalCenter, globalTap)
+                                        let tappedRaw = rawAngle(from: globalCenter, tap.location)
                                         let totalPct = tappedRaw / maxWinds
                                         let clampedPct = Swift.max(0, Swift.min(1, totalPct))
                                         let rawValue = clampedPct * (range.upperBound - range.lowerBound) + range.lowerBound

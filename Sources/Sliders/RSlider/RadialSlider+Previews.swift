@@ -76,7 +76,7 @@ struct DiagnosticRSliderStyle: RSliderStyle {
         }
         
         HStack {
-            RSlider($value, maxWinds: 3)
+            RSlider($value, maxWinds: 3, allowsSingleTapSelect: true)
                 .radialSliderStyle(DiagnosticRSliderStyle())
             
             RSlider($value, maxWinds: 0.25)
@@ -105,6 +105,7 @@ struct DiagnosticRSliderStyle: RSliderStyle {
     
     VStack(spacing: 16) {
         RSlider($a, allowsSingleTapSelect: true)
+            .border(Color.gray)
             
         RSlider($b, tickSpacing: .count(10))
         
