@@ -170,38 +170,82 @@ public struct RSlider: View {
         return (raw - originFraction).truncatingRemainder(dividingBy: 1.0) + (raw < originFraction ? 1 : 0)
     }
 
+    /// Returns the raw [0, 1) angle that corresponds to the current `value`.
+    /// This is used to seed the drag gesture so the first delta can’t be misread as a wrap.
+    private func rawAngleForCurrentValue() -> Double {
+        let span = range.upperBound - range.lowerBound
+        guard span > 0, maxWinds != 0 else { return 0 }
+        let pct = (value - range.lowerBound) / span
+        let windValue = pct * maxWinds
+        let withinWind = windValue.truncatingRemainder(dividingBy: 1.0)
+        // Ensure [0, 1)
+        return (withinWind < 0 ? withinWind + 1 : withinWind)
+    }
+
     /// Computes the new value and updates `currentWind` based on the drag position.
     private func updateValue(from center: CGPoint, location: CGPoint) {
-        let newRaw = rawAngle(from: center, location)
+        var newRaw = rawAngle(from: center, location)
+
+        let span = range.upperBound - range.lowerBound
+        let atMin = span > 0 ? (value <= range.lowerBound + span * 1e-12) : true
+        let atMax = span > 0 ? (value >= range.upperBound - span * 1e-12) : true
+        let maxWindIndex = floor(maxWinds)
 
         // Detect wrap-around crossings
         let delta = newRaw - lastRawAngle
+
+        // If we’re pinned at the minimum (wind 0), don’t allow a backward seam-crossing
+        // to be interpreted as “almost a full rotation” (0 → 0.999...).
+        // Keep withinWind at 0 until the user drags forward.
+        if atMin && currentWind <= 0 && delta > 0.5 {
+            currentWind = 0
+            newRaw = 0
+            lastRawAngle = 0
+            value = range.lowerBound
+            return
+        }
+
         if delta < -0.5 {
             // Crossed 0 going forward (e.g. 0.95 → 0.05)
-            currentWind += 1
-            currentWind = min(floor(maxWinds), currentWind)
+            // If we’re already pinned at max, don’t treat this as a forward wrap;
+            // otherwise the clamp would keep us stuck at max.
+            if !(atMax && currentWind >= maxWindIndex) {
+                currentWind += 1
+                currentWind = min(maxWindIndex, currentWind)
+            }
         } else if delta > 0.5 {
             // Crossed 0 going backward (e.g. 0.05 → 0.95)
-            currentWind -= 1
+            // If we’re already pinned at min, don’t treat this as a backward wrap.
+            if !(atMin && currentWind <= 0) {
+                currentWind -= 1
+            }
         }
-        
+
         if delta > 0.5 && currentWind == -1 {
             currentWind = 0
             value = range.lowerBound
             return
         }
 
-        lastRawAngle = newRaw
-
         // Total fractional progress across all winds
         let totalPct = (currentWind + newRaw) / maxWinds
 
         // Clamp to [0, 1] across full wind range
         let clampedPct = Swift.max(0, Swift.min(1, totalPct))
-  
+
         let rawValue = clampedPct * (range.upperBound - range.lowerBound) + range.lowerBound
         let (snappedValue, _) = applyAffinity(rawValue: rawValue)
-        value = snappedValue
+
+        if abs(value - range.upperBound) > abs(value - range.lowerBound)
+            && abs(snappedValue - range.upperBound) < abs(snappedValue - range.lowerBound)
+            && value == range.lowerBound {
+            value = range.lowerBound
+            currentWind = 0
+        } else {
+            value = snappedValue
+        }
+
+        lastRawAngle = newRaw
     }
 
     // MARK: - Haptics
@@ -304,12 +348,15 @@ public struct RSlider: View {
         let gesture = DragGesture(minimumDistance: 0, coordinateSpace: .global)
             .onChanged { dragValue in
                 if !isActive {
-                    // Initialise lastRawAngle on first touch to avoid a spurious wind jump
-                    lastRawAngle = rawAngle(from: middle, dragValue.location)
-                    // Prevent having a lastRawAngle greater than 0.9 because of initial touch location on thumb
-                    if currentWind == 0 && value == range.lowerBound {
-                        lastRawAngle = 0
-                    }
+                    // Seed gesture state from the current value (not the finger-down location).
+                    // This prevents the first update from being interpreted as a wrap when the user
+                    // touches the “wrong” side of the thumb at the seam (especially at max).
+                    lastRawAngle = rawAngleForCurrentValue()
+
+                    let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+                    let currentWindValue = percent * maxWinds
+                    currentWind = floor(currentWindValue)
+
                     if !disableHaptics && tickSpacing == nil {
                         hapticManager.prepare()
                     }
@@ -368,10 +415,11 @@ public struct RSlider: View {
                 let currentWindValue = percent * maxWinds
                 currentWind = floor(currentWindValue)
             }
-            .onChange(of: value) { oldValue, newValue in
-                let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
-                let currentWindValue = percent * maxWinds
-                currentWind = floor(currentWindValue)
-            }
+//            .onChange(of: value) { oldValue, newValue in
+//                guard !isActive else { return }
+//                let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+//                let currentWindValue = percent * maxWinds
+//                currentWind = floor(currentWindValue)
+//            }
     }
 }
