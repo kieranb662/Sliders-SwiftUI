@@ -66,6 +66,20 @@ public struct TrackPadConfiguration: Sendable {
     /// Use this to visually distinguish the "locked" state — for example the default style
     /// enlarges and brightens the indicator ring.
     public let isSnappedToPrevious: Bool
+
+    // MARK: Tick marks
+    /// The number of tick intervals along the x-axis.  `0` means no tick marks.
+    public let tickCountX: Int
+    /// The number of tick intervals along the y-axis.  `0` means no tick marks.
+    public let tickCountY: Int
+    /// `true` while the thumb is snapped to a tick-mark intersection.
+    public let isSnappedToTick: Bool
+    /// The normalised x fraction `[0,1]` of the tick-mark position the thumb is currently
+    /// snapped to, or `nil` when not snapped.
+    public let snappedTickPctX: Double?
+    /// The normalised y fraction `[0,1]` of the tick-mark position the thumb is currently
+    /// snapped to, or `nil` when not snapped.
+    public let snappedTickPctY: Double?
 }
 
 // MARK: - Style Protocol
@@ -83,18 +97,27 @@ public protocol TrackPadStyle: Sendable {
     associatedtype Track: View
     /// The view used to mark the last committed position (previous value indicator).
     associatedtype PreviousValueIndicator: View
-    
+    /// The view used to render tick-mark intersections inside the track.
+    associatedtype TickMarks: View
+
     /// Creates the draggable thumb.
     func makeThumb(configuration: TrackPadConfiguration) -> Self.Thumb
-    
+
     /// Creates the track background.
     func makeTrack(configuration: TrackPadConfiguration) -> Self.Track
-    
+
     /// Creates the view shown at the previous-value position.
     ///
     /// ``TrackPad`` places this view at the correct offset automatically; you only need to
     /// return the indicator's intrinsic appearance. A default implementation is provided.
     func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> Self.PreviousValueIndicator
+
+    /// Creates the view rendered inside the track to show tick-mark intersections.
+    ///
+    /// ``TrackPad`` calls this method only when `tickCountX > 0 || tickCountY > 0`.
+    /// The view is sized to fill the full track area, so you can use a `GeometryReader`
+    /// inside to position individual marks. A default implementation is provided.
+    func makeTickMarks(configuration: TrackPadConfiguration) -> Self.TickMarks
 }
 
 // MARK: - Default implementations
@@ -110,7 +133,10 @@ public extension TrackPadStyle {
     func makePreviousValueIndicatorTypeErased(configuration: TrackPadConfiguration) -> AnyView {
         AnyView(self.makePreviousValueIndicator(configuration: configuration))
     }
-    
+    func makeTickMarksTypeErased(configuration: TrackPadConfiguration) -> AnyView {
+        AnyView(self.makeTickMarks(configuration: configuration))
+    }
+
     /// Default previous-value indicator: a dim ring with a small crosshair that brightens
     /// and scales up when `isSnappedToPrevious` is `true`.
     func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> some View {
@@ -137,6 +163,58 @@ public extension TrackPadStyle {
         }
         .animation(.easeOut(duration: 0.15), value: snapped)
     }
+    
+    /// Default tick-mark view: small circles at every grid intersection, with snapped
+    /// intersections shown as a larger, brighter dot.
+    func makeTickMarks(configuration: TrackPadConfiguration) -> some View {
+        GeometryReader { geo in
+            let w = geo.size.width
+            let h = geo.size.height
+            let nx = configuration.tickCountX
+            let ny = configuration.tickCountY
+            // Draw x-axis lines (vertical rules)
+            if nx > 0 {
+                ForEach(0...nx, id: \.self) { ix in
+                    let fx = CGFloat(ix) / CGFloat(nx)
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.10))
+                        .frame(width: 1)
+                        .frame(height: h)
+                        .position(x: fx * w, y: h / 2)
+                }
+            }
+            // Draw y-axis lines (horizontal rules)
+            if ny > 0 {
+                ForEach(0...ny, id: \.self) { iy in
+                    let fy = CGFloat(iy) / CGFloat(ny)
+                    Rectangle()
+                        .fill(Color.primary.opacity(0.10))
+                        .frame(width: w)
+                        .frame(height: 1)
+                        .position(x: w / 2, y: fy * h)
+                }
+            }
+            // Draw intersection dots
+            if nx > 0 && ny > 0 {
+                ForEach(0...nx, id: \.self) { ix in
+                    ForEach(0...ny, id: \.self) { iy in
+                        let fx = CGFloat(ix) / CGFloat(nx)
+                        let fy = CGFloat(iy) / CGFloat(ny)
+                        let isSnapped = configuration.isSnappedToTick
+                            && abs((configuration.snappedTickPctX ?? -1) - Double(fx)) < 0.001
+                            && abs((configuration.snappedTickPctY ?? -1) - Double(fy)) < 0.001
+                        Circle()
+                            .fill(isSnapped
+                                  ? Color(.sRGB, red: 0.204, green: 0.648, blue: 0.855).opacity(0.85)
+                                  : Color.primary.opacity(0.22))
+                            .frame(width: isSnapped ? 8 : 4, height: isSnapped ? 8 : 4)
+                            .position(x: fx * w, y: fy * h)
+                            .animation(.easeOut(duration: 0.12), value: isSnapped)
+                    }
+                }
+            }
+        }
+    }
 }
 
 // MARK: - AnyTrackPadStyle
@@ -148,7 +226,8 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
     private let _makeThumb: @Sendable (TrackPadConfiguration) -> AnyView
     private let _makeTrack: @Sendable (TrackPadConfiguration) -> AnyView
     private let _makePreviousValueIndicator: @Sendable (TrackPadConfiguration) -> AnyView
-    
+    private let _makeTickMarks: @Sendable (TrackPadConfiguration) -> AnyView
+
     public func makeThumb(configuration: TrackPadConfiguration) -> some View {
         _makeThumb(configuration)
     }
@@ -158,11 +237,15 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
     public func makePreviousValueIndicator(configuration: TrackPadConfiguration) -> some View {
         _makePreviousValueIndicator(configuration)
     }
-    
+    public func makeTickMarks(configuration: TrackPadConfiguration) -> some View {
+        _makeTickMarks(configuration)
+    }
+
     public init<S: TrackPadStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
         self._makePreviousValueIndicator = style.makePreviousValueIndicatorTypeErased
+        self._makeTickMarks = style.makeTickMarksTypeErased
     }
 }
 
@@ -256,14 +339,7 @@ public struct DefaultTrackPadStyle: TrackPadStyle, Sendable {
         Circle()
             .fill(configuration.isActive ? thumbActiveColor : thumbInactiveColor)
             .frame(width: thumbSize, height: thumbSize)
-            .shadow(
-                color: Color.black.opacity(0.2),
-                radius: configuration.isActive ? 6 : 2
-            )
-            .overlay(
-                Circle()
-                    .strokeBorder(Color.white.opacity(0.3), lineWidth: 1)
-            )
+            .shadow(radius: configuration.isActive ? 3 : 0)
     }
     
     public func makeTrack(configuration: TrackPadConfiguration) -> some View {

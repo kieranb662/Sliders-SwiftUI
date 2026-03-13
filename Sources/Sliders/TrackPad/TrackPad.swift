@@ -29,6 +29,23 @@ import SwiftUI
 ///     - previousValueVelocityThreshold: Maximum drag speed (pts/s) at which the affinity snap
 ///       can engage. Above this speed the snap is ignored, enabling fast swipes to pass through
 ///       freely (default `180`).
+///     - tickCountX: Number of tick-mark intervals along the x-axis (default `0` = off).
+///     - tickCountY: Number of tick-mark intervals along the y-axis (default `0` = off).
+///     - tickAffinityRadius: Fraction of the track diagonal within which the thumb snaps to
+///       the nearest tick intersection (default `0.05`).
+///     - tickAffinityResistance: Extra fraction beyond `tickAffinityRadius` the drag must
+///       travel to escape a tick snap (default `0.02`).
+///     - tickAffinityVelocityThreshold: Maximum drag speed (pts/s) at which tick snapping can
+///       engage (default `150`).
+///
+/// ## Tick Marks
+///
+/// Set `tickCountX` and/or `tickCountY` to positive integers to divide the track into a
+/// regular grid of tick positions.  When both are > 0 the intersections form snap points.
+/// When only one axis has ticks, lines are drawn and single-axis snapping occurs.
+/// Use the fluent modifiers `.tickCountX(_:)`, `.tickCountY(_:)`, `.tickAffinityRadius(_:)`,
+/// `.tickAffinityResistance(_:)`, and `.tickAffinityVelocityThreshold(_:)` to configure the
+/// behaviour.
 ///
 /// ## Styling
 ///
@@ -37,6 +54,7 @@ import SwiftUI
 ///  - `makeTrack` – the rectangular track background.
 ///  - `makePreviousValueIndicator` – (optional, default provided) the marker shown at the
 ///    previous position.
+///  - `makeTickMarks` – (optional, default provided) the grid rendered inside the track.
 ///
 /// Apply your style with `.trackPadStyle(MyStyle())`.
 ///
@@ -52,23 +70,40 @@ public struct TrackPad: View {
     @State private var previousValue: CGPoint? = nil
     /// Whether the thumb is currently magnetically snapped to the previous-value position.
     @State private var isSnappedToPrevious: Bool = false
-    
+    /// Whether the thumb is currently snapped to a tick-mark intersection.
+    @State private var isSnappedToTick: Bool = false
+    /// The tick intersection (normalised [0,1]) the thumb is currently snapped to.
+    @State private var snappedTickPct: CGPoint? = nil
+
     // MARK: Inputs
     @Binding public var value: CGPoint
     public var rangeX: ClosedRange<CGFloat> = 0...1
     public var rangeY: ClosedRange<CGFloat> = 0...1
-    
+
     /// When `true`, a visual indicator marks the last committed position and affinity snap
     /// is enabled near it.
     public var showPreviousValue: Bool = false
-    
+
     /// Fraction of the track diagonal within which the previous-value snap activates.
     public var previousValueAffinityRadius: Double = 0.06
     /// Extra fraction beyond `previousValueAffinityRadius` before the snap releases.
     public var previousValueAffinityResistance: Double = 0.03
     /// Maximum drag velocity (pts/s) at which the snap can engage.
     public var previousValueVelocityThreshold: Double = 180.0
-    
+
+    // MARK: Tick mark inputs
+
+    /// Number of equal intervals along the x-axis.  `0` disables tick marks on that axis.
+    public var tickCountX: Int = 0
+    /// Number of equal intervals along the y-axis.  `0` disables tick marks on that axis.
+    public var tickCountY: Int = 0
+    /// Fraction of the track diagonal within which the thumb snaps to the nearest tick.
+    public var tickAffinityRadius: Double = 0.05
+    /// Extra fraction the drag must travel beyond `tickAffinityRadius` to escape a tick snap.
+    public var tickAffinityResistance: Double = 0.02
+    /// Maximum drag speed (pts/s) at which tick-mark snapping can engage.
+    public var tickAffinityVelocityThreshold: Double = 150.0
+
     // MARK: - Initialisers
     
     public init(
@@ -119,23 +154,23 @@ public struct TrackPad: View {
     }
     
     // MARK: - Configuration
-    
+
     private func makeConfiguration() -> TrackPadConfiguration {
         let pctX = Double((value.x - rangeX.lowerBound) / (rangeX.upperBound - rangeX.lowerBound))
         let pctY = Double((value.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound))
-        
+
         var prevPctX: Double? = nil
         var prevPctY: Double? = nil
         var prevValX: Double? = nil
         var prevValY: Double? = nil
-        
+
         if let prev = previousValue {
             prevPctX = Double((prev.x - rangeX.lowerBound) / (rangeX.upperBound - rangeX.lowerBound))
             prevPctY = Double((prev.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound))
             prevValX = Double(prev.x)
             prevValY = Double(prev.y)
         }
-        
+
         return TrackPadConfiguration(
             isDisabled: !isEnabled,
             isActive: isActive,
@@ -152,7 +187,12 @@ public struct TrackPad: View {
             previousPctY: prevPctY,
             previousValueX: prevValX,
             previousValueY: prevValY,
-            isSnappedToPrevious: isSnappedToPrevious
+            isSnappedToPrevious: isSnappedToPrevious,
+            tickCountX: tickCountX,
+            tickCountY: tickCountY,
+            isSnappedToTick: isSnappedToTick,
+            snappedTickPctX: snappedTickPct.map { Double($0.x) },
+            snappedTickPctY: snappedTickPct.map { Double($0.y) }
         )
     }
     
@@ -194,7 +234,64 @@ public struct TrackPad: View {
         copy.previousValueVelocityThreshold = threshold
         return copy
     }
-    
+
+    // MARK: Tick mark fluent modifiers
+
+    /// Sets the number of tick-mark intervals along the x-axis.
+    ///
+    /// - Parameter count: Number of equal intervals (e.g. `4` → 5 lines at 0%, 25%, 50%, 75%, 100%).
+    ///   Pass `0` to hide tick marks on this axis.
+    public func tickCountX(_ count: Int) -> TrackPad {
+        var copy = self
+        copy.tickCountX = max(0, count)
+        return copy
+    }
+
+    /// Sets the number of tick-mark intervals along the y-axis.
+    ///
+    /// - Parameter count: Number of equal intervals.  Pass `0` to hide tick marks on this axis.
+    public func tickCountY(_ count: Int) -> TrackPad {
+        var copy = self
+        copy.tickCountY = max(0, count)
+        return copy
+    }
+
+    /// Convenience: sets the same tick-mark interval count on both axes.
+    public func tickCount(_ count: Int) -> TrackPad {
+        var copy = self
+        let c = max(0, count)
+        copy.tickCountX = c
+        copy.tickCountY = c
+        return copy
+    }
+
+    /// Sets the affinity pull radius for tick-mark snapping.
+    ///
+    /// - Parameter radius: Fraction of the track diagonal within which the snap activates.
+    public func tickAffinityRadius(_ radius: Double) -> TrackPad {
+        var copy = self
+        copy.tickAffinityRadius = radius
+        return copy
+    }
+
+    /// Sets the resistance beyond the pull radius before a tick snap releases.
+    ///
+    /// - Parameter resistance: Extra fraction the drag must travel to escape.
+    public func tickAffinityResistance(_ resistance: Double) -> TrackPad {
+        var copy = self
+        copy.tickAffinityResistance = resistance
+        return copy
+    }
+
+    /// Sets the maximum drag speed at which tick-mark snapping can engage.
+    ///
+    /// - Parameter threshold: Speed in points per second.
+    public func tickAffinityVelocityThreshold(_ threshold: Double) -> TrackPad {
+        var copy = self
+        copy.tickAffinityVelocityThreshold = threshold
+        return copy
+    }
+
     // MARK: - Calculations
     
     /// Converts a drag location into a clamped `value`, firing edge haptics as needed.
@@ -275,6 +372,65 @@ public struct TrackPad: View {
         }
     }
     
+    /// Applies tick-mark affinity, potentially snapping `value` to the nearest tick intersection.
+    ///
+    /// - Parameters:
+    ///   - proxy: The geometry of the track, used to compute the diagonal.
+    ///   - velocity: The current drag velocity in points per second.
+    private func applyTickAffinity(_ proxy: GeometryProxy, velocity: CGSize) {
+        let nx = tickCountX
+        let ny = tickCountY
+        guard nx > 0 || ny > 0 else { return }
+
+        let w = Double(proxy.size.width)
+        let h = Double(proxy.size.height)
+        let diagonal = (w * w + h * h).squareRoot()
+        guard diagonal > 0 else { return }
+
+        let currentPctX = Double((value.x - rangeX.lowerBound) / (rangeX.upperBound - rangeX.lowerBound))
+        let currentPctY = Double((value.y - rangeY.lowerBound) / (rangeY.upperBound - rangeY.lowerBound))
+
+        let speed = (Double(velocity.width) * Double(velocity.width) + Double(velocity.height) * Double(velocity.height)).squareRoot()
+
+        let pullRadius   = tickAffinityRadius
+        let resistRadius = tickAffinityRadius + tickAffinityResistance
+
+        if isSnappedToTick, let snapped = snappedTickPct {
+            // ── Hold phase: stay snapped until drag escapes resistance zone ───────
+            let dxS = (currentPctX - Double(snapped.x)) * w
+            let dyS = (currentPctY - Double(snapped.y)) * h
+            let dist = (dxS * dxS + dyS * dyS).squareRoot() / diagonal
+
+            if dist > resistRadius {
+                isSnappedToTick = false
+                snappedTickPct = nil
+            } else {
+                // Reconstruct domain value for the snapped tick
+                let snapX = CGFloat(snapped.x) * (rangeX.upperBound - rangeX.lowerBound) + rangeX.lowerBound
+                let snapY = CGFloat(snapped.y) * (rangeY.upperBound - rangeY.lowerBound) + rangeY.lowerBound
+                value = CGPoint(x: snapX, y: snapY)
+            }
+        } else {
+            // ── Pull phase: find nearest tick and snap if within radius ───────────
+            // Nearest tick fraction on each axis
+            let nearPctX: Double = nx > 0 ? (Double(Int((currentPctX * Double(nx)).rounded())) / Double(nx)).clamped(to: 0...1) : currentPctX
+            let nearPctY: Double = ny > 0 ? (Double(Int((currentPctY * Double(ny)).rounded())) / Double(ny)).clamped(to: 0...1) : currentPctY
+
+            let dx = (currentPctX - nearPctX) * w
+            let dy = (currentPctY - nearPctY) * h
+            let dist = (dx * dx + dy * dy).squareRoot() / diagonal
+
+            if dist <= pullRadius && speed <= tickAffinityVelocityThreshold {
+                isSnappedToTick = true
+                snappedTickPct = CGPoint(x: nearPctX, y: nearPctY)
+                let snapX = CGFloat(nearPctX) * (rangeX.upperBound - rangeX.lowerBound) + rangeX.lowerBound
+                let snapY = CGFloat(nearPctY) * (rangeY.upperBound - rangeY.lowerBound) + rangeY.lowerBound
+                value = CGPoint(x: snapX, y: snapY)
+                playSnapHaptic()
+            }
+        }
+    }
+    
     private func thumbOffset(_ proxy: GeometryProxy) -> CGSize {
         let w = proxy.size.width
         let h = proxy.size.height
@@ -309,18 +465,24 @@ public struct TrackPad: View {
     }
     
     // MARK: - View
-    
+
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: makeConfiguration())
             GeometryReader { proxy in
                 ZStack(alignment: .center) {
+                    // Tick marks (rendered below the previous-value indicator and thumb)
+                    if tickCountX > 0 || tickCountY > 0 {
+                        style.makeTickMarks(configuration: makeConfiguration())
+                            .frame(width: proxy.size.width, height: proxy.size.height)
+                    }
+
                     // Previous-value indicator (rendered below the thumb)
                     if showPreviousValue, previousValue != nil {
                         style.makePreviousValueIndicator(configuration: makeConfiguration())
                             .offset(previousValueOffset(proxy))
                     }
-                    
+
                     // Thumb
                     style.makeThumb(configuration: makeConfiguration())
                         .offset(thumbOffset(proxy))
@@ -328,15 +490,19 @@ public struct TrackPad: View {
                             DragGesture(minimumDistance: 0, coordinateSpace: .named(space))
                                 .onChanged { drag in
                                     constrainValue(proxy, drag.location)
+                                    applyTickAffinity(proxy, velocity: drag.velocity)
                                     applyPreviousValueAffinity(proxy, velocity: drag.velocity)
                                     isActive = true
                                 }
                                 .onEnded { drag in
                                     constrainValue(proxy, drag.location)
                                     // Apply affinity one final time before committing
+                                    applyTickAffinity(proxy, velocity: drag.velocity)
                                     applyPreviousValueAffinity(proxy, velocity: drag.velocity)
                                     isActive = false
                                     isSnappedToPrevious = false
+                                    isSnappedToTick = false
+                                    snappedTickPct = nil
                                     // Record the committed position as the new previous value
                                     if showPreviousValue {
                                         previousValue = value

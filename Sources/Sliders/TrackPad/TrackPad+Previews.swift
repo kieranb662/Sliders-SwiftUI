@@ -19,6 +19,9 @@ fileprivate struct TrackPadExamples: View {
     @State var point6 = CGPoint(x: 0.5, y: 0.5)
     @State var point7 = CGPoint(x: 0.5, y: 0.5)
     @State var point8 = CGPoint(x: 0.5, y: 0.5)
+    @State var point9  = CGPoint(x: 0.5, y: 0.5)
+    @State var point10 = CGPoint(x: 0.5, y: 0.5)
+    @State var point11 = CGPoint(x: 0.5, y: 0.5)
     
     var body: some View {
         ScrollView {
@@ -97,6 +100,41 @@ fileprivate struct TrackPadExamples: View {
                         .disabled(true)
                         .frame(height: 140)
                         .opacity(0.45)
+                }
+                
+                // ── Tick marks — 4×4 grid ─────────────────────────────────────
+                GroupBox("Tick Marks — 4×4 grid") {
+                    TrackPad($point9)
+                        .tickCount(4)
+                        .frame(height: 220)
+                    Text("Drag slowly near an intersection to snap to it")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    valueLabel(point9, rangeX: 0...1, rangeY: 0...1)
+                }
+
+                // ── Tick marks — x-axis only (3 intervals) ────────────────────
+                GroupBox("Tick Marks — x-axis only (3 intervals)") {
+                    TrackPad($point10)
+                        .tickCountX(3)
+                        .frame(height: 220)
+                    Text("Vertical guide lines; snaps to nearest x tick when moving slowly")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    valueLabel(point10, rangeX: 0...1, rangeY: 0...1)
+                }
+
+                // ── Tick marks — large affinity radius ────────────────────────
+                GroupBox("Tick Marks — 3×3 grid, large snap radius (10%)") {
+                    TrackPad($point11)
+                        .tickCount(3)
+                        .tickAffinityRadius(0.10)
+                        .tickAffinityResistance(0.04)
+                        .frame(height: 220)
+                    Text("Generous pull zone — easy to land on intersections")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    valueLabel(point11, rangeX: 0...1, rangeY: 0...1)
                 }
             }
             .padding()
@@ -248,6 +286,46 @@ private struct CrosshairTrackPadStyle: TrackPadStyle {
             .showPreviousValue(true)
             .trackPadStyle(CrosshairTrackPadStyle())
             .frame(height: 260)
+        HStack(spacing: 16) {
+            Label(String(format: "x: %.2f", point.x), systemImage: "arrow.left.arrow.right")
+            Label(String(format: "y: %.2f", point.y), systemImage: "arrow.up.arrow.down")
+        }
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.secondary)
+    }
+    .padding()
+}
+
+#Preview("Tick Marks — 4×4 Grid") {
+    @Previewable @State var point = CGPoint(x: 0.5, y: 0.5)
+    VStack(spacing: 12) {
+        TrackPad($point)
+            .tickCount(4)
+            .frame(height: 260)
+        Text("Drag slowly near an intersection to snap to it.\nFast swipes pass through freely.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+        HStack(spacing: 16) {
+            Label(String(format: "x: %.2f", point.x), systemImage: "arrow.left.arrow.right")
+            Label(String(format: "y: %.2f", point.y), systemImage: "arrow.up.arrow.down")
+        }
+        .font(.caption.monospacedDigit())
+        .foregroundStyle(.secondary)
+    }
+    .padding()
+}
+
+#Preview("Tick Marks — x-axis Only") {
+    @Previewable @State var point = CGPoint(x: 0.5, y: 0.5)
+    VStack(spacing: 12) {
+        TrackPad($point)
+            .tickCountX(4)
+            .frame(height: 260)
+        Text("Vertical guide lines on the x-axis; snaps to nearest column.")
+            .font(.caption)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
         HStack(spacing: 16) {
             Label(String(format: "x: %.2f", point.x), systemImage: "arrow.left.arrow.right")
             Label(String(format: "y: %.2f", point.y), systemImage: "arrow.up.arrow.down")
