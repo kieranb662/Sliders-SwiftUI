@@ -109,6 +109,6 @@ struct DiagnosticRSliderStyle: RSliderStyle {
         RSlider($b, tickSpacing: .count(10))
         
         RSlider($c)
-            .radialSliderStyle(KnobStyle())
+            .radialSliderStyle(.knob)
     }
 }

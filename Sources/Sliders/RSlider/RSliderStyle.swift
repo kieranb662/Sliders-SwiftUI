@@ -60,6 +60,57 @@ public protocol RSliderStyle: Sendable {
     func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> Self.TickMark
 }
 
+// MARK: - SwiftUI-style presets
+
+public extension RSliderStyle where Self == DefaultRSliderStyle {
+    /// The built-in default radial slider style.
+    static var `default`: DefaultRSliderStyle { DefaultRSliderStyle() }
+
+    /// The built-in default radial slider style, with customizable parameters.
+    ///
+    /// Usage:
+    /// `RadialSlider(...).radialSliderStyle(.default(trackThickness: 18))`
+    static func `default`(
+        trackColor: Color = Color(red: 0.55, green: 0.55, blue: 0.59),
+        trackFilledColor: Color = Color(red: 0.084, green: 0.247, blue: 0.602),
+        thumbInactiveColor: Color = Color.white,
+        thumbActiveColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        trackThickness: Double = 24.0
+    ) -> DefaultRSliderStyle {
+        DefaultRSliderStyle(
+            trackColor: trackColor,
+            trackFilledColor: trackFilledColor,
+            thumbInactiveColor: thumbInactiveColor,
+            thumbActiveColor: thumbActiveColor,
+            trackThickness: trackThickness
+        )
+    }
+}
+
+public extension RSliderStyle where Self == KnobStyle {
+    /// A knob-style radial slider.
+    ///
+    /// This mirrors the SwiftUI pattern of creating a style via a static factory.
+    static func knob(
+        backgroundColor: Color = Color(red: 0, green: 0.1148955151, blue: 0.3572945595),
+        strokeColor: Color = Color.white,
+        thumbColor: Color = Color.white,
+        thumbSize: Double = 30,
+        thumbInset: Double = 30
+    ) -> KnobStyle {
+        KnobStyle(
+            backgroundColor: backgroundColor,
+            strokeColor: strokeColor,
+            thumbColor: thumbColor,
+            thumbSize: thumbSize,
+            thumbInset: thumbInset
+        )
+    }
+    
+    static var knob: KnobStyle { KnobStyle() }
+        
+}
+
 public extension RSliderStyle {
     func makeThumbTypeErased(configuration: RSliderConfiguration) -> AnyView {
         AnyView(self.makeThumb(configuration: configuration))
@@ -212,7 +263,7 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
 
 // MARK: - Knob Style
 
-public struct KnobStyle: RSliderStyle {
+public struct KnobStyle: RSliderStyle, Sendable {
     let backgroundColor: Color
     let strokeColor: Color
     let thumbColor: Color
