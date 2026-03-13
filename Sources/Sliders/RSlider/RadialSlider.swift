@@ -50,8 +50,6 @@ public struct RSlider: View {
     private let originAngle: Angle
     /// Maximum number of full winds allowed (e.g. 2 = 0–720°, 0.25 = 0–90°). Default is 1.
     private let maxWinds: Double
-    /// A Flag that when true indicates the value grows in the clockwise direction
-    private let isClockwise: Bool // TODO: Implement using this
     /// How tick marks are spaced around the arc, or `nil` to hide tick marks.
     private let tickSpacing: TickMarkSpacing?
     /// When `true` the thumb is magnetically attracted to nearby tick marks.
@@ -63,10 +61,46 @@ public struct RSlider: View {
     /// When `true` all haptic feedback is suppressed.
     private let disableHaptics: Bool
 
+    /// Creates a radial (circular) slider.
+    ///
+    /// The slider maps your bound `value` onto a circle (or multiple turns of a circle).
+    /// Dragging the thumb changes `value` as it moves around the track.
+    ///
+    /// ## Value mapping
+    /// - The slider’s domain is `range`.
+    /// - The *minimum* value is located at `originAngle` (by default `.zero`, i.e. the 3 o’clock position).
+    /// - The slider can span more than one full revolution using `maxWinds`.
+    ///
+    /// ## Winds (multiple rotations)
+    /// `maxWinds` is the number of full rotations represented by the entire `range`.
+    /// For example:
+    /// - `maxWinds = 1` maps the entire range to 0–360°.
+    /// - `maxWinds = 2` maps the entire range to 0–720°.
+    /// - `maxWinds = 0.25` maps the entire range to 0–90°.
+    ///
+    /// ## Tick marks and affinity
+    /// Provide `tickSpacing` to show tick marks around the track. When `affinityEnabled` is `true`,
+    /// the thumb is magnetically attracted to nearby tick values.
+    ///
+    /// - Note: `affinityRadius` and `affinityResistance` are expressed as *fractions of the total value range*,
+    ///   not points/pixels.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the value controlled by the slider.
+    ///   - range: The allowed value range. Defaults to `0...1`.
+    ///   - originAngle: The angle on the circle that corresponds to the minimum value. Defaults to `.zero`.
+    ///   - maxWinds: The number of full revolutions spanned by the slider’s full value range.
+    ///     Fractional winds are supported.
+    ///   - tickSpacing: Optional tick mark placement configuration. When `nil`, no tick marks are drawn.
+    ///   - affinityEnabled: When `true`, the thumb will snap to nearby tick values.
+    ///   - affinityRadius: The distance (as a fraction of the full value range) within which the thumb will
+    ///     be pulled onto the nearest tick.
+    ///   - affinityResistance: Extra distance (as a fraction of full value range) the user must drag *past*
+    ///     `affinityRadius` to break out of a snap.
+    ///   - disableHaptics: When `true`, all haptic feedback is suppressed.
     public init(_ value: Binding<Double>,
                 range: ClosedRange<Double> = 0...1,
                 originAngle: Angle = .zero,
-                isClockwise: Bool = true,
                 maxWinds: Double = 1,
                 tickSpacing: TickMarkSpacing? = nil,
                 affinityEnabled: Bool = false,
@@ -76,7 +110,6 @@ public struct RSlider: View {
         self._value = value
         self.range = range
         self.originAngle = originAngle
-        self.isClockwise = isClockwise
         self.maxWinds = maxWinds
         self.tickSpacing = tickSpacing
         self.affinityEnabled = affinityEnabled
@@ -415,11 +448,11 @@ public struct RSlider: View {
                 let currentWindValue = percent * maxWinds
                 currentWind = floor(currentWindValue)
             }
-//            .onChange(of: value) { oldValue, newValue in
-//                guard !isActive else { return }
-//                let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
-//                let currentWindValue = percent * maxWinds
-//                currentWind = floor(currentWindValue)
-//            }
+            .onChange(of: value) { oldValue, newValue in
+                guard !isActive else { return }
+                let percent = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+                let currentWindValue = percent * maxWinds
+                currentWind = floor(currentWindValue)
+            }
     }
 }

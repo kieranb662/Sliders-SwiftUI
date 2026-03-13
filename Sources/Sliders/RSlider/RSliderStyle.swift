@@ -9,26 +9,42 @@ import SwiftUI
 
 // MARK: - Configuration
 
+/// A value type describing the current state of an ``RSlider``.
+///
+/// Styles receive an instance of `RSliderConfiguration` when creating the thumb, track, and
+/// tick marks. Most styles will use `value`, `percent`, `angle`, and `isActive`.
+///
+/// ## Winds
+/// When `maxWinds` is greater than `1`, the slider’s full value range spans multiple rotations.
+/// Use `currentWind` and `withinWind` to render progress for the current rotation.
+///
+/// ## Tick marks and affinity
+/// When tick marks are enabled, `tickValues` contains the resolved values that will be rendered.
+/// If affinity is enabled, `snappedTickValue` is the tick the thumb is currently snapped to.
 public struct RSliderConfiguration {
-    /// whether or not the slider is current disabled
+    /// Whether the slider is currently disabled.
     public let isDisabled: Bool
-    /// whether or not the thumb is dragging or not
+    /// Whether the user is actively dragging the thumb.
     public let isActive: Bool
-    /// The current value of the slider
+    /// The current value of the slider.
     public let value: Double
-    /// The direction from the thumb to the slider center
+    /// The direction from the thumb to the slider’s center.
+    ///
+    /// Styles typically use this for thumb placement/orientation.
     public let angle: Angle
-    /// The angle on the slider that corresponds to the minimum value
+    /// The angle on the slider that corresponds to the minimum value.
     public let originAngle: Angle
-    /// The minimum value of the sliders range
+    /// The minimum value of the slider’s range.
     public let min: Double
-    /// The maximum value of the sliders range
+    /// The maximum value of the slider’s range.
     public let max: Double
-    /// The fractional component within the current wind
+    /// The fractional component within the current wind.
+    ///
+    /// This value is in the range `[0, 1)` when `maxWinds` is positive.
     public let withinWind: Double
-    /// The current number of full rotations completed (fractional winds are possible)
+    /// The current number of full rotations completed.
     public let currentWind: Double
-    /// The maximum number of winds the slider spans
+    /// The maximum number of winds the slider spans.
     public let maxWinds: Double
     /// How tick marks are spaced, or `nil` if tick marks are disabled.
     public let tickMarkSpacing: TickMarkSpacing?
@@ -38,7 +54,11 @@ public struct RSliderConfiguration {
     public let affinityEnabled: Bool
     /// The tick-mark value the thumb is currently snapped to, or `nil` when not snapped.
     public let snappedTickValue: Double?
-    /// The current percent of total value
+
+    /// The slider’s normalized value in the range `0...1`.
+    ///
+    /// - Important: If `min == max`, this will divide by zero. ``RSlider`` is designed for
+    ///   non-empty ranges.
     public var percent: Double {
         (value - min) / (max - min)
     }
@@ -46,17 +66,34 @@ public struct RSliderConfiguration {
 
 // MARK: - Style
 
+/// A style that defines the appearance of an ``RSlider``.
+///
+/// Conform to `RSliderStyle` to provide a custom thumb and track for the radial slider.
+/// Tick marks are optional.
+///
+/// Apply a style using ``SwiftUI/View/radialSliderStyle(_:)``.
 public protocol RSliderStyle: Sendable {
+    /// The view used for the draggable thumb.
     associatedtype Thumb: View
+    /// The view used for the slider track.
     associatedtype Track: View
+    /// The view used for each tick mark.
     associatedtype TickMark: View
-    
+
+    /// Creates the draggable thumb.
+    /// - Parameter configuration: The current slider state.
     func makeThumb(configuration: RSliderConfiguration) -> Self.Thumb
+
+    /// Creates the track behind the thumb.
+    /// - Parameter configuration: The current slider state.
     func makeTrack(configuration: RSliderConfiguration) -> Self.Track
-    /// Returns the view displayed at a single tick mark position around the radial track.
+
+    /// Creates the view shown for a single tick mark.
+    ///
+    /// ``RSlider`` calls this once for each value in `configuration.tickValues`.
     /// - Parameters:
-    ///   - configuration: The current slider configuration.
-    ///   - tickValue: The value (in the slider's domain) at which this tick mark sits.
+    ///   - configuration: The current slider state.
+    ///   - tickValue: The value (in the slider’s domain) at which this tick mark sits.
     func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> Self.TickMark
 }
 
@@ -69,7 +106,7 @@ public extension RSliderStyle where Self == DefaultRSliderStyle {
     /// The built-in default radial slider style, with customizable parameters.
     ///
     /// Usage:
-    /// `RadialSlider(...).radialSliderStyle(.default(trackThickness: 18))`
+    /// `RSlider($value).radialSliderStyle(.default(trackThickness: 18))`
     static func `default`(
         trackColor: Color = Color(red: 0.55, green: 0.55, blue: 0.59),
         trackFilledColor: Color = Color(red: 0.084, green: 0.247, blue: 0.602),
@@ -90,7 +127,11 @@ public extension RSliderStyle where Self == DefaultRSliderStyle {
 public extension RSliderStyle where Self == KnobStyle {
     /// A knob-style radial slider.
     ///
-    /// This mirrors the SwiftUI pattern of creating a style via a static factory.
+    /// Usage:
+    /// `RSlider($value).radialSliderStyle(.knob)`
+    ///
+    /// Or with customization:
+    /// `RSlider($value).radialSliderStyle(.knob(thumbSize: 26))`
     static func knob(
         backgroundColor: Color = Color(red: 0, green: 0.1148955151, blue: 0.3572945595),
         strokeColor: Color = Color.white,
@@ -106,9 +147,9 @@ public extension RSliderStyle where Self == KnobStyle {
             thumbInset: thumbInset
         )
     }
-    
+
+    /// The knob preset with default parameters.
     static var knob: KnobStyle { KnobStyle() }
-        
 }
 
 public extension RSliderStyle {
@@ -137,6 +178,9 @@ public extension RSliderStyle {
     }
 }
 
+/// A type-erased radix slider style.
+///
+/// This is used to store an `RSliderStyle` in the SwiftUI environment.
 public struct AnyRSliderStyle: RSliderStyle, Sendable {
     private let _makeThumb: @Sendable (RSliderConfiguration) -> AnyView
     private let _makeTrack: @Sendable (RSliderConfiguration) -> AnyView
@@ -154,6 +198,7 @@ public struct AnyRSliderStyle: RSliderStyle, Sendable {
         _makeTickMark(configuration, tickValue)
     }
     
+    /// Creates an environment-storable wrapper around `style`.
     public init<S: RSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -161,11 +206,14 @@ public struct AnyRSliderStyle: RSliderStyle, Sendable {
     }
 }
 
+/// The environment key used by ``AnyRSliderStyle``.
 public struct RSliderStyleKey: EnvironmentKey {
+    /// The default style used when no custom style is provided.
     public static let defaultValue: AnyRSliderStyle = AnyRSliderStyle(DefaultRSliderStyle())
 }
 
 extension EnvironmentValues {
+    /// The current radial slider style stored in the environment.
     public var radialSliderStyle: AnyRSliderStyle {
         get {
             return self[RSliderStyleKey.self]
@@ -177,6 +225,9 @@ extension EnvironmentValues {
 }
 
 extension View {
+    /// Sets the style for ``RSlider`` instances within this view.
+    ///
+    /// This works like other SwiftUI style modifiers (for example, `buttonStyle(_:)`).
     public func radialSliderStyle<S>(_ style: S) -> some View where S: RSliderStyle {
         environment(\.radialSliderStyle, AnyRSliderStyle(style))
     }
@@ -184,6 +235,9 @@ extension View {
 
 // MARK: - Default Style
 
+/// The built-in default style for ``RSlider``.
+///
+/// This style draws a circular track with a filled arc and a circular thumb.
 public struct DefaultRSliderStyle: RSliderStyle, Sendable {
     
     let trackColor: Color
@@ -192,6 +246,8 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
     let thumbActiveColor: Color
     let trackThickness: Double
     
+    /// Creates the default style with customizable colors and track thickness.
+    /// - Parameter trackThickness: The stroke width of the circular track.
     public init(
         trackColor: Color = Color(red: 0.55, green: 0.55, blue: 0.59),
         trackFilledColor: Color = Color(red: 0.084, green: 0.247, blue: 0.602),
@@ -263,6 +319,9 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
 
 // MARK: - Knob Style
 
+/// A knob-like ``RSliderStyle`` with a circular face and a pointer indicator.
+///
+/// - Note: This style currently returns `EmptyView` for tick marks.
 public struct KnobStyle: RSliderStyle, Sendable {
     let backgroundColor: Color
     let strokeColor: Color
@@ -270,7 +329,14 @@ public struct KnobStyle: RSliderStyle, Sendable {
     let thumbSize: Double
     let thumbInset: Double
     
-    // Color(red: 0, green: 0.3979960084, blue: 0.5352870226)
+    /// Creates a knob style.
+    ///
+    /// - Parameters:
+    ///   - backgroundColor: The knob face fill color.
+    ///   - strokeColor: The dashed stroke color around the face.
+    ///   - thumbColor: The thumb fill color.
+    ///   - thumbSize: The thumb circle diameter.
+    ///   - thumbInset: How far the thumb is inset toward the center.
     public init(
         backgroundColor: Color = Color(red: 0, green: 0.1148955151, blue: 0.3572945595),
         strokeColor: Color = Color.white,
@@ -320,7 +386,7 @@ public struct KnobStyle: RSliderStyle, Sendable {
             )
     }
     
-    /// Returns an empty view for now
+    /// Returns an empty view (tick marks aren’t rendered by this style).
     public func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> some View {
         EmptyView()
     }

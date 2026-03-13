@@ -9,16 +9,24 @@
 import CoreHaptics
 import Foundation
 
-/// Manages CoreHaptics playback for the RSlider.
+/// Manages CoreHaptics playback for ``RSlider``.
 ///
-/// ### Event catalogue
-/// - ``playLimitHit()``         – sharp impact when the thumb reaches min or max.
-/// - ``playTick(intensity:)``   – light transient as the thumb crosses a tick mark.
-/// - ``playSnapIn()``           – two-pulse "magnetic pull" when affinity snaps the thumb onto a tick.
-/// - ``updateWindTension(_:)``  – continuous haptic engine that ramps intensity with the
-///   fractional wind position and fires a crisp pop each time a full wind boundary is crossed.
+/// ``RSlider`` uses this helper internally to provide tactile feedback while dragging.
+/// The type is public so custom components can reuse the same haptic vocabulary.
 ///
-/// Call ``prepare()`` before the first drag event and ``stopContinuous()`` when dragging ends.
+/// ## Event catalogue
+/// - ``playLimitHit()`` – sharp impact when the thumb reaches min or max.
+/// - ``playTick(intensity:)`` – light transient as the thumb crosses a tick mark.
+/// - ``playSnapIn()`` – two-pulse “magnetic pull” when affinity snaps onto a tick.
+/// - ``updateWindTension(_:)`` – a continuous “spring tension” feel used when tick marks
+///   are disabled.
+///
+/// ## Lifecycle
+/// - Call ``prepare()`` before playing any events (it’s safe to call multiple times).
+/// - While dragging, call one of the discrete event methods or `updateWindTension(_:)`.
+/// - When dragging ends, call ``releaseSpring()`` if you were using `updateWindTension(_:)`.
+///
+/// - Important: This class is `@MainActor`.
 @MainActor
 @Observable
 public final class RSliderHapticManager: Sendable {
@@ -34,7 +42,10 @@ public final class RSliderHapticManager: Sendable {
 
     // MARK: - Engine lifecycle
 
-    /// Prepares the haptic engine. Safe to call multiple times.
+    /// Prepares the haptic engine.
+    ///
+    /// This method is idempotent and safe to call multiple times.
+    /// If the current device doesn’t support haptics, this is a no-op.
     public func prepare() {
         guard CHHapticEngine.capabilitiesForHardware().supportsHaptics else { return }
         do {
@@ -60,7 +71,13 @@ public final class RSliderHapticManager: Sendable {
         }
     }
     
-    // Call this continuously as the user winds (gestureProgress: 0.0 → 1.0)
+    /// Updates the continuous “wind tension” feel.
+    ///
+    /// Call this repeatedly as the user drags when tick marks are disabled.
+    ///
+    /// - Parameter gestureProgress: A normalized progress value (typically `0...maxWinds` as used by
+    ///   ``RSlider``). Values outside the expected range are accepted, but may produce stronger or
+    ///   weaker feedback depending on hardware.
     public func updateWindTension(_ gestureProgress: Float) {
         let previousTension = tension
         tension = gestureProgress
@@ -76,6 +93,15 @@ public final class RSliderHapticManager: Sendable {
         
         // Play continuous friction buzz while winding
         updateContinuousHaptic(tension: tension)
+    }
+    
+    /// Stops the continuous wind tension and plays a release snap.
+    ///
+    /// Call this when the user ends the drag interaction (for example, in `DragGesture.onEnded`).
+    public func releaseSpring() {
+        playReleaseSnap()
+        stopContinuous()
+        tension = 0.0
     }
     
     // Discrete "click" feeling at each wind increment
@@ -159,13 +185,6 @@ public final class RSliderHapticManager: Sendable {
         }
     }
     
-    // Call when user releases — spring snaps back
-    public func releaseSpring() {
-        playReleaseSnap()
-        stopContinuous()
-        tension = 0.0
-    }
-    
     private func playReleaseSnap() {
         guard let engine else { return }
         
@@ -235,7 +254,7 @@ public final class RSliderHapticManager: Sendable {
     }
 
     /// Plays a subtle tick haptic as the thumb crosses a tick mark value.
-    /// - Parameter intensity: A value in 0…1 controlling the strength. Defaults to `0.6`.
+    /// - Parameter intensity: A value in `0...1` controlling the strength. Defaults to `0.6`.
     public func playTick(intensity: Float = 0.6) {
         guard isEngineReady, let engine else { return }
         do {
@@ -253,10 +272,10 @@ public final class RSliderHapticManager: Sendable {
         } catch { }
     }
 
-    /// Plays a two-pulse "magnetic pull" haptic when affinity snaps the thumb onto a tick mark.
+    /// Plays a two-pulse “magnetic pull” haptic when affinity snaps the thumb onto a tick mark.
     ///
-    /// A soft leading pulse (the "pull") is immediately followed by a firmer landing pulse
-    /// (the "snap"), giving the sensation of the thumb being drawn in and settling into place.
+    /// A soft leading pulse (the “pull”) is immediately followed by a firmer landing pulse
+    /// (the “snap”), giving the sensation of the thumb being drawn in and settling into place.
     public func playSnapIn() {
         guard isEngineReady, let engine else { return }
         do {
@@ -288,16 +307,28 @@ public final class RSliderHapticManager: Sendable {
 #else
 import Foundation
 
-/// Stub for platforms that don't support CoreHaptics (e.g. macOS < 10.15, watchOS).
+/// Fallback implementation for platforms that don’t support CoreHaptics.
+///
+/// All methods are no-ops.
 @MainActor
 @Observable
 public final class RSliderHapticManager: Sendable {
+    /// Creates a no-op haptic manager.
     public init() {}
+
+    /// No-op on platforms without CoreHaptics.
     public func prepare() {}
+    /// No-op on platforms without CoreHaptics.
     public func playLimitHit() {}
+    /// No-op on platforms without CoreHaptics.
     public func playTick(intensity: Float = 0.6) {}
+    /// No-op on platforms without CoreHaptics.
     public func playSnapIn() {}
+
+    /// No-op on platforms without CoreHaptics.
     public func updateWindTension(_ gestureProgress: Float) {}
+
+    /// No-op on platforms without CoreHaptics.
     public func releaseSpring() {}
 }
 #endif
