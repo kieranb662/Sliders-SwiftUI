@@ -1,9 +1,8 @@
+// Swift toolchain version 6.0
+// Running macOS version 26.3
+// Created on 3/25/20.
 //
-//  RadialSlider.swift
-//  MyExamples
-//
-//  Created by Kieran Brown on 3/25/20.
-//  Copyright © 2020 BrownandSons. All rights reserved.
+// Author: Kieran Brown
 //
 
 import SwiftUI

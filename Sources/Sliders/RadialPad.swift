@@ -1,9 +1,8 @@
+// Swift toolchain version 6.0
+// Running macOS version 26.3
+// Created on 4/7/20.
 //
-//  RadialPad.swift
-//  MyExamples
-//
-//  Created by Kieran Brown on 4/7/20.
-//  Copyright © 2020 BrownandSons. All rights reserved.
+// Author: Kieran Brown
 //
 
 import SwiftUI
