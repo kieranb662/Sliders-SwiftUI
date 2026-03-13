@@ -7,33 +7,6 @@ import SwiftUI
 
 // MARK: - Preview Styles
 
-struct CircularArc: Shape {
-    var percent: Double
-    var animatableData: Double {
-        get { percent }
-        set { percent = newValue }
-    }
-    
-    var inset: CGFloat = 0.0
-    
-    func path(in rect: CGRect) -> Path {
-        let rect = rect.insetBy(dx: inset, dy: inset)
-        
-        return Circle()
-            .path(in: rect)
-            .trimmedPath(from: 0, to: percent)
-    }
-}
-
-extension CircularArc: InsettableShape {
-    func inset(by amount: CGFloat) -> some InsettableShape {
-        var arc = self
-        arc.inset += amount
-        return arc
-    }
-}
-
-
 struct DiagnosticRSliderStyle: RSliderStyle {
     let thickness = 24.0
     
@@ -122,4 +95,20 @@ struct DiagnosticRSliderStyle: RSliderStyle {
             .font(.caption)
     }
     .padding()
+}
+
+
+#Preview("Style Comparison") {
+    @Previewable @State var a = 0.75
+    @Previewable @State var b = 0.75
+    @Previewable @State var c = 0.75
+    
+    VStack(spacing: 16) {
+        RSlider($a)
+            
+        RSlider($b, tickSpacing: .count(10))
+        
+        RSlider($c)
+            .radialSliderStyle(KnobStyle())
+    }
 }

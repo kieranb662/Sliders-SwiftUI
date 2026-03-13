@@ -50,7 +50,7 @@ public protocol RSliderStyle: Sendable {
     associatedtype Thumb: View
     associatedtype Track: View
     associatedtype TickMark: View
-
+    
     func makeThumb(configuration: RSliderConfiguration) -> Self.Thumb
     func makeTrack(configuration: RSliderConfiguration) -> Self.Track
     /// Returns the view displayed at a single tick mark position around the radial track.
@@ -70,7 +70,7 @@ public extension RSliderStyle {
     func makeTickMarkTypeErased(configuration: RSliderConfiguration, tickValue: Double) -> AnyView {
         AnyView(self.makeTickMark(configuration: configuration, tickValue: tickValue))
     }
-
+    
     /// Default tick mark: a small white circle that brightens near the thumb.
     func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> some View {
         let range = configuration.max - configuration.min
@@ -90,19 +90,19 @@ public struct AnyRSliderStyle: RSliderStyle, Sendable {
     private let _makeThumb: @Sendable (RSliderConfiguration) -> AnyView
     private let _makeTrack: @Sendable (RSliderConfiguration) -> AnyView
     private let _makeTickMark: @Sendable (RSliderConfiguration, Double) -> AnyView
-
+    
     public func makeThumb(configuration: RSliderConfiguration) -> some View {
         _makeThumb(configuration)
     }
-
+    
     public func makeTrack(configuration: RSliderConfiguration) -> some View {
         _makeTrack(configuration)
     }
-
+    
     public func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> some View {
         _makeTickMark(configuration, tickValue)
     }
-
+    
     public init<S: RSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
@@ -134,29 +134,54 @@ extension View {
 // MARK: - Default Style
 
 public struct DefaultRSliderStyle: RSliderStyle, Sendable {
-    public init() { }
-
+    
+    let trackColor: Color
+    let trackFilledColor: Color
+    let thumbInactiveColor: Color
+    let thumbActiveColor: Color
+    let trackThickness: Double
+    
+    public init(
+        trackColor: Color = Color(red: 0.55, green: 0.55, blue: 0.59),
+        trackFilledColor: Color = Color(red: 0.084, green: 0.247, blue: 0.602),
+        thumbInactiveColor: Color = Color.white,
+        thumbActiveColor: Color = Color(red: 0.204, green: 0.648, blue: 0.855),
+        trackThickness: Double = 24.0
+    ) {
+        self.trackColor = trackColor
+        self.trackFilledColor = trackFilledColor
+        self.thumbInactiveColor = thumbInactiveColor
+        self.thumbActiveColor = thumbActiveColor
+        self.trackThickness = trackThickness
+    }
+    
     public func makeThumb(configuration: RSliderConfiguration) -> some View {
         Circle()
-            .frame(width: 30, height: 30)
-            .foregroundColor(configuration.isActive ? Color.yellow : Color.white)
+            .fill(configuration.isActive ? thumbInactiveColor : thumbActiveColor)
+            .frame(width: trackThickness * 2, height: trackThickness * 2)
+            .shadow(
+                color: Color.black.opacity(0.2),
+                radius: configuration.isActive ? 5 : 2
+            )
+            .offset(x: -trackThickness * cos(configuration.angle.radians),
+                    y: -trackThickness * sin(configuration.angle.radians))
     }
-
+    
     public func makeTrack(configuration: RSliderConfiguration) -> some View {
-        // How far around the circle the thumb is within the current wind (0–1)
-        let withinWind = configuration.maxWinds > 0
-            ? (configuration.currentWind + (configuration.value - configuration.min) / (configuration.max - configuration.min) * configuration.maxWinds)
-                .truncatingRemainder(dividingBy: 1.0)
-            : 0.0
         return ZStack {
             Circle()
-                .stroke(Color.gray, style: StrokeStyle(lineWidth: 10, lineCap: .round))
-            Circle()
-                .trim(from: 0, to: CGFloat(withinWind))
-                .stroke(Color.purple, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+                .strokeBorder(trackColor, lineWidth: trackThickness)
+            
+            CircularArc(
+                percent: configuration.percent == 1 && configuration.maxWinds >= 1
+                ? 1.0
+                : configuration.withinWind
+            )
+            .strokeBorder(trackFilledColor, lineWidth: trackThickness)
         }
+        .padding(trackThickness / 2)
     }
-
+    
     /// A small circle that grows and brightens as the thumb approaches this tick mark.
     public func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> some View {
         let range = configuration.max - configuration.min
@@ -167,15 +192,15 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
         let tickPct  = (tickValue          - configuration.min) / range
         let distance = abs(thumbPct - tickPct)
         let proximity = max(0, 1 - distance / 0.20)
-
+        
         let baseSize:  Double = 4
         let maxGrowth: Double = 6
         let size = baseSize + maxGrowth * proximity
-
+        
         let baseOpacity:  Double = 0.35
         let maxOpacity:   Double = 1.00
         let opacity = baseOpacity + (maxOpacity - baseOpacity) * proximity
-
+        
         return AnyView(
             Circle()
                 .fill(Color.white.opacity(opacity))
@@ -188,47 +213,64 @@ public struct DefaultRSliderStyle: RSliderStyle, Sendable {
 // MARK: - Knob Style
 
 public struct KnobStyle: RSliderStyle {
-    public init() { }
-
+    let backgroundColor: Color
+    let strokeColor: Color
+    let thumbColor: Color
+    let thumbSize: Double
+    let thumbInset: Double
+    
+    // Color(red: 0, green: 0.3979960084, blue: 0.5352870226)
+    public init(
+        backgroundColor: Color = Color(red: 0, green: 0.1148955151, blue: 0.3572945595),
+        strokeColor: Color = Color.white,
+        thumbColor: Color = Color.white,
+        thumbSize: Double = 30,
+        thumbInset: Double = 30
+    ) {
+        self.backgroundColor = backgroundColor
+        self.strokeColor = strokeColor
+        self.thumbColor = thumbColor
+        self.thumbSize = thumbSize
+        self.thumbInset = thumbInset
+    }
+    
     public func makeThumb(configuration: RSliderConfiguration) -> some View {
-        let gradient = RadialGradient(gradient: Gradient(colors: [.gray, .white]), center: .center, startRadius: 0, endRadius: 80)
         return Circle()
-            .fill(gradient)
-            .frame(width: 40)
+            .fill(thumbColor)
+            .frame(width: thumbSize)
             .shadow(radius: 1)
+            .overlay(
+                Image(systemName: "triangle.fill")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .foregroundStyle(backgroundColor)
+                    .padding(.horizontal, 4)
+                    .offset(y: -2)
+                    .rotationEffect(
+                        configuration.angle + configuration.originAngle + .degrees(90)
+                    )
+            )
+            .offset(
+                x: -thumbInset * cos(configuration.angle.radians),
+                y: -thumbInset * sin(configuration.angle.radians)
+            )
     }
-
+    
     public func makeTrack(configuration: RSliderConfiguration) -> some View {
-        // Total rotation in degrees across all completed winds plus position in current wind
-        let totalDegrees = configuration.maxWinds > 0
-            ? 360.0 * (configuration.currentWind + (configuration.value - configuration.min) / (configuration.max - configuration.min) * configuration.maxWinds)
-                .truncatingRemainder(dividingBy: 1.0) / configuration.maxWinds
-                + 360.0 * configuration.currentWind / configuration.maxWinds
-            : 0.0
-        return Circle().frame(width: 150)
-            .foregroundColor(.clear)
-            .overlay(ZStack {
+        return Circle()
+            .foregroundStyle(backgroundColor)
+            .overlay(
                 Circle()
-                    .fill(
-                        RadialGradient(gradient: Gradient(colors: [.blue, Color(white: 0.2)]),
-                                       center: .center,
-                                       startRadius: 0,
-                                       endRadius: 300)
+                    .strokeBorder(
+                        strokeColor,
+                        style: StrokeStyle(lineWidth: 1, dash: [3,3])
                     )
-                    .drawingGroup(opaque: false, colorMode: .extendedLinear)
-                    .overlay(
-                        Circle()
-                            .stroke(Color.white, style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, miterLimit: 0, dash: [6], dashPhase: 0))
-                    )
-            }
-            .rotationEffect(Angle(degrees: totalDegrees))
-            .scaleEffect(1.50))
+                    .rotationEffect(configuration.angle)
+            )
     }
-
-    /// Returns a simple tick mark: a small white circle.
+    
+    /// Returns an empty view for now
     public func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> some View {
-        Circle()
-            .fill(Color.white)
-            .frame(width: 4, height: 4)
+        EmptyView()
     }
 }
