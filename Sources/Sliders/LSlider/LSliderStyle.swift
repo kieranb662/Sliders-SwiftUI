@@ -81,6 +81,7 @@ public protocol LSliderStyle: Sendable {
     associatedtype Thumb: View
     associatedtype Track: View
     associatedtype TickMark: View
+    associatedtype LabelContainer: View
 
     /// Creates the draggable thumb view.
     ///
@@ -100,6 +101,13 @@ public protocol LSliderStyle: Sendable {
     ///   - configuration: The current slider configuration.
     ///   - tickValue: The value (in the slider's domain) at which this tick mark sits.
     func makeTickMark(configuration: LSliderConfiguration, tickValue: Double) -> Self.TickMark
+
+    /// Creates the styled container for a thumb label.
+    ///
+    /// - Parameters:
+    ///   - configuration: The current slider configuration.
+    ///   - content: The pre-styled label view provided by the caller.
+    func makeLabel(configuration: LSliderConfiguration, content: AnyView) -> Self.LabelContainer
 }
 
 public extension LSliderStyle {
@@ -117,6 +125,26 @@ public extension LSliderStyle {
     func makeTickMarkTypeErased(configuration: LSliderConfiguration, tickValue: Double) -> AnyView {
         AnyView(self.makeTickMark(configuration: configuration, tickValue: tickValue))
     }
+
+    /// Type-erases ``makeLabel(configuration:content:)`` for storage in ``AnyLSliderStyle``.
+    func makeLabelTypeErased(configuration: LSliderConfiguration, content: AnyView) -> AnyView {
+        AnyView(self.makeLabel(configuration: configuration, content: content))
+    }
+
+    /// Default label: the current value in a floating capsule.
+    func makeLabel(configuration: LSliderConfiguration, content: AnyView) -> some View {
+        content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, y: 1)
+            )
+            .scaleEffect(configuration.isActive ? 1.0 : 0.8)
+            .opacity(configuration.isActive ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isActive)
+    }
 }
 
 // MARK: - AnyLSliderStyle
@@ -129,6 +157,7 @@ public struct AnyLSliderStyle: LSliderStyle, Sendable {
     private let _makeThumb: @Sendable (LSliderConfiguration) -> AnyView
     private let _makeTrack: @Sendable (LSliderConfiguration) -> AnyView
     private let _makeTickMark: @Sendable (LSliderConfiguration, Double) -> AnyView
+    private let _makeLabel: @Sendable (LSliderConfiguration, AnyView) -> AnyView
 
     public func makeThumb(configuration: LSliderConfiguration) -> some View {
         _makeThumb(configuration)
@@ -142,11 +171,16 @@ public struct AnyLSliderStyle: LSliderStyle, Sendable {
         _makeTickMark(configuration, tickValue)
     }
 
+    public func makeLabel(configuration: LSliderConfiguration, content: AnyView) -> some View {
+        _makeLabel(configuration, content)
+    }
+
     /// Creates a type-erased wrapper around `style`.
     public init<S: LSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
         self._makeTickMark = style.makeTickMarkTypeErased
+        self._makeLabel = style.makeLabelTypeErased
     }
 }
 

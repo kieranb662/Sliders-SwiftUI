@@ -52,7 +52,7 @@ import SwiftUI
 ///
 /// Apply your style with `.radialPadStyle(MyStyle())`.
 ///
-public struct RadialPad: View {
+public struct RadialPad<LabelView: View>: View {
     // MARK: - Environment / internal state
 
     @Environment(\.radialPadStyle) private var style: AnyRadialPadStyle
@@ -107,11 +107,19 @@ public struct RadialPad: View {
     /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
     public var allowsSingleTapSelect: Bool = false
 
+    /// The user-provided label view displayed near the thumb.
+    private var label: (_ offset: Double, _ angle: Angle) -> LabelView
+
     // MARK: - Initialisers
 
-    public init(offset: Binding<Double>, angle: Binding<Angle>) {
+    public init(
+        offset: Binding<Double>,
+        angle: Binding<Angle>,
+        @ViewBuilder label: @escaping (_ offset: Double, _ angle: Angle) -> LabelView
+    ) {
         self._offset = offset
         self._angle  = angle
+        self.label = label
     }
 
     // MARK: - Fluent configuration modifiers
@@ -339,6 +347,12 @@ public struct RadialPad: View {
 
     // MARK: - View
 
+    /// Computes the offset to position a label above the thumb.
+    private func labelOffset(_ proxy: GeometryProxy) -> CGSize {
+        let thumb = thumbOffset(proxy, r: offset, theta: angle)
+        return CGSize(width: thumb.width, height: thumb.height - 36)
+    }
+
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: makeConfiguration())
@@ -403,10 +417,35 @@ public struct RadialPad: View {
                                 }
                         )
                         .allowsHitTesting(isEnabled)
+
+                    // ── Label (floating above the thumb) ─────────────────────
+                    if labelsVisibility != .hidden {
+                        style.makeLabel(configuration: makeConfiguration(), content: AnyView(label(offset, angle)))
+                            .fixedSize()
+                            .offset(labelOffset(proxy))
+                            .allowsHitTesting(false)
+                    }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
         .coordinateSpace(name: space)
+    }
+}
+
+extension RadialPad where LabelView == Text {
+    
+    // MARK: - Initialisers
+
+    public init(
+        offset: Binding<Double>,
+        angle: Binding<Angle>,
+        @ViewBuilder label: @escaping (_ offset: Double, _ angle: Angle) -> LabelView = { offset, angle in
+            Text("\(Text(offset, format: .number.precision(.fractionLength(2)))) @ \(Text(angle.degrees, format: .number.precision(.fractionLength(0))))°")
+        }
+    ) {
+        self._offset = offset
+        self._angle  = angle
+        self.label = label
     }
 }

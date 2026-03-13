@@ -79,6 +79,8 @@ public protocol RSliderStyle: Sendable {
     associatedtype Track: View
     /// The view used for each tick mark.
     associatedtype TickMark: View
+    /// The view used as a styled label container.
+    associatedtype LabelContainer: View
 
     /// Creates the draggable thumb.
     /// - Parameter configuration: The current slider state.
@@ -95,6 +97,9 @@ public protocol RSliderStyle: Sendable {
     ///   - configuration: The current slider state.
     ///   - tickValue: The value (in the slider’s domain) at which this tick mark sits.
     func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> Self.TickMark
+
+    /// Creates the styled container for a thumb label.
+    func makeLabel(configuration: RSliderConfiguration, content: AnyView) -> Self.LabelContainer
 }
 
 // MARK: - SwiftUI-style presets
@@ -162,6 +167,9 @@ public extension RSliderStyle {
     func makeTickMarkTypeErased(configuration: RSliderConfiguration, tickValue: Double) -> AnyView {
         AnyView(self.makeTickMark(configuration: configuration, tickValue: tickValue))
     }
+    func makeLabelTypeErased(configuration: RSliderConfiguration, content: AnyView) -> AnyView {
+        AnyView(self.makeLabel(configuration: configuration, content: content))
+    }
     
     /// Default tick mark: a small white circle that brightens near the thumb.
     func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> some View {
@@ -176,6 +184,21 @@ public extension RSliderStyle {
             .frame(width: size, height: size)
             .animation(.easeOut(duration: 0.1), value: proximity)
     }
+    
+    /// Default label: the current value in a floating capsule.
+    func makeLabel(configuration: RSliderConfiguration, content: AnyView) -> some View {
+        content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, y: 1)
+            )
+            .scaleEffect(configuration.isActive ? 1.0 : 0.8)
+            .opacity(configuration.isActive ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isActive)
+    }
 }
 
 /// A type-erased radix slider style.
@@ -185,6 +208,7 @@ public struct AnyRSliderStyle: RSliderStyle, Sendable {
     private let _makeThumb: @Sendable (RSliderConfiguration) -> AnyView
     private let _makeTrack: @Sendable (RSliderConfiguration) -> AnyView
     private let _makeTickMark: @Sendable (RSliderConfiguration, Double) -> AnyView
+    private let _makeLabel: @Sendable (RSliderConfiguration, AnyView) -> AnyView
     
     public func makeThumb(configuration: RSliderConfiguration) -> some View {
         _makeThumb(configuration)
@@ -197,12 +221,17 @@ public struct AnyRSliderStyle: RSliderStyle, Sendable {
     public func makeTickMark(configuration: RSliderConfiguration, tickValue: Double) -> some View {
         _makeTickMark(configuration, tickValue)
     }
+
+    public func makeLabel(configuration: RSliderConfiguration, content: AnyView) -> some View {
+        _makeLabel(configuration, content)
+    }
     
     /// Creates an environment-storable wrapper around `style`.
     public init<S: RSliderStyle>(_ style: S) {
         self._makeThumb = style.makeThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
         self._makeTickMark = style.makeTickMarkTypeErased
+        self._makeLabel = style.makeLabelTypeErased
     }
 }
 

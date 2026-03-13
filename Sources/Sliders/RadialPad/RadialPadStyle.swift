@@ -96,6 +96,7 @@ public protocol RadialPadStyle: Sendable {
     associatedtype Thumb: View
     associatedtype PreviousValueIndicator: View
     associatedtype TickMarks: View
+    associatedtype LabelContainer: View
 
     func makeTrack(configuration: RadialPadConfiguration) -> Self.Track
     func makeThumb(configuration: RadialPadConfiguration) -> Self.Thumb
@@ -109,6 +110,9 @@ public protocol RadialPadStyle: Sendable {
     /// The view is sized to fill the full circular track area.
     /// A default implementation is provided.
     func makeTickMarks(configuration: RadialPadConfiguration) -> Self.TickMarks
+
+    /// Creates the styled container for a thumb label.
+    func makeLabel(configuration: RadialPadConfiguration, content: AnyView) -> Self.LabelContainer
 }
 
 // MARK: - Default implementations
@@ -126,6 +130,9 @@ public extension RadialPadStyle {
     }
     func makeTickMarksTypeErased(configuration: RadialPadConfiguration) -> AnyView {
         AnyView(self.makeTickMarks(configuration: configuration))
+    }
+    func makeLabelTypeErased(configuration: RadialPadConfiguration, content: AnyView) -> AnyView {
+        AnyView(self.makeLabel(configuration: configuration, content: content))
     }
 
     /// Default previous-value indicator: a dim radial ring + crosshair that brightens
@@ -216,6 +223,21 @@ public extension RadialPadStyle {
             }
         }
     }
+
+    /// Default label: the current value in a floating capsule that appears when active.
+    func makeLabel(configuration: RadialPadConfiguration, content: AnyView) -> some View {
+        content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, y: 1)
+            )
+            .scaleEffect(configuration.isActive ? 1.0 : 0.8)
+            .opacity(configuration.isActive ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isActive)
+    }
 }
 
 // MARK: - Angular helpers (file-private)
@@ -235,6 +257,7 @@ public struct AnyRadialPadStyle: RadialPadStyle, Sendable {
     private let _makeThumb: @Sendable (RadialPadConfiguration) -> AnyView
     private let _makePreviousValueIndicator: @Sendable (RadialPadConfiguration) -> AnyView
     private let _makeTickMarks: @Sendable (RadialPadConfiguration) -> AnyView
+    private let _makeLabel: @Sendable (RadialPadConfiguration, AnyView) -> AnyView
 
     public func makeTrack(configuration: RadialPadConfiguration) -> some View {
         _makeTrack(configuration)
@@ -248,12 +271,16 @@ public struct AnyRadialPadStyle: RadialPadStyle, Sendable {
     public func makeTickMarks(configuration: RadialPadConfiguration) -> some View {
         _makeTickMarks(configuration)
     }
+    public func makeLabel(configuration: RadialPadConfiguration, content: AnyView) -> some View {
+        _makeLabel(configuration, content)
+    }
 
     public init<S: RadialPadStyle>(_ style: S) {
         self._makeTrack = style.makeTrackTypeErased
         self._makeThumb = style.makeThumbTypeErased
         self._makePreviousValueIndicator = style.makePreviousValueIndicatorTypeErased
         self._makeTickMarks = style.makeTickMarksTypeErased
+        self._makeLabel = style.makeLabelTypeErased
     }
 }
 

@@ -45,7 +45,7 @@ import SwiftUI
 ///   - `makeTickMark(configuration:tickValue:)` – the view shown at each tick position
 ///
 /// Apply your style with `.linearSliderStyle(MyStyle())`.
-public struct LSlider: View {
+public struct LSlider<LabelView: View>: View {
     // MARK: State and Setup
     @Environment(\.linearSliderStyle) private var style: AnyLSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
@@ -75,6 +75,9 @@ public struct LSlider: View {
     /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
     private var allowsSingleTapSelect: Bool = false
 
+    /// The user-provided label view displayed near the thumb.
+    private var label: (Double) -> LabelView
+    
     // MARK: - Initialisers
 
     /// Creates a linear slider that controls `value` within `range` and is rendered at `angle`.
@@ -98,6 +101,7 @@ public struct LSlider: View {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks.
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
+    ///   - label: A view builder closure that creates the label view.
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
@@ -108,7 +112,8 @@ public struct LSlider: View {
         hapticFeedbackEnabled: Bool = true,
         affinityEnabled: Bool = false,
         affinityRadius: Double = 0.04,
-        affinityResistance: Double = 0.02
+        affinityResistance: Double = 0.02,
+        @ViewBuilder label: @escaping (Double) -> LabelView
     ) {
         self._value = value
         self.range = range
@@ -120,6 +125,7 @@ public struct LSlider: View {
         self.affinityEnabled = affinityEnabled
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
+        self.label = label
     }
 
     /// Creates a linear slider that controls `value` within `range`.
@@ -136,6 +142,7 @@ public struct LSlider: View {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
+    ///   - label: A view builder closure that creates the label view.
     public init(
         _ value: Binding<Double>,
         range: ClosedRange<Double>,
@@ -145,7 +152,8 @@ public struct LSlider: View {
         hapticFeedbackEnabled: Bool = true,
         affinityEnabled: Bool = false,
         affinityRadius: Double = 0.04,
-        affinityResistance: Double = 0.02
+        affinityResistance: Double = 0.02,
+        @ViewBuilder label: @escaping (Double) -> LabelView
     ) {
         self._value = value
         self.range = range
@@ -156,6 +164,7 @@ public struct LSlider: View {
         self.affinityEnabled = affinityEnabled
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
+        self.label = label
     }
 
     /// Creates a linear slider that controls `value` and is rendered at `angle`.
@@ -172,6 +181,7 @@ public struct LSlider: View {
     ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
     ///   - affinityRadius: Pull radius as a fraction of the total value range.
     ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
+    ///   - label: A view builder closure that creates the label view.
     public init(
         _ value: Binding<Double>,
         angle: Angle,
@@ -181,7 +191,8 @@ public struct LSlider: View {
         hapticFeedbackEnabled: Bool = true,
         affinityEnabled: Bool = false,
         affinityRadius: Double = 0.04,
-        affinityResistance: Double = 0.02
+        affinityResistance: Double = 0.02,
+        @ViewBuilder label: @escaping (Double) -> LabelView
     ) {
         self._value = value
         self.angle = angle
@@ -192,6 +203,7 @@ public struct LSlider: View {
         self.affinityEnabled = affinityEnabled
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
+        self.label = label
     }
 
     /// Creates a linear slider with default configuration.
@@ -206,8 +218,12 @@ public struct LSlider: View {
     /// - `affinityEnabled`: `false`
     ///
     /// - Parameter value: A binding to the value being edited.
-    public init(_ value: Binding<Double>) {
+    public init(
+        _ value: Binding<Double>,
+        @ViewBuilder label: @escaping (Double) -> LabelView
+    ) {
         self._value = value
+        self.label = label
     }
 
     // MARK: - Tick Mark Value Resolution
@@ -451,6 +467,20 @@ public struct LSlider: View {
 
     // MARK: - View
 
+    /// Computes the perpendicular offset to position a label above the thumb.
+    private func labelOffset(_ proxy: GeometryProxy) -> CGSize {
+        let thumb = thumbOffset(proxy)
+        let θ = angle.radians
+        // Perpendicular direction (90° counter-clockwise from the track angle)
+        let perpX = -sin(θ)
+        let perpY = cos(θ)
+        let labelDistance = trackThickness * 2 + 16
+        return CGSize(
+            width:  thumb.width  + perpX * labelDistance,
+            height: thumb.height - perpY * labelDistance
+        )
+    }
+
     public var body: some View {
         GeometryReader { geo in
             let config = configuration
@@ -493,8 +523,166 @@ public struct LSlider: View {
                     .offset(thumbOffset(geo))
                     .simultaneousGesture(makeGesture(geo))
                     .allowsHitTesting(isEnabled)
+
+                // Label (floating above the thumb)
+                if labelsVisibility != .hidden {
+                    style.makeLabel(configuration: config, content: AnyView(label(value)))
+                        .fixedSize()
+                        .offset(labelOffset(geo))
+                        .allowsHitTesting(false)
+                }
             }
             .coordinateSpace(name: space)
         }
+    }
+}
+
+extension LSlider where LabelView == Text {
+    // MARK: - Initialisers
+
+    /// Creates a linear slider that controls `value` within `range` and is rendered at `angle`.
+    ///
+    /// The slider can optionally show tick marks (see `tickMarkSpacing`) and can provide
+    /// haptic feedback as the thumb crosses those tick marks.
+    ///
+    /// If `affinityEnabled` is `true` and tick marks are configured, the thumb will
+    /// magnetically snap to nearby tick marks.
+    ///
+    /// - Important: `affinityEnabled` has no effect when `tickMarkSpacing` is `nil`.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the value being edited.
+    ///   - range: The minimum and maximum bounds for `value`.
+    ///   - angle: The angle of the slider’s track.
+    ///   - keepThumbInTrack: If `true`, the thumb’s center is constrained to stay within the track’s end caps.
+    ///   - trackThickness: The thickness of the track, used by layout and the default style.
+    ///   - tickMarkSpacing: How tick marks are spaced, or `nil` to hide them.
+    ///   - hapticFeedbackEnabled: If `true`, crossing a tick mark may trigger haptics (best-effort, device-dependent).
+    ///   - affinityEnabled: Enables magnetic snapping to tick marks.
+    ///   - affinityRadius: Pull radius as a fraction of the total value range.
+    ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        _ value: Binding<Double>,
+        range: ClosedRange<Double>,
+        angle: Angle,
+        keepThumbInTrack: Bool = false,
+        trackThickness: Double = 20,
+        tickMarkSpacing: TickMarkSpacing? = nil,
+        hapticFeedbackEnabled: Bool = true,
+        affinityEnabled: Bool = false,
+        affinityRadius: Double = 0.04,
+        affinityResistance: Double = 0.02,
+        @ViewBuilder label: @escaping (Double) -> LabelView = { Text($0, format: .number.precision(.fractionLength(2))) }
+    ) {
+        self._value = value
+        self.range = range
+        self.angle = angle
+        self.keepThumbInTrack = keepThumbInTrack
+        self.trackThickness = trackThickness
+        self.tickMarkSpacing = tickMarkSpacing
+        self.hapticFeedbackEnabled = hapticFeedbackEnabled
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
+        self.label = label
+    }
+
+    /// Creates a linear slider that controls `value` within `range`.
+    ///
+    /// This overload uses a default `angle` of `.zero` (horizontal).
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the value being edited.
+    ///   - range: The minimum and maximum bounds for `value`.
+    ///   - keepThumbInTrack: If `true`, the thumb’s center is constrained to stay within the track’s end caps.
+    ///   - trackThickness: The thickness of the track, used by layout and the default style.
+    ///   - tickMarkSpacing: How tick marks are spaced, or `nil` to hide them.
+    ///   - hapticFeedbackEnabled: If `true`, crossing a tick mark may trigger haptics (best-effort, device-dependent).
+    ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
+    ///   - affinityRadius: Pull radius as a fraction of the total value range.
+    ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        _ value: Binding<Double>,
+        range: ClosedRange<Double>,
+        keepThumbInTrack: Bool = false,
+        trackThickness: Double = 20,
+        tickMarkSpacing: TickMarkSpacing? = nil,
+        hapticFeedbackEnabled: Bool = true,
+        affinityEnabled: Bool = false,
+        affinityRadius: Double = 0.04,
+        affinityResistance: Double = 0.02,
+        @ViewBuilder label: @escaping (Double) -> LabelView = { Text($0, format: .number.precision(.fractionLength(2))) }
+    ) {
+        self._value = value
+        self.range = range
+        self.keepThumbInTrack = keepThumbInTrack
+        self.trackThickness = trackThickness
+        self.tickMarkSpacing = tickMarkSpacing
+        self.hapticFeedbackEnabled = hapticFeedbackEnabled
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
+        self.label = label
+    }
+
+    /// Creates a linear slider that controls `value` and is rendered at `angle`.
+    ///
+    /// This overload uses a default `range` of `0...1`.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the value being edited.
+    ///   - angle: The angle of the slider’s track.
+    ///   - keepThumbInTrack: If `true`, the thumb’s center is constrained to stay within the track’s end caps.
+    ///   - trackThickness: The thickness of the track, used by layout and the default style.
+    ///   - tickMarkSpacing: How tick marks are spaced, or `nil` to hide them.
+    ///   - hapticFeedbackEnabled: If `true`, crossing a tick mark may trigger haptics (best-effort, device-dependent).
+    ///   - affinityEnabled: Enables magnetic snapping to tick marks (requires `tickMarkSpacing != nil`).
+    ///   - affinityRadius: Pull radius as a fraction of the total value range.
+    ///   - affinityResistance: Extra escape distance (fraction of range) beyond the pull radius required to leave a snap.
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        _ value: Binding<Double>,
+        angle: Angle,
+        keepThumbInTrack: Bool = false,
+        trackThickness: Double = 20,
+        tickMarkSpacing: TickMarkSpacing? = nil,
+        hapticFeedbackEnabled: Bool = true,
+        affinityEnabled: Bool = false,
+        affinityRadius: Double = 0.04,
+        affinityResistance: Double = 0.02,
+        @ViewBuilder label: @escaping (Double) -> LabelView = { Text($0, format: .number.precision(.fractionLength(2))) }
+    ) {
+        self._value = value
+        self.angle = angle
+        self.keepThumbInTrack = keepThumbInTrack
+        self.trackThickness = trackThickness
+        self.tickMarkSpacing = tickMarkSpacing
+        self.hapticFeedbackEnabled = hapticFeedbackEnabled
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
+        self.label = label
+    }
+
+    /// Creates a linear slider with default configuration.
+    ///
+    /// Defaults:
+    /// - `range`: `0...1`
+    /// - `angle`: `.zero`
+    /// - `keepThumbInTrack`: `false`
+    /// - `trackThickness`: `20`
+    /// - `tickMarkSpacing`: `nil` (no tick marks)
+    /// - `hapticFeedbackEnabled`: `true`
+    /// - `affinityEnabled`: `false`
+    ///
+    /// - Parameter value: A binding to the value being edited.
+    public init(
+        _ value: Binding<Double>,
+        @ViewBuilder label: @escaping (Double) -> LabelView = { Text($0, format: .number.precision(.fractionLength(2))) }
+    ) {
+        self._value = value
+        self.label = label
     }
 }

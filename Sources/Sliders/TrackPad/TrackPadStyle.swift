@@ -99,6 +99,8 @@ public protocol TrackPadStyle: Sendable {
     associatedtype PreviousValueIndicator: View
     /// The view used to render tick-mark intersections inside the track.
     associatedtype TickMarks: View
+    /// The view used as a styled label container.
+    associatedtype LabelContainer: View
 
     /// Creates the draggable thumb.
     func makeThumb(configuration: TrackPadConfiguration) -> Self.Thumb
@@ -118,6 +120,9 @@ public protocol TrackPadStyle: Sendable {
     /// The view is sized to fill the full track area, so you can use a `GeometryReader`
     /// inside to position individual marks. A default implementation is provided.
     func makeTickMarks(configuration: TrackPadConfiguration) -> Self.TickMarks
+
+    /// Creates the styled container for a thumb label.
+    func makeLabel(configuration: TrackPadConfiguration, content: AnyView) -> Self.LabelContainer
 }
 
 // MARK: - Default implementations
@@ -135,6 +140,9 @@ public extension TrackPadStyle {
     }
     func makeTickMarksTypeErased(configuration: TrackPadConfiguration) -> AnyView {
         AnyView(self.makeTickMarks(configuration: configuration))
+    }
+    func makeLabelTypeErased(configuration: TrackPadConfiguration, content: AnyView) -> AnyView {
+        AnyView(self.makeLabel(configuration: configuration, content: content))
     }
 
     /// Default previous-value indicator: a dim ring with a small crosshair that brightens
@@ -215,6 +223,21 @@ public extension TrackPadStyle {
             }
         }
     }
+    
+    /// Default label: the current value in a floating capsule that appears when active.
+    func makeLabel(configuration: TrackPadConfiguration, content: AnyView) -> some View {
+        content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, y: 1)
+            )
+            .scaleEffect(configuration.isActive ? 1.0 : 0.8)
+            .opacity(configuration.isActive ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.15), value: configuration.isActive)
+    }
 }
 
 // MARK: - AnyTrackPadStyle
@@ -227,6 +250,7 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
     private let _makeTrack: @Sendable (TrackPadConfiguration) -> AnyView
     private let _makePreviousValueIndicator: @Sendable (TrackPadConfiguration) -> AnyView
     private let _makeTickMarks: @Sendable (TrackPadConfiguration) -> AnyView
+    private let _makeLabel: @Sendable (TrackPadConfiguration, AnyView) -> AnyView
 
     public func makeThumb(configuration: TrackPadConfiguration) -> some View {
         _makeThumb(configuration)
@@ -240,6 +264,9 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
     public func makeTickMarks(configuration: TrackPadConfiguration) -> some View {
         _makeTickMarks(configuration)
     }
+    public func makeLabel(configuration: TrackPadConfiguration, content: AnyView) -> some View {
+        _makeLabel(configuration, content)
+    }
 
     /// Creates a type-erased wrapper around the given style.
     ///
@@ -249,6 +276,7 @@ public struct AnyTrackPadStyle: TrackPadStyle, Sendable {
         self._makeTrack = style.makeTrackTypeErased
         self._makePreviousValueIndicator = style.makePreviousValueIndicatorTypeErased
         self._makeTickMarks = style.makeTickMarksTypeErased
+        self._makeLabel = style.makeLabelTypeErased
     }
 }
 

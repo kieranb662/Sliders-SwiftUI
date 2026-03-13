@@ -29,7 +29,7 @@ import SwiftUI
 ///
 /// Both methods provide access to state values of the radial slider thru the  `RSliderConfiguration` struct
 ///
-public struct RSlider: View {
+public struct RSlider<LabelView: View>: View {
     @Environment(\.radialSliderStyle) private var style: AnyRSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
     @Environment(\.labelsVisibility) private var labelsVisibility
@@ -62,6 +62,9 @@ public struct RSlider: View {
     private let disableHaptics: Bool
     /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
     private let allowsSingleTapSelect: Bool
+
+    /// The user-provided label view displayed near the thumb.
+    private var label: (_ value: Double) -> LabelView
 
     /// Creates a radial (circular) slider.
     ///
@@ -109,7 +112,9 @@ public struct RSlider: View {
                 affinityRadius: Double = 0.04,
                 affinityResistance: Double = 0.02,
                 disableHaptics: Bool = false,
-                allowsSingleTapSelect: Bool = false) {
+                allowsSingleTapSelect: Bool = false,
+                @ViewBuilder label: @escaping (_ value: Double) -> LabelView
+    ) {
         self._value = value
         self.range = range
         self.originAngle = originAngle
@@ -120,6 +125,7 @@ public struct RSlider: View {
         self.affinityResistance = affinityResistance
         self.disableHaptics = disableHaptics
         self.allowsSingleTapSelect = allowsSingleTapSelect
+        self.label = label
     }
 
     // MARK: - Tick mark value resolution
@@ -428,6 +434,17 @@ public struct RSlider: View {
 
     // MARK: - Body
 
+    /// Computes the offset to position a label outside the thumb on the radial track.
+    private func labelOffset(radius: CGFloat) -> CGSize {
+        let pct = (value - range.lowerBound) / (range.upperBound - range.lowerBound)
+        let thumbAngle = pct * 2 * .pi * maxWinds + originAngle.radians
+        let labelRadius = radius + 36
+        return CGSize(
+            width:  labelRadius * CGFloat(cos(thumbAngle)),
+            height: labelRadius * CGFloat(sin(thumbAngle))
+        )
+    }
+
     public var body: some View {
         let config = configuration
         let ticks = config.tickValues
@@ -449,8 +466,6 @@ public struct RSlider: View {
                             .gesture(
                                 SpatialTapGesture(coordinateSpace: .global)
                                     .onEnded { tap in
-                                        // Use the same global centre that the drag gesture uses,
-                                        // so rawAngle sees the same coordinate space.
                                         let globalCenter = CGPoint(
                                             x: proxy.frame(in: .global).midX,
                                             y: proxy.frame(in: .global).midY
@@ -470,6 +485,14 @@ public struct RSlider: View {
                     }
                     // Thumb
                     makeThumb(proxy)
+
+                    // Label (floating outside the thumb)
+                    if labelsVisibility != .hidden {
+                        style.makeLabel(configuration: config, content: AnyView(label(value)))
+                            .fixedSize()
+                            .offset(labelOffset(radius: r))
+                            .allowsHitTesting(false)
+                    }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
             })
@@ -485,5 +508,70 @@ public struct RSlider: View {
                 let currentWindValue = percent * maxWinds
                 currentWind = floor(currentWindValue)
             }
+    }
+}
+
+extension RSlider where LabelView == Text {
+    
+    /// Creates a radial (circular) slider.
+    ///
+    /// The slider maps your bound `value` onto a circle (or multiple turns of a circle).
+    /// Dragging the thumb changes `value` as it moves around the track.
+    ///
+    /// ## Value mapping
+    /// - The slider’s domain is `range`.
+    /// - The *minimum* value is located at `originAngle` (by default `.zero`, i.e. the 3 o’clock position).
+    /// - The slider can span more than one full revolution using `maxWinds`.
+    ///
+    /// ## Winds (multiple rotations)
+    /// `maxWinds` is the number of full rotations represented by the entire `range`.
+    /// For example:
+    /// - `maxWinds = 1` maps the entire range to 0–360°.
+    /// - `maxWinds = 2` maps the entire range to 0–720°.
+    /// - `maxWinds = 0.25` maps the entire range to 0–90°.
+    ///
+    /// ## Tick marks and affinity
+    /// Provide `tickSpacing` to show tick marks around the track. When `affinityEnabled` is `true`,
+    /// the thumb is magnetically attracted to nearby tick values.
+    ///
+    /// - Note: `affinityRadius` and `affinityResistance` are expressed as *fractions of the total value range*,
+    ///   not points/pixels.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the value controlled by the slider.
+    ///   - range: The allowed value range. Defaults to `0...1`.
+    ///   - originAngle: The angle on the circle that corresponds to the minimum value. Defaults to `.zero`.
+    ///   - maxWinds: The number of full revolutions spanned by the slider’s full value range.
+    ///     Fractional winds are supported.
+    ///   - tickSpacing: Optional tick mark placement configuration. When `nil`, no tick marks are drawn.
+    ///   - affinityEnabled: When `true`, the thumb will snap to nearby tick values.
+    ///   - affinityRadius: The distance (as a fraction of the full value range) within which the thumb will
+    ///     be pulled onto the nearest tick.
+    ///   - affinityResistance: Extra distance (as a fraction of full value range) the user must drag *past*
+    ///     `affinityRadius` to break out of a snap.
+    ///   - disableHaptics: When `true`, all haptic feedback is suppressed.
+    public init(_ value: Binding<Double>,
+                range: ClosedRange<Double> = 0...1,
+                originAngle: Angle = .zero,
+                maxWinds: Double = 1,
+                tickSpacing: TickMarkSpacing? = nil,
+                affinityEnabled: Bool = false,
+                affinityRadius: Double = 0.04,
+                affinityResistance: Double = 0.02,
+                disableHaptics: Bool = false,
+                allowsSingleTapSelect: Bool = false,
+                @ViewBuilder label: @escaping (_ value: Double) -> LabelView = { Text($0, format: .number.precision(.fractionLength(2))) }
+    ) {
+        self._value = value
+        self.range = range
+        self.originAngle = originAngle
+        self.maxWinds = maxWinds
+        self.tickSpacing = tickSpacing
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
+        self.disableHaptics = disableHaptics
+        self.allowsSingleTapSelect = allowsSingleTapSelect
+        self.label = label
     }
 }

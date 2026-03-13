@@ -105,6 +105,7 @@ fileprivate struct DoubleLSliderExamples: View {
                         hapticFeedbackEnabled: true
                     )
                     .frame(height: 60)
+                    .labelsHidden()
                     Text("[\(lower2, specifier: "%.2f"), \(upper2, specifier: "%.2f")]")
                         .font(.caption)
                 }

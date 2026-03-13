@@ -58,7 +58,7 @@ import SwiftUI
 ///
 /// Apply your style with `.trackPadStyle(MyStyle())`.
 ///
-public struct TrackPad: View {
+public struct TrackPad<LabelView: View>: View {
     // MARK: State and Setup
     @Environment(\.trackPadStyle) private var style: AnyTrackPadStyle
     @Environment(\.isEnabled) private var isEnabled
@@ -110,6 +110,9 @@ public struct TrackPad: View {
     /// When `true`, a single tap on the track immediately moves the thumb to the tapped position.
     public var allowsSingleTapSelect: Bool = false
 
+    /// The user-provided label view displayed near the thumb.
+    private var label: (_ x: Double, _ y: Double) -> LabelView
+ 
     // MARK: - Initialisers
 
     /// Creates a `TrackPad` with independent x and y ranges.
@@ -118,14 +121,17 @@ public struct TrackPad: View {
     ///   - value: A binding to the `CGPoint` whose `x` and `y` components the trackpad controls.
     ///   - rangeX: The closed range of valid values along the x-axis. Defaults to `0...1`.
     ///   - rangeY: The closed range of valid values along the y-axis. Defaults to `0...1`.
+    ///   - label: A view builder closure that creates the label view.
     public init(
         _ value: Binding<CGPoint>,
         rangeX: ClosedRange<CGFloat> = 0...1,
-        rangeY: ClosedRange<CGFloat> = 0...1
+        rangeY: ClosedRange<CGFloat> = 0...1,
+        @ViewBuilder label: @escaping (_ x: Double, _ y: Double) -> LabelView
     ) {
         self._value = value
         self.rangeX = rangeX
         self.rangeY = rangeY
+        self.label = label
     }
 
     /// Creates a `TrackPad` with a single range applied to both axes.
@@ -133,10 +139,16 @@ public struct TrackPad: View {
     /// - Parameters:
     ///   - value: A binding to the `CGPoint` the trackpad controls.
     ///   - range: The closed range used for both the x-axis and y-axis. Defaults to `0...1`.
-    public init(_ value: Binding<CGPoint>, range: ClosedRange<CGFloat> = 0...1) {
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        _ value: Binding<CGPoint>,
+        range: ClosedRange<CGFloat> = 0...1,
+        @ViewBuilder label: @escaping (_ x: Double, _ y: Double) -> LabelView
+    ) {
         self._value = value
         self.rangeX = range
         self.rangeY = range
+        self.label = label
     }
 
     /// Creates a `TrackPad` backed by separate `Double` bindings for each axis, with
@@ -147,11 +159,13 @@ public struct TrackPad: View {
     ///   - y: A binding to the vertical value.
     ///   - rangeX: The closed range of valid values along the x-axis. Defaults to `0...1`.
     ///   - rangeY: The closed range of valid values along the y-axis. Defaults to `0...1`.
+    ///   - label: A view builder closure that creates the label view.
     public init(
         x: Binding<Double>,
         y: Binding<Double>,
         rangeX: ClosedRange<CGFloat> = 0...1,
-        rangeY: ClosedRange<CGFloat> = 0...1
+        rangeY: ClosedRange<CGFloat> = 0...1,
+        @ViewBuilder label: @escaping (_ x: Double, _ y: Double) -> LabelView
     ) {
         self._value = Binding(
             get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
@@ -162,6 +176,7 @@ public struct TrackPad: View {
         )
         self.rangeX = rangeX
         self.rangeY = rangeY
+        self.label = label
     }
 
     /// Creates a `TrackPad` backed by separate `Double` bindings for each axis, with the
@@ -171,7 +186,13 @@ public struct TrackPad: View {
     ///   - x: A binding to the horizontal value.
     ///   - y: A binding to the vertical value.
     ///   - range: The closed range used for both axes. Defaults to `0...1`.
-    public init(x: Binding<Double>, y: Binding<Double>, range: ClosedRange<CGFloat> = 0...1) {
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        x: Binding<Double>,
+        y: Binding<Double>,
+        range: ClosedRange<CGFloat> = 0...1,
+        @ViewBuilder label: @escaping (_ x: Double, _ y: Double) -> LabelView
+    ) {
         self._value = Binding(
             get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
             set: {
@@ -181,6 +202,7 @@ public struct TrackPad: View {
         )
         self.rangeX = range
         self.rangeY = range
+        self.label = label
     }
     
     // MARK: - Configuration
@@ -509,6 +531,12 @@ public struct TrackPad: View {
     
     // MARK: - View
 
+    /// Computes the offset to position a label above the thumb.
+    private func labelOffset(_ proxy: GeometryProxy) -> CGSize {
+        let thumb = thumbOffset(proxy)
+        return CGSize(width: thumb.width, height: thumb.height - 36)
+    }
+
     public var body: some View {
         ZStack {
             style.makeTrack(configuration: makeConfiguration())
@@ -573,10 +601,120 @@ public struct TrackPad: View {
                                 }
                         )
                         .allowsHitTesting(isEnabled)
+
+                    // Label (floating above the thumb)
+                    if labelsVisibility != .hidden {
+                        style.makeLabel(configuration: makeConfiguration(), content: AnyView(label(value.x, value.y)))
+                            .fixedSize()
+                            .offset(labelOffset(proxy))
+                            .allowsHitTesting(false)
+                    }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
             }
         }
         .coordinateSpace(name: space)
+    }
+}
+
+extension TrackPad where LabelView == Text {
+    // MARK: - Initialisers
+
+    /// Creates a `TrackPad` with independent x and y ranges.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the `CGPoint` whose `x` and `y` components the trackpad controls.
+    ///   - rangeX: The closed range of valid values along the x-axis. Defaults to `0...1`.
+    ///   - rangeY: The closed range of valid values along the y-axis. Defaults to `0...1`.
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        _ value: Binding<CGPoint>,
+        rangeX: ClosedRange<CGFloat> = 0...1,
+        rangeY: ClosedRange<CGFloat> = 0...1,
+        @ViewBuilder label: @escaping (_ x: Double, _ y: Double) -> LabelView = {
+            Text("\(Text($0, format: .number.precision(.fractionLength(2)))), \(Text($1, format: .number.precision(.fractionLength(2))))")
+        }
+    ) {
+        self._value = value
+        self.rangeX = rangeX
+        self.rangeY = rangeY
+        self.label = label
+    }
+
+    /// Creates a `TrackPad` with a single range applied to both axes.
+    ///
+    /// - Parameters:
+    ///   - value: A binding to the `CGPoint` the trackpad controls.
+    ///   - range: The closed range used for both the x-axis and y-axis. Defaults to `0...1`.
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        _ value: Binding<CGPoint>,
+        range: ClosedRange<CGFloat> = 0...1,
+        @ViewBuilder label: @escaping (_ x: Double, _ y: Double) -> LabelView = {
+            Text("\(Text($0, format: .number.precision(.fractionLength(2)))), \(Text($1, format: .number.precision(.fractionLength(2))))")
+        }
+    ) {
+        self._value = value
+        self.rangeX = range
+        self.rangeY = range
+        self.label = label
+    }
+
+    /// Creates a `TrackPad` backed by separate `Double` bindings for each axis, with
+    /// independent ranges.
+    ///
+    /// - Parameters:
+    ///   - x: A binding to the horizontal value.
+    ///   - y: A binding to the vertical value.
+    ///   - rangeX: The closed range of valid values along the x-axis. Defaults to `0...1`.
+    ///   - rangeY: The closed range of valid values along the y-axis. Defaults to `0...1`.
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        x: Binding<Double>,
+        y: Binding<Double>,
+        rangeX: ClosedRange<CGFloat> = 0...1,
+        rangeY: ClosedRange<CGFloat> = 0...1,
+        @ViewBuilder label: @escaping (_ x: Double, _ y: Double) -> LabelView = {
+            Text("\(Text($0, format: .number.precision(.fractionLength(2)))), \(Text($1, format: .number.precision(.fractionLength(2))))")
+        }
+    ) {
+        self._value = Binding(
+            get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
+            set: {
+                x.wrappedValue = Double($0.x)
+                y.wrappedValue = Double($0.y)
+            }
+        )
+        self.rangeX = rangeX
+        self.rangeY = rangeY
+        self.label = label
+    }
+
+    /// Creates a `TrackPad` backed by separate `Double` bindings for each axis, with the
+    /// same range applied to both axes.
+    ///
+    /// - Parameters:
+    ///   - x: A binding to the horizontal value.
+    ///   - y: A binding to the vertical value.
+    ///   - range: The closed range used for both axes. Defaults to `0...1`.
+    ///   - label: A view builder closure that creates the label view.
+    public init(
+        x: Binding<Double>,
+        y: Binding<Double>,
+        range: ClosedRange<CGFloat> = 0...1,
+        @ViewBuilder label: @escaping (_ x: Double, _ y: Double) -> LabelView = {
+            Text("\(Text($0, format: .number.precision(.fractionLength(2)))), \(Text($1, format: .number.precision(.fractionLength(2))))")
+        }
+    ) {
+        self._value = Binding(
+            get: { CGPoint(x: x.wrappedValue, y: y.wrappedValue) },
+            set: {
+                x.wrappedValue = Double($0.x)
+                y.wrappedValue = Double($0.y)
+            }
+        )
+        self.rangeX = range
+        self.rangeY = range
+        self.label = label
     }
 }

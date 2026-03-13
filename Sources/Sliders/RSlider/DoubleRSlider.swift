@@ -29,7 +29,7 @@ import SwiftUI
 /// # Minimum distance
 /// `minimumDistance` (in value-domain units) ensures the two thumbs never overlap.
 ///
-public struct DoubleRSlider: View {
+public struct DoubleRSlider<LowerLabel: View, UpperLabel: View>: View {
     @Environment(\.doubleRadialSliderStyle) private var style: AnyDoubleRSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
     @Environment(\.labelsVisibility) private var labelsVisibility
@@ -74,6 +74,11 @@ public struct DoubleRSlider: View {
     private let affinityResistance: Double
     private let disableHaptics: Bool
 
+    /// The user-provided label view for the lower (start) thumb.
+    private var startLabel: (Double) -> LowerLabel
+    /// The user-provided label view for the upper (end) thumb.
+    private var endLabel: (Double) -> UpperLabel
+
     // MARK: - Init
 
     /// Creates a double radial (circular) slider.
@@ -91,6 +96,8 @@ public struct DoubleRSlider: View {
     ///   - affinityRadius: Pull radius as a fraction of the value range.
     ///   - affinityResistance: Extra escape distance beyond `affinityRadius`.
     ///   - disableHaptics: Suppresses all haptic feedback when `true`.
+    ///   - startLabel: A view builder that creates the label for the lower (start) thumb.
+    ///   - endLabel: A view builder that creates the label for the upper (end) thumb.
     public init(
         lowerValue: Binding<Double>,
         upperValue: Binding<Double>,
@@ -101,7 +108,9 @@ public struct DoubleRSlider: View {
         affinityEnabled: Bool = false,
         affinityRadius: Double = 0.04,
         affinityResistance: Double = 0.02,
-        disableHaptics: Bool = false
+        disableHaptics: Bool = false,
+        @ViewBuilder startLabel: @escaping (Double) -> LowerLabel,
+        @ViewBuilder endLabel: @escaping (Double) -> UpperLabel
     ) {
         self._lowerValue = lowerValue
         self._upperValue = upperValue
@@ -114,6 +123,8 @@ public struct DoubleRSlider: View {
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
         self.disableHaptics = disableHaptics
+        self.startLabel = startLabel
+        self.endLabel = endLabel
     }
 
     // MARK: - Tick mark resolution
@@ -556,6 +567,16 @@ public struct DoubleRSlider: View {
 
     // MARK: - Body
 
+    /// Computes the offset to position a label outside a thumb at `value` on the radial track.
+    private func labelOffsetForValue(_ v: Double, radius: CGFloat) -> CGSize {
+        let thumbAngle = angleForValue(v)
+        let labelRadius = radius + 36
+        return CGSize(
+            width:  labelRadius * CGFloat(cos(thumbAngle.radians)),
+            height: labelRadius * CGFloat(sin(thumbAngle.radians))
+        )
+    }
+
     public var body: some View {
         let config = configuration
         let ticks = config.tickValues
@@ -578,6 +599,19 @@ public struct DoubleRSlider: View {
 
                     // Upper thumb
                     makeUpperThumbView(proxy)
+
+                    // Labels (floating outside the thumbs)
+                    if labelsVisibility != .hidden {
+                        style.makeLowerLabel(configuration: config, content: AnyView(startLabel(lowerValue)))
+                            .fixedSize()
+                            .offset(labelOffsetForValue(lowerValue, radius: r))
+                            .allowsHitTesting(false)
+
+                        style.makeUpperLabel(configuration: config, content: AnyView(endLabel(upperValue)))
+                            .fixedSize()
+                            .offset(labelOffsetForValue(upperValue, radius: r))
+                            .allowsHitTesting(false)
+                    }
                 }
                 .frame(width: proxy.size.width, height: proxy.size.height)
             })
@@ -585,5 +619,55 @@ public struct DoubleRSlider: View {
                 lowerHapticManager.prepare()
                 upperHapticManager.prepare()
             }
+    }
+}
+
+extension DoubleRSlider where LowerLabel == Text, UpperLabel == Text {
+    // MARK: - Init
+
+    /// Creates a double radial (circular) slider.
+    ///
+    /// - Parameters:
+    ///   - lowerValue: A binding to the start of the selected range.
+    ///   - upperValue: A binding to the end of the selected range.
+    ///   - range: The allowed value domain. Defaults to `0...1`.
+    ///   - originAngle: The angle that corresponds to the minimum value. Defaults to `.zero`
+    ///     (3 o'clock).
+    ///   - minimumDistance: The smallest gap (in value units) allowed between the two thumbs.
+    ///     Defaults to `0.05` of the range span.
+    ///   - tickSpacing: Optional tick-mark placement configuration.
+    ///   - affinityEnabled: When `true`, thumbs snap magnetically to nearby tick values.
+    ///   - affinityRadius: Pull radius as a fraction of the value range.
+    ///   - affinityResistance: Extra escape distance beyond `affinityRadius`.
+    ///   - disableHaptics: Suppresses all haptic feedback when `true`.
+    ///   - startLabel: A view builder that creates the label for the lower (start) thumb.
+    ///   - endLabel: A view builder that creates the label for the upper (end) thumb.
+    public init(
+        lowerValue: Binding<Double>,
+        upperValue: Binding<Double>,
+        range: ClosedRange<Double> = 0...1,
+        originAngle: Angle = .zero,
+        minimumDistance: Double? = nil,
+        tickSpacing: TickMarkSpacing? = nil,
+        affinityEnabled: Bool = false,
+        affinityRadius: Double = 0.04,
+        affinityResistance: Double = 0.02,
+        disableHaptics: Bool = false,
+        @ViewBuilder startLabel: @escaping (Double) -> LowerLabel = { Text($0, format: .number.precision(.fractionLength(2))) },
+        @ViewBuilder endLabel: @escaping (Double) -> UpperLabel = { Text($0, format: .number.precision(.fractionLength(2))) }
+    ) {
+        self._lowerValue = lowerValue
+        self._upperValue = upperValue
+        self.range = range
+        self.originAngle = originAngle
+        let span = range.upperBound - range.lowerBound
+        self.minimumDistance = minimumDistance ?? (span > 0 ? span * 0.05 : 0)
+        self.tickSpacing = tickSpacing
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
+        self.disableHaptics = disableHaptics
+        self.startLabel = startLabel
+        self.endLabel = endLabel
     }
 }

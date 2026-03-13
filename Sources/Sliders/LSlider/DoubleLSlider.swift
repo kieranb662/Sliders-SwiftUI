@@ -24,7 +24,7 @@ import SwiftUI
 ///
 /// # Minimum Distance
 /// `minimumDistance` (in value-domain units) ensures the two thumbs never overlap.
-public struct DoubleLSlider: View {
+public struct DoubleLSlider<LowerLabel: View, UpperLabel: View>: View {
     @Environment(\.doubleLSliderStyle) private var style: AnyDoubleLSliderStyle
     @Environment(\.isEnabled) private var isEnabled: Bool
     @Environment(\.labelsVisibility) private var labelsVisibility
@@ -69,6 +69,11 @@ public struct DoubleLSlider: View {
     private let affinityRadius: Double
     private let affinityResistance: Double
 
+    /// The user-provided label view for the lower (start) thumb.
+    private var startLabel: (Double) -> LowerLabel
+    /// The user-provided label view for the upper (end) thumb.
+    private var endLabel: (Double) -> UpperLabel
+
     // MARK: - Init
 
     /// Creates a double linear slider.
@@ -87,6 +92,8 @@ public struct DoubleLSlider: View {
     ///   - affinityEnabled: When `true`, thumbs snap magnetically to nearby tick values.
     ///   - affinityRadius: Pull radius as a fraction of the value range.
     ///   - affinityResistance: Extra escape distance beyond `affinityRadius`.
+    ///   - startLabel: A view builder closure that produces the label view for the lower thumb.
+    ///   - endLabel: A view builder closure that produces the label view for the upper thumb.
     public init(
         lowerValue: Binding<Double>,
         upperValue: Binding<Double>,
@@ -99,7 +106,9 @@ public struct DoubleLSlider: View {
         hapticFeedbackEnabled: Bool = true,
         affinityEnabled: Bool = false,
         affinityRadius: Double = 0.04,
-        affinityResistance: Double = 0.02
+        affinityResistance: Double = 0.02,
+        @ViewBuilder startLabel: @escaping (Double) -> LowerLabel,
+        @ViewBuilder endLabel: @escaping (Double) -> UpperLabel
     ) {
         self._lowerValue = lowerValue
         self._upperValue = upperValue
@@ -114,6 +123,8 @@ public struct DoubleLSlider: View {
         self.affinityEnabled = affinityEnabled
         self.affinityRadius = affinityRadius
         self.affinityResistance = affinityResistance
+        self.startLabel = startLabel
+        self.endLabel = endLabel
     }
 
     // MARK: - Tick Mark Resolution
@@ -479,6 +490,19 @@ public struct DoubleLSlider: View {
 
     // MARK: - Body
 
+    /// Computes the perpendicular offset to position a label above a thumb at `parameter`.
+    private func labelOffsetForParameter(_ parameter: Double, proxy: GeometryProxy) -> CGSize {
+        let thumb = offsetForParameter(parameter, proxy: proxy)
+        let θ = angle.radians
+        let perpX = -sin(θ)
+        let perpY = cos(θ)
+        let labelDistance = trackThickness * 2 + 16
+        return CGSize(
+            width:  thumb.width  + perpX * labelDistance,
+            height: thumb.height - perpY * labelDistance
+        )
+    }
+
     public var body: some View {
         let config = configuration
         let ticks  = config.tickValues
@@ -502,6 +526,19 @@ public struct DoubleLSlider: View {
 
                 // Upper thumb
                 makeUpperThumbView(proxy)
+
+                // Labels (floating above thumbs)
+                if labelsVisibility != .hidden {
+                    style.makeLowerLabel(configuration: config, content: AnyView(startLabel(lowerValue)))
+                        .fixedSize()
+                        .offset(labelOffsetForParameter(parameterForValue(lowerValue), proxy: proxy))
+                        .allowsHitTesting(false)
+
+                    style.makeUpperLabel(configuration: config, content: AnyView(endLabel(upperValue)))
+                        .fixedSize()
+                        .offset(labelOffsetForParameter(parameterForValue(upperValue), proxy: proxy))
+                        .allowsHitTesting(false)
+                }
             }
             .coordinateSpace(name: space)
         }
@@ -509,5 +546,61 @@ public struct DoubleLSlider: View {
             lowerHapticManager.prepare()
             upperHapticManager.prepare()
         }
+    }
+}
+
+extension DoubleLSlider where LowerLabel == Text, UpperLabel == Text {
+    
+    // MARK: - Init
+
+    /// Creates a double linear slider.
+    ///
+    /// - Parameters:
+    ///   - lowerValue: A binding to the start of the selected range.
+    ///   - upperValue: A binding to the end of the selected range.
+    ///   - range: The allowed value domain. Defaults to `0...1`.
+    ///   - angle: The angle of the slider's track. Defaults to `.zero` (horizontal).
+    ///   - keepThumbInTrack: If `true`, the thumb centres are constrained to the track's extent.
+    ///   - trackThickness: The thickness of the track.
+    ///   - minimumDistance: The smallest gap (in value units) between the two thumbs.
+    ///     Defaults to 5 % of the range span.
+    ///   - tickMarkSpacing: Optional tick-mark placement configuration.
+    ///   - hapticFeedbackEnabled: Whether crossing a tick mark triggers haptic feedback.
+    ///   - affinityEnabled: When `true`, thumbs snap magnetically to nearby tick values.
+    ///   - affinityRadius: Pull radius as a fraction of the value range.
+    ///   - affinityResistance: Extra escape distance beyond `affinityRadius`.
+    ///   - startLabel: A view builder closure that produces the label view for the lower thumb.
+    ///   - endLabel: A view builder closure that produces the label view for the upper thumb.
+    public init(
+        lowerValue: Binding<Double>,
+        upperValue: Binding<Double>,
+        range: ClosedRange<Double> = 0...1,
+        angle: Angle = .zero,
+        keepThumbInTrack: Bool = false,
+        trackThickness: Double = 20,
+        minimumDistance: Double? = nil,
+        tickMarkSpacing: TickMarkSpacing? = nil,
+        hapticFeedbackEnabled: Bool = true,
+        affinityEnabled: Bool = false,
+        affinityRadius: Double = 0.04,
+        affinityResistance: Double = 0.02,
+        @ViewBuilder startLabel: @escaping (Double) -> LowerLabel = { Text($0, format: .number.precision(.fractionLength(2))) },
+        @ViewBuilder endLabel: @escaping (Double) -> UpperLabel = { Text($0, format: .number.precision(.fractionLength(2))) }
+    ) {
+        self._lowerValue = lowerValue
+        self._upperValue = upperValue
+        self.range = range
+        self.angle = angle
+        self.keepThumbInTrack = keepThumbInTrack
+        self.trackThickness = trackThickness
+        let span = range.upperBound - range.lowerBound
+        self.minimumDistance = minimumDistance ?? (span > 0 ? span * 0.05 : 0)
+        self.tickMarkSpacing = tickMarkSpacing
+        self.hapticFeedbackEnabled = hapticFeedbackEnabled
+        self.affinityEnabled = affinityEnabled
+        self.affinityRadius = affinityRadius
+        self.affinityResistance = affinityResistance
+        self.startLabel = startLabel
+        self.endLabel = endLabel
     }
 }

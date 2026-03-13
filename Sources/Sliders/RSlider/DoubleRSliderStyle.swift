@@ -13,7 +13,7 @@ import SwiftUI
 ///
 /// Styles receive an instance of `DoubleRSliderConfiguration` when creating the thumbs, track, and
 /// tick marks. Most styles will use `lowerValue`, `upperValue`, `lowerAngle`, `upperAngle`,
-/// `isLowerActive`, `isUpperActive`, and `isRangeActive`.
+/// `isLowerActive`, `isUpperActive`, `isRangeActive`, and `isRangeActive`.
 public struct DoubleRSliderConfiguration {
     /// Whether the slider is currently disabled.
     public let isDisabled: Bool
@@ -76,6 +76,9 @@ public protocol DoubleRSliderStyle: Sendable {
     associatedtype Track: View
     /// The view used for each tick mark.
     associatedtype TickMark: View
+    /// The view used as a styled label container.
+    associatedtype LowerLabel: View
+    associatedtype UpperLabel: View
 
     /// Creates the lower (start) draggable thumb.
     func makeLowerThumb(configuration: DoubleRSliderConfiguration) -> Self.LowerThumb
@@ -91,6 +94,12 @@ public protocol DoubleRSliderStyle: Sendable {
 
     /// Creates the view shown for a single tick mark.
     func makeTickMark(configuration: DoubleRSliderConfiguration, tickValue: Double) -> Self.TickMark
+
+    /// Creates the styled container for the lower thumb label.
+    func makeLowerLabel(configuration: DoubleRSliderConfiguration, content: AnyView) -> Self.LowerLabel
+
+    /// Creates the styled container for the upper thumb label.
+    func makeUpperLabel(configuration: DoubleRSliderConfiguration, content: AnyView) -> Self.UpperLabel
 }
 
 // MARK: - Default tick mark
@@ -107,6 +116,12 @@ public extension DoubleRSliderStyle {
     }
     func makeTrackTypeErased(configuration: DoubleRSliderConfiguration) -> AnyView {
         AnyView(self.makeTrack(configuration: configuration))
+    }
+    func makeLowerLabelTypeErased(configuration: DoubleRSliderConfiguration, content: AnyView) -> AnyView {
+        AnyView(self.makeLowerLabel(configuration: configuration, content: content))
+    }
+    func makeUpperLabelTypeErased(configuration: DoubleRSliderConfiguration, content: AnyView) -> AnyView {
+        AnyView(self.makeUpperLabel(configuration: configuration, content: content))
     }
 
     /// Default tick mark: a small white circle.
@@ -125,6 +140,38 @@ public extension DoubleRSliderStyle {
             .frame(width: size, height: size)
             .animation(.easeOut(duration: 0.1), value: proximity)
     }
+
+    /// Default lower label: the value in a floating capsule.
+    func makeLowerLabel(configuration: DoubleRSliderConfiguration, content: AnyView) -> some View {
+        let isActive = configuration.isLowerActive || configuration.isRangeActive
+        return content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, y: 1)
+            )
+            .scaleEffect(isActive ? 1.0 : 0.8)
+            .opacity(isActive ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.15), value: isActive)
+    }
+
+    /// Default upper label: the value in a floating capsule.
+    func makeUpperLabel(configuration: DoubleRSliderConfiguration, content: AnyView) -> some View {
+        let isActive = configuration.isUpperActive || configuration.isRangeActive
+        return content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, y: 1)
+            )
+            .scaleEffect(isActive ? 1.0 : 0.8)
+            .opacity(isActive ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.15), value: isActive)
+    }
 }
 
 // MARK: - Type-Eraser
@@ -135,6 +182,8 @@ public struct AnyDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
     private let _makeUpperThumb: @Sendable (DoubleRSliderConfiguration) -> AnyView
     private let _makeTrack: @Sendable (DoubleRSliderConfiguration) -> AnyView
     private let _makeTickMark: @Sendable (DoubleRSliderConfiguration, Double) -> AnyView
+    private let _makeLowerLabel: @Sendable (DoubleRSliderConfiguration, AnyView) -> AnyView
+    private let _makeUpperLabel: @Sendable (DoubleRSliderConfiguration, AnyView) -> AnyView
 
     public func makeLowerThumb(configuration: DoubleRSliderConfiguration) -> some View {
         _makeLowerThumb(configuration)
@@ -148,12 +197,20 @@ public struct AnyDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
     public func makeTickMark(configuration: DoubleRSliderConfiguration, tickValue: Double) -> some View {
         _makeTickMark(configuration, tickValue)
     }
+    public func makeLowerLabel(configuration: DoubleRSliderConfiguration, content: AnyView) -> some View {
+        _makeLowerLabel(configuration, content)
+    }
+    public func makeUpperLabel(configuration: DoubleRSliderConfiguration, content: AnyView) -> some View {
+        _makeUpperLabel(configuration, content)
+    }
 
     public init<S: DoubleRSliderStyle>(_ style: S) {
         self._makeLowerThumb = style.makeLowerThumbTypeErased
         self._makeUpperThumb = style.makeUpperThumbTypeErased
         self._makeTrack = style.makeTrackTypeErased
         self._makeTickMark = style.makeTickMarkTypeErased
+        self._makeLowerLabel = style.makeLowerLabelTypeErased
+        self._makeUpperLabel = style.makeUpperLabelTypeErased
     }
 }
 
@@ -297,5 +354,35 @@ public struct DefaultDoubleRSliderStyle: DoubleRSliderStyle, Sendable {
                 .frame(width: size, height: size)
                 .animation(.easeOut(duration: 0.1), value: proximity)
         )
+    }
+
+    public func makeLowerLabel(configuration: DoubleRSliderConfiguration, content: AnyView) -> some View {
+        let isActive = configuration.isLowerActive || configuration.isRangeActive
+        return content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, y: 1)
+            )
+            .scaleEffect(isActive ? 1.0 : 0.8)
+            .opacity(isActive ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.15), value: isActive)
+    }
+
+    public func makeUpperLabel(configuration: DoubleRSliderConfiguration, content: AnyView) -> some View {
+        let isActive = configuration.isUpperActive || configuration.isRangeActive
+        return content
+            .padding(.horizontal, 8)
+            .padding(.vertical, 4)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .shadow(color: Color.black.opacity(0.15), radius: 2, y: 1)
+            )
+            .scaleEffect(isActive ? 1.0 : 0.8)
+            .opacity(isActive ? 1.0 : 0.0)
+            .animation(.easeOut(duration: 0.15), value: isActive)
     }
 }
